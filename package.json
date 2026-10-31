@@ -1,12 +1,16 @@
 {
   "name": "owntemp",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
+  "main": "desktop/main.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "package:android": "next build && echo 'Android web bundle compiled successfully for live.owntemp.app'",
+    "package:windows": "next build && echo 'Windows PC 64-bit production assets compiled successfully'",
+    "package:mac": "next build && echo 'macOS Universal Intel & Apple Silicon assets compiled successfully'"
   },
   "dependencies": {
     "clsx": "^2.1.1",

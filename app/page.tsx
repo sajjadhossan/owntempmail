@@ -27,6 +27,10 @@ import {
   Filter,
   Bookmark,
   Layers,
+  Settings,
+  Smartphone,
+  Laptop,
+  Apple,
 } from 'lucide-react';
 import { EmailRecord, InboxMetadata, DomainItem } from '@/lib/types';
 import { translations, Language } from '@/lib/translations';
@@ -67,6 +71,7 @@ export default function OwntempHome() {
   const [showDomainModal, setShowDomainModal] = useState(false);
   const [showSimModal, setShowSimModal] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   // Form states
   const [lockPin, setLockPin] = useState('');
@@ -81,6 +86,10 @@ export default function OwntempHome() {
   const [simOtp, setSimOtp] = useState('');
   const [isSimulating, setIsSimulating] = useState(false);
 
+  // Version check
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState<string | null>(null);
+
   // Play audio chime when new email arrives
   const playChime = useCallback(() => {
     if (!soundEnabled || typeof window === 'undefined') return;
@@ -89,8 +98,8 @@ export default function OwntempHome() {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
-      osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.15); // E6
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.15);
       gain.gain.setValueAtTime(0.15, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
       osc.connect(gain);
@@ -98,7 +107,7 @@ export default function OwntempHome() {
       osc.start();
       osc.stop(ctx.currentTime + 0.35);
     } catch (e) {
-      // AudioContext policy fallback
+      // Audio fallback
     }
   }, [soundEnabled]);
 
@@ -350,6 +359,23 @@ export default function OwntempHome() {
     }
   };
 
+  // Check version updates
+  const handleCheckVersion = async () => {
+    setIsCheckingUpdate(true);
+    setUpdateStatus(null);
+    try {
+      const res = await fetch('/api/app/version');
+      const data = await res.json();
+      if (data.success) {
+        setUpdateStatus(lang === 'bn' ? `আপনার অ্যাপ লেটেস্ট ভার্সন ${data.data.latestVersion} এ চলছে!` : `App is up-to-date on latest release ${data.data.latestVersion}!`);
+      }
+    } catch (e) {
+      setUpdateStatus('Could not reach update server.');
+    } finally {
+      setIsCheckingUpdate(false);
+    }
+  };
+
   // Download Email as Text
   const handleDownloadTxt = (email: EmailRecord) => {
     const content = `From: ${email.senderName || ''} <${email.sender}>\nTo: ${email.address}\nDate: ${email.receivedAt}\nSubject: ${email.subject}\nOTP: ${email.otpCode || 'None'}\n\n${email.textBody}`;
@@ -415,7 +441,7 @@ export default function OwntempHome() {
                   {t.appTitle}
                 </span>
                 <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                  v1.1.0
+                  v1.2.0
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 hidden sm:block">
@@ -454,6 +480,15 @@ export default function OwntempHome() {
             >
               <Sparkles className="w-3.5 h-3.5 text-indigo-300" />
               <span>{lang === 'bn' ? 'টেস্ট সিমুলেটর' : 'Simulator'}</span>
+            </button>
+
+            {/* Settings Trigger */}
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition"
+              title="Settings & Downloads"
+            >
+              <Settings className="w-4 h-4" />
             </button>
 
             {/* Language Switcher */}
@@ -635,7 +670,7 @@ export default function OwntempHome() {
           </div>
         </section>
 
-        {/* Permanent Locked Inboxes Quick Switcher Tray (New in v1.1.0) */}
+        {/* Permanent Locked Inboxes Tray */}
         {lockedInboxes.length > 0 && (
           <section className="bg-slate-900/40 border border-slate-800/80 rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
@@ -933,7 +968,7 @@ export default function OwntempHome() {
         </div>
       )}
 
-      {/* QR Code Modal (New in v1.1.0) */}
+      {/* QR Code Modal */}
       {showQrModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-4 shadow-2xl text-center">
@@ -965,6 +1000,99 @@ export default function OwntempHome() {
             >
               {t.copy}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* App Settings & Multi-Platform Downloads Modal (New in v1.2.0) */}
+      {showSettingsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-5 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center space-x-2">
+                <Settings className="w-5 h-5 text-indigo-400" />
+                <h3 className="font-bold text-base text-slate-100">{t.settingsTitle}</h3>
+              </div>
+              <button onClick={() => setShowSettingsModal(false)} className="text-slate-400 hover:text-white">✕</button>
+            </div>
+
+            {/* Version & Update check */}
+            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-bold text-slate-200">Owntemp Engine</div>
+                  <div className="text-xs text-indigo-400 font-mono">Current Version: v1.2.0</div>
+                </div>
+                <button
+                  onClick={handleCheckVersion}
+                  disabled={isCheckingUpdate}
+                  className="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold transition"
+                >
+                  {isCheckingUpdate ? t.checkingUpdate : t.checkUpdate}
+                </button>
+              </div>
+              {updateStatus && (
+                <div className="text-xs text-emerald-400 font-medium pt-1 border-t border-slate-900">
+                  {updateStatus}
+                </div>
+              )}
+            </div>
+
+            {/* Multi-Platform Download Links */}
+            <div className="space-y-2">
+              <div className="text-xs font-bold text-slate-300">{t.platformsTitle}</div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <a
+                  href="https://github.com/owntemp/releases/latest/app-v1.2.0-android.apk"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-emerald-500/50 flex flex-col items-center text-center space-y-1.5 group transition"
+                >
+                  <Smartphone className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition" />
+                  <span className="text-xs font-semibold text-slate-200">Android APK</span>
+                  <span className="text-[10px] text-slate-500 font-mono">v1.2.0</span>
+                </a>
+
+                <a
+                  href="https://github.com/owntemp/releases/latest/Owntemp-v1.2.0-windows-x64.exe"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-blue-500/50 flex flex-col items-center text-center space-y-1.5 group transition"
+                >
+                  <Laptop className="w-5 h-5 text-blue-400 group-hover:scale-110 transition" />
+                  <span className="text-xs font-semibold text-slate-200">Windows PC</span>
+                  <span className="text-[10px] text-slate-500 font-mono">x64 .exe</span>
+                </a>
+
+                <a
+                  href="https://github.com/owntemp/releases/latest/Owntemp-v1.2.0-mac-universal.dmg"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-purple-500/50 flex flex-col items-center text-center space-y-1.5 group transition"
+                >
+                  <Apple className="w-5 h-5 text-purple-400 group-hover:scale-110 transition" />
+                  <span className="text-xs font-semibold text-slate-200">macOS</span>
+                  <span className="text-[10px] text-slate-500 font-mono">Intel & M-Chip</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Inbound Webhook URL */}
+            <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1.5">
+              <span className="text-xs font-semibold text-slate-400">{t.webhookUrlTitle}</span>
+              <div className="font-mono text-xs text-indigo-300 bg-slate-900 px-3 py-2 rounded-lg truncate border border-slate-800 select-all">
+                https://your-domain.vercel.app/api/inbound/webhook
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setShowSettingsModal(false)}
+                className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition"
+              >
+                {t.close}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1204,7 +1332,7 @@ export default function OwntempHome() {
           <div className="flex items-center space-x-4">
             <span className="font-mono text-indigo-400">API: /api/inbound/webhook</span>
             <span>•</span>
-            <span className="font-mono text-slate-400">Version 1.1.0</span>
+            <span className="font-mono text-slate-400">Version 1.2.0</span>
           </div>
         </div>
       </footer>

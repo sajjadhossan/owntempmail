@@ -55,7 +55,7 @@ export const translations = {
     sendTestBtn: 'এখনই টেস্ট মেইল পাঠান',
     sending: 'পাঠানো হচ্ছে...',
     successSim: 'টেস্ট মেইল সফলভাবে ইনবক্সে পৌঁছেছে!',
-    // v1.1.0 New Additions
+    // v1.1.0 Additions
     savedInboxes: 'সুরক্ষিত লক করা ইনবক্সসমূহ',
     noLockedInboxes: 'কোনো লক করা ইনবক্স নেই। আপনার দরকারি ঠিকানা চিরতরে সেভ রাখতে "লাইফটাইম লক" বাটন চাপুন।',
     searchPlaceholder: 'ইমেইল প্রেরক, সাবজেক্ট বা ওটিপি দিয়ে খুঁজুন...',
@@ -68,6 +68,16 @@ export const translations = {
     soundOn: 'নোটিফিকেশন সাউন্ড চালু',
     soundOff: 'নোটিফিকেশন সাউন্ড বন্ধ',
     newMailChime: 'নতুন ইমেইল এসেছে!',
+    // v1.2.0 Additions
+    settingsTitle: 'অ্যাপ সেটিংস ও ডাউনলোড',
+    checkUpdate: 'আপডেট চেক করুন',
+    checkingUpdate: 'আপডেট চেক করা হচ্ছে...',
+    upToDate: 'আপনার অ্যাপটি লেটেস্ট ভার্সনে আছে (v1.2.0)',
+    platformsTitle: 'মাল্টি-প্ল্যাটফর্ম অ্যাপ ডাউনলোড',
+    downloadApk: 'অ্যান্ড্রয়েড APK ডাউনলোড',
+    downloadWindows: 'উইন্ডোজ PC (.exe) ডাউনলোড',
+    downloadMac: 'ম্যাকবুক Universal (.dmg) ডাউনলোড',
+    webhookUrlTitle: 'আপনার ক্লাউডফ্লেয়ার ইনবাউন্ড ওয়েবহুক ইউআরএল:',
   },
   en: {
     appTitle: 'Owntemp',
@@ -123,7 +133,7 @@ export const translations = {
     sendTestBtn: 'Dispatch Test Email Now',
     sending: 'Sending...',
     successSim: 'Test email delivered to inbox successfully!',
-    // v1.1.0 New Additions
+    // v1.1.0 Additions
     savedInboxes: 'Permanent Locked Inboxes',
     noLockedInboxes: 'No locked inboxes yet. Click "Lock Lifetime" to permanently secure your critical addresses.',
     searchPlaceholder: 'Search by sender, subject, or OTP code...',
@@ -136,5 +146,15 @@ export const translations = {
     soundOn: 'Audio Chime Enabled',
     soundOff: 'Audio Chime Muted',
     newMailChime: 'New email received!',
+    // v1.2.0 Additions
+    settingsTitle: 'App Settings & Downloads',
+    checkUpdate: 'Check for Updates',
+    checkingUpdate: 'Checking for updates...',
+    upToDate: 'Your app is on the latest version (v1.2.0)',
+    platformsTitle: 'Multi-Platform App Downloads',
+    downloadApk: 'Download Android APK',
+    downloadWindows: 'Download Windows PC (.exe)',
+    downloadMac: 'Download macOS Universal (.dmg)',
+    webhookUrlTitle: 'Your Cloudflare Inbound Webhook URL:',
   },
 };

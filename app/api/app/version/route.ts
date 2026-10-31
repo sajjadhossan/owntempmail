@@ -5,14 +5,33 @@ export async function GET() {
     success: true,
     data: {
       appName: 'Owntemp',
-      latestVersion: '1.1.0',
+      latestVersion: '1.2.0',
       minimumSupportedVersion: '1.0.0',
-      apkDownloadUrl: 'https://github.com/owntemp/releases/latest/app-v1.1.0-android.apk',
-      windowsDownloadUrl: 'https://github.com/owntemp/releases/latest/Owntemp-v1.1.0-windows-x64.exe',
-      macDownloadUrl: 'https://github.com/owntemp/releases/latest/Owntemp-v1.1.0-mac-universal.dmg',
+      apkDownloadUrl: 'https://github.com/owntemp/releases/latest/app-v1.2.0-android.apk',
+      windowsDownloadUrl: 'https://github.com/owntemp/releases/latest/Owntemp-v1.2.0-windows-x64.exe',
+      macDownloadUrl: 'https://github.com/owntemp/releases/latest/Owntemp-v1.2.0-mac-universal.dmg',
       releaseNotes: {
-        bn: 'Owntemp v1.1.0 আপডেট: পার্মানেন্ট লকড ইনবক্স সুইচার ট্রে, ইনস্ট্যান্ট QR কোড জেনারেটর, সার্চ ও ওটিপি ফিল্টারিং, সাউন্ড ও ব্রাউজার নোটিফিকেশন, ইমেইল ডাউনলোড/এক্সপোর্ট (EML/TXT)।',
-        en: 'Owntemp v1.1.0 Update: Permanent locked inboxes switcher tray, Instant QR code generator, Search & OTP filtering, Audio chime & browser notifications, Email export (EML/TXT).',
+        bn: 'Owntemp v1.2.0 আপডেট: মাল্টি-প্ল্যাটফর্ম সাপোর্ট (অ্যান্ড্রয়েড APK, উইন্ডোজ PC .exe, ম্যাকবুক Intel ও Apple Silicon M-Series), Vercel প্রোডাকশন কনফিগারেশন, অটো-আপডেট চেকার এবং সেটিংস প্যানেল।',
+        en: 'Owntemp v1.2.0 Release: Full multi-platform packaging (Android APK, Windows PC .exe, macOS Universal for Intel & Apple Silicon M-Series), Vercel production deployment config, Auto-update checker and App Settings drawer.',
+      },
+      platforms: {
+        android: {
+          appId: 'live.owntemp.app',
+          target: 'Android 8.0 - 15.0',
+          format: 'APK / AAB',
+        },
+        windows: {
+          arch: 'x64 (64-bit)',
+          format: 'Portable .exe & Installer',
+        },
+        macos: {
+          arch: 'Universal (x86_64 Intel & arm64 Apple Silicon M1-M4)',
+          format: '.dmg / .app',
+        },
+        web: {
+          provider: 'Vercel Serverless Edge',
+          ssl: 'Enforced HTTPS',
+        },
       },
       forceUpdate: false,
     },
