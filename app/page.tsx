@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useId } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Mail,
   Lock,
@@ -19,10 +19,18 @@ import {
   AlertCircle,
   HelpCircle,
   Eye,
-  ChevronRight,
+  QrCode,
+  Download,
+  Volume2,
+  VolumeX,
+  Search,
+  Filter,
+  Bookmark,
+  Layers,
 } from 'lucide-react';
 import { EmailRecord, InboxMetadata, DomainItem } from '@/lib/types';
 import { translations, Language } from '@/lib/translations';
+import { generateQrSvgUri } from '@/lib/qr';
 
 export default function OwntempHome() {
   const [lang, setLang] = useState<Language>('bn');
@@ -37,19 +45,28 @@ export default function OwntempHome() {
   // Inbox & Emails
   const [inboxMeta, setInboxMeta] = useState<InboxMetadata | null>(null);
   const [emails, setEmails] = useState<EmailRecord[]>([]);
+  const [lockedInboxes, setLockedInboxes] = useState<InboxMetadata[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [copiedText, setCopiedText] = useState(false);
   const [copiedOtp, setCopiedOtp] = useState<string | null>(null);
   const [selectedEmail, setSelectedEmail] = useState<EmailRecord | null>(null);
 
+  // Search & Filter
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterMode, setFilterMode] = useState<'all' | 'otp'>('all');
+
+  // Sound settings
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
   // Auto-refresh timer
   const [countdown, setCountdown] = useState(10);
 
-  // Modals & Drawers
+  // Modals
   const [showLockModal, setShowLockModal] = useState(false);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [showDomainModal, setShowDomainModal] = useState(false);
   const [showSimModal, setShowSimModal] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
 
   // Form states
   const [lockPin, setLockPin] = useState('');
@@ -60,9 +77,30 @@ export default function OwntempHome() {
 
   // Simulator Form
   const [simSender, setSimSender] = useState('security@google.com');
-  const [simSubject, setSimSubject] = useState('Google Account Verification Code / গুগল একাউন্ট যাচাইকরণ কোড');
+  const [simSubject, setSimSubject] = useState('Google Verification Code / গুগল যাচাইকরণ কোড');
   const [simOtp, setSimOtp] = useState('');
   const [isSimulating, setIsSimulating] = useState(false);
+
+  // Play audio chime when new email arrives
+  const playChime = useCallback(() => {
+    if (!soundEnabled || typeof window === 'undefined') return;
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
+      osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.15); // E6
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.35);
+    } catch (e) {
+      // AudioContext policy fallback
+    }
+  }, [soundEnabled]);
 
   // Load available domains
   const fetchDomains = useCallback(async () => {
@@ -80,35 +118,58 @@ export default function OwntempHome() {
     }
   }, [selectedDomain]);
 
-  // Fetch emails for current inbox
-  const fetchEmails = useCallback(async (targetAddress: string, silent = false) => {
-    if (!silent) setIsLoading(true);
-    setActionError(null);
+  // Load locked inboxes list
+  const fetchLockedInboxes = useCallback(async () => {
     try {
-      const res = await fetch(`/api/inbox/${encodeURIComponent(targetAddress)}`);
+      const res = await fetch('/api/inbox/locked');
       const data = await res.json();
-      if (data.success) {
-        setEmails(data.data.emails || []);
-        setInboxMeta(data.data.inbox || null);
+      if (data.success && Array.isArray(data.data)) {
+        setLockedInboxes(data.data);
       }
-    } catch (err: any) {
-      console.error('Failed to fetch emails', err);
-    } finally {
-      if (!silent) setIsLoading(false);
+    } catch (err) {
+      console.error('Failed to load locked inboxes', err);
     }
   }, []);
 
-  // Initial setup
+  // Fetch emails for current inbox
+  const fetchEmails = useCallback(
+    async (targetAddress: string, silent = false) => {
+      if (!silent) setIsLoading(true);
+      setActionError(null);
+      try {
+        const res = await fetch(`/api/inbox/${encodeURIComponent(targetAddress)}`);
+        const data = await res.json();
+        if (data.success) {
+          const newEmails: EmailRecord[] = data.data.emails || [];
+          setEmails((prev) => {
+            if (prev.length > 0 && newEmails.length > prev.length) {
+              playChime();
+            }
+            return newEmails;
+          });
+          setInboxMeta(data.data.inbox || null);
+        }
+      } catch (err: any) {
+        console.error('Failed to fetch emails', err);
+      } finally {
+        if (!silent) setIsLoading(false);
+      }
+    },
+    [playChime]
+  );
+
+  // Initial load
   useEffect(() => {
     fetchDomains();
-    // Generate random prefix on start if default
+    fetchLockedInboxes();
+
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     const initialPrefix = `user_${randomSuffix}`;
     setUsernamePrefix(initialPrefix);
     const full = `${initialPrefix}@owntemp.live`;
     setActiveEmail(full);
     fetchEmails(full);
-  }, [fetchDomains, fetchEmails]);
+  }, [fetchDomains, fetchEmails, fetchLockedInboxes]);
 
   // Countdown auto-refresh
   useEffect(() => {
@@ -136,9 +197,22 @@ export default function OwntempHome() {
     setTimeout(() => setActionSuccess(null), 3000);
   };
 
+  // Switch directly to a locked inbox
+  const handleSelectLockedInbox = (address: string) => {
+    const parts = address.split('@');
+    if (parts.length === 2) {
+      setUsernamePrefix(parts[0]);
+      setSelectedDomain(parts[1]);
+    }
+    setActiveEmail(address);
+    fetchEmails(address);
+    setActionSuccess(lang === 'bn' ? `লক করা ইনবক্স (${address}) সক্রিয় করা হয়েছে!` : `Switched to locked inbox: ${address}`);
+    setTimeout(() => setActionSuccess(null), 3000);
+  };
+
   // Generate random alias
   const handleGenerateRandom = () => {
-    const words = ['alpha', 'swift', 'temp', 'spark', 'cloud', 'nexus', 'pro', 'inbox'];
+    const words = ['alpha', 'swift', 'temp', 'spark', 'cloud', 'nexus', 'pro', 'inbox', 'secure'];
     const word = words[Math.floor(Math.random() * words.length)];
     const num = Math.floor(10000 + Math.random() * 90000);
     const randomUser = `${word}${num}`;
@@ -148,7 +222,7 @@ export default function OwntempHome() {
     fetchEmails(newAddr);
   };
 
-  // Copy email to clipboard
+  // Copy email
   const handleCopyEmail = () => {
     navigator.clipboard.writeText(activeEmail);
     setCopiedText(true);
@@ -182,6 +256,7 @@ export default function OwntempHome() {
         setLockPin('');
         setActionSuccess(lang === 'bn' ? 'ইনবক্সটি আজীবনের জন্য লক করা হয়েছে!' : 'Inbox permanently locked for lifetime!');
         fetchEmails(activeEmail);
+        fetchLockedInboxes();
       } else {
         setActionError(data.message || 'Failed to lock');
       }
@@ -207,6 +282,7 @@ export default function OwntempHome() {
         setUnlockPin('');
         setActionSuccess(lang === 'bn' ? 'ইনবক্স সফলভাবে আনলক হয়েছে।' : 'Inbox unlocked successfully.');
         fetchEmails(activeEmail);
+        fetchLockedInboxes();
       } else {
         setActionError(data.message || 'Unlock failed');
       }
@@ -274,9 +350,59 @@ export default function OwntempHome() {
     }
   };
 
+  // Download Email as Text
+  const handleDownloadTxt = (email: EmailRecord) => {
+    const content = `From: ${email.senderName || ''} <${email.sender}>\nTo: ${email.address}\nDate: ${email.receivedAt}\nSubject: ${email.subject}\nOTP: ${email.otpCode || 'None'}\n\n${email.textBody}`;
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `email_${email.id}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Download Email as EML
+  const handleDownloadEml = (email: EmailRecord) => {
+    const eml = [
+      `From: "${email.senderName || email.sender}" <${email.sender}>`,
+      `To: <${email.address}>`,
+      `Subject: ${email.subject}`,
+      `Date: ${new Date(email.receivedAt).toUTCString()}`,
+      `MIME-Version: 1.0`,
+      `Content-Type: text/html; charset=utf-8`,
+      ``,
+      email.htmlBody || `<pre>${email.textBody}</pre>`,
+    ].join('\r\n');
+
+    const blob = new Blob([eml], { type: 'message/rfc822;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `email_${email.id}.eml`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Filtered emails
+  const filteredEmails = useMemo(() => {
+    return emails.filter((item) => {
+      if (filterMode === 'otp' && !item.otpCode) return false;
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        item.subject.toLowerCase().includes(q) ||
+        item.sender.toLowerCase().includes(q) ||
+        (item.senderName && item.senderName.toLowerCase().includes(q)) ||
+        (item.otpCode && item.otpCode.includes(q)) ||
+        item.textBody.toLowerCase().includes(q)
+      );
+    });
+  }, [emails, filterMode, searchQuery]);
+
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between">
-      {/* Top Navigation */}
+      {/* Top Header */}
       <header className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -289,7 +415,7 @@ export default function OwntempHome() {
                   {t.appTitle}
                 </span>
                 <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                  v1.0.0
+                  v1.1.0
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 hidden sm:block">
@@ -299,11 +425,18 @@ export default function OwntempHome() {
           </div>
 
           <div className="flex items-center space-x-2 sm:space-x-3">
-            {/* Live Indicator */}
-            <div className="hidden md:flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs px-3 py-1.5 rounded-full">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>{lang === 'bn' ? 'রিয়েল-টাইম সক্রিয়' : 'Live Inbound Ready'}</span>
-            </div>
+            {/* Sound Toggle */}
+            <button
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              className={`p-2 rounded-lg border text-xs transition ${
+                soundEnabled
+                  ? 'bg-indigo-600/20 text-indigo-300 border-indigo-500/30'
+                  : 'bg-slate-800 text-slate-500 border-slate-700'
+              }`}
+              title={soundEnabled ? t.soundOn : t.soundOff}
+            >
+              {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            </button>
 
             {/* Custom Domain Button */}
             <button
@@ -336,7 +469,7 @@ export default function OwntempHome() {
       </header>
 
       {/* Main Container */}
-      <div className="max-w-6xl mx-auto px-4 py-8 flex-1 w-full space-y-8">
+      <div className="max-w-6xl mx-auto px-4 py-8 flex-1 w-full space-y-6">
         {/* Alerts */}
         {actionSuccess && (
           <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm flex items-center space-x-3 transition">
@@ -370,7 +503,7 @@ export default function OwntempHome() {
               </div>
 
               {/* Status Badge */}
-              <div>
+              <div className="flex items-center space-x-2">
                 {inboxMeta?.isLocked ? (
                   <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/15 border border-amber-500/30 text-amber-400">
                     <Lock className="w-3.5 h-3.5 text-amber-400" />
@@ -382,6 +515,15 @@ export default function OwntempHome() {
                     <span>{lang === 'bn' ? 'সক্রিয় ডিসপোজেবল' : 'Active Disposable'}</span>
                   </span>
                 )}
+
+                {/* QR Code Trigger */}
+                <button
+                  onClick={() => setShowQrModal(true)}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition"
+                  title="Show QR Code"
+                >
+                  <QrCode className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
@@ -493,25 +635,103 @@ export default function OwntempHome() {
           </div>
         </section>
 
+        {/* Permanent Locked Inboxes Quick Switcher Tray (New in v1.1.0) */}
+        {lockedInboxes.length > 0 && (
+          <section className="bg-slate-900/40 border border-slate-800/80 rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-300 flex items-center space-x-1.5">
+                <Bookmark className="w-3.5 h-3.5 text-amber-400" />
+                <span>{t.savedInboxes}</span>
+                <span className="px-1.5 py-0.2 rounded text-[10px] bg-amber-500/20 text-amber-300 font-mono">
+                  {lockedInboxes.length}
+                </span>
+              </span>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {lockedInboxes.map((meta) => {
+                const isActive = meta.address.toLowerCase() === activeEmail.toLowerCase();
+                return (
+                  <button
+                    key={meta.address}
+                    onClick={() => handleSelectLockedInbox(meta.address)}
+                    className={`inline-flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-mono transition border ${
+                      isActive
+                        ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-sm'
+                        : 'bg-slate-950/80 hover:bg-slate-800 border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <Lock className="w-3 h-3 text-amber-400" />
+                    <span>{meta.address}</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 font-sans">
+                      {meta.totalEmails}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         {/* Inbound Emails Feed */}
         <section className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center space-x-2">
               <h2 className="text-lg font-bold text-slate-200">
                 {lang === 'bn' ? 'ইনবক্স মেসেজ' : 'Inbox Messages'}
               </h2>
               <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">
-                {emails.length}
+                {filteredEmails.length}
               </span>
             </div>
 
-            <span className="text-xs text-slate-500">
-              {t.autoRefreshIn} <b className="text-indigo-400 font-mono">{countdown}</b>{t.seconds}
-            </span>
+            {/* Filter Pills & Auto Refresh countdown */}
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs">
+                <button
+                  onClick={() => setFilterMode('all')}
+                  className={`px-2.5 py-1 rounded-md transition ${
+                    filterMode === 'all'
+                      ? 'bg-indigo-600 text-white font-semibold'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {t.filterAll}
+                </button>
+                <button
+                  onClick={() => setFilterMode('otp')}
+                  className={`px-2.5 py-1 rounded-md transition ${
+                    filterMode === 'otp'
+                      ? 'bg-indigo-600 text-white font-semibold'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {t.filterOtpOnly}
+                </button>
+              </div>
+
+              <span className="text-xs text-slate-500 hidden sm:inline">
+                {t.autoRefreshIn} <b className="text-indigo-400 font-mono">{countdown}</b>{t.seconds}
+              </span>
+            </div>
           </div>
 
+          {/* Search Bar */}
+          {emails.length > 0 && (
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t.searchPlaceholder}
+                className="w-full bg-slate-900/60 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-200 placeholder:text-slate-500 outline-none focus:border-indigo-500 transition"
+              />
+            </div>
+          )}
+
           {/* Messages List or Empty State */}
-          {emails.length === 0 ? (
+          {filteredEmails.length === 0 ? (
             <div className="rounded-2xl border border-slate-800/80 bg-slate-900/30 p-12 text-center space-y-4">
               <div className="relative w-16 h-16 mx-auto">
                 <div className="absolute inset-0 rounded-full bg-indigo-500/20 animate-ping"></div>
@@ -535,7 +755,7 @@ export default function OwntempHome() {
             </div>
           ) : (
             <div className="grid gap-3">
-              {emails.map((email) => (
+              {filteredEmails.map((email) => (
                 <div
                   key={email.id}
                   onClick={() => setSelectedEmail(email)}
@@ -566,7 +786,7 @@ export default function OwntempHome() {
                     {email.subject}
                   </div>
 
-                  {/* Detected OTP Highlight Chip (Zero-Demo, Real Working Feature!) */}
+                  {/* Detected OTP Highlight Chip */}
                   {email.otpCode && (
                     <div
                       onClick={(e) => {
@@ -683,8 +903,25 @@ export default function OwntempHome() {
               )}
             </div>
 
-            {/* Modal Footer */}
-            <div className="p-4 border-t border-slate-800 flex justify-end">
+            {/* Modal Footer with Export options */}
+            <div className="p-4 border-t border-slate-800 flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => handleDownloadEml(selectedEmail)}
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 border border-slate-700 flex items-center space-x-1.5 transition"
+                >
+                  <Download className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>{t.exportEml}</span>
+                </button>
+                <button
+                  onClick={() => handleDownloadTxt(selectedEmail)}
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 border border-slate-700 flex items-center space-x-1.5 transition"
+                >
+                  <Download className="w-3.5 h-3.5 text-slate-400" />
+                  <span>{t.exportTxt}</span>
+                </button>
+              </div>
+
               <button
                 onClick={() => setSelectedEmail(null)}
                 className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm font-semibold text-slate-200 transition"
@@ -692,6 +929,42 @@ export default function OwntempHome() {
                 {t.close}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR Code Modal (New in v1.1.0) */}
+      {showQrModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-4 shadow-2xl text-center">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="font-bold text-base text-slate-100">{t.qrModalTitle}</h3>
+              <button onClick={() => setShowQrModal(false)} className="text-slate-400 hover:text-white">✕</button>
+            </div>
+
+            <p className="text-xs text-slate-400">{t.qrScanDesc}</p>
+
+            <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 flex justify-center">
+              <img
+                src={generateQrSvgUri(`mailto:${activeEmail}`)}
+                alt="Email QR Code"
+                className="w-48 h-48 rounded-lg"
+              />
+            </div>
+
+            <div className="font-mono text-xs text-indigo-300 bg-slate-950 px-3 py-2 rounded-lg truncate border border-slate-800">
+              {activeEmail}
+            </div>
+
+            <button
+              onClick={() => {
+                handleCopyEmail();
+                setShowQrModal(false);
+              }}
+              className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md transition"
+            >
+              {t.copy}
+            </button>
           </div>
         </div>
       )}
@@ -822,7 +1095,6 @@ export default function OwntempHome() {
               </div>
             </form>
 
-            {/* Cloudflare Step-by-Step Instructions */}
             <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs">
               <div className="font-bold text-indigo-300">{t.dnsGuideTitle}</div>
               <p className="text-slate-400">{t.dnsGuideStep1}</p>
@@ -932,7 +1204,7 @@ export default function OwntempHome() {
           <div className="flex items-center space-x-4">
             <span className="font-mono text-indigo-400">API: /api/inbound/webhook</span>
             <span>•</span>
-            <span className="font-mono text-slate-400">Version 1.0.0</span>
+            <span className="font-mono text-slate-400">Version 1.1.0</span>
           </div>
         </div>
       </footer>

@@ -182,6 +182,23 @@ export function deleteEmail(id: string): boolean {
   return true;
 }
 
+export function getLockedInboxes(): InboxMetadata[] {
+  const db = ensureDbLoaded();
+  return Object.values(db.inboxes)
+    .filter((meta) => meta.isLocked)
+    .sort((a, b) => new Date(b.lockedAt || b.createdAt).getTime() - new Date(a.lockedAt || a.createdAt).getTime());
+}
+
+export function markEmailAsRead(id: string): boolean {
+  const db = ensureDbLoaded();
+  const email = db.emails.find((e) => e.id === id);
+  if (!email) return false;
+  email.isRead = true;
+  persistDb();
+  return true;
+}
+
+
 export function getAllDomains(): DomainItem[] {
   const db = ensureDbLoaded();
   return db.domains;

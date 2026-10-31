@@ -6,6 +6,29 @@
       "createdAt": "2026-10-31T16:31:01.625Z",
       "lastActiveAt": "2026-10-31T16:31:01.628Z",
       "totalEmails": 1
+    },
+    "user_5772@owntemp.live": {
+      "address": "user_5772@owntemp.live",
+      "isLocked": false,
+      "createdAt": "2026-10-31T16:32:34.002Z",
+      "lastActiveAt": "2026-10-31T16:32:34.002Z",
+      "totalEmails": 0
+    },
+    "user_4408@owntemp.live": {
+      "address": "user_4408@owntemp.live",
+      "isLocked": false,
+      "createdAt": "2026-10-31T16:35:56.090Z",
+      "lastActiveAt": "2026-10-31T16:35:56.090Z",
+      "totalEmails": 0
+    },
+    "vip@mybusiness.com": {
+      "address": "vip@mybusiness.com",
+      "isLocked": true,
+      "createdAt": "2026-10-31T16:41:36.906Z",
+      "lastActiveAt": "2026-10-31T16:41:36.906Z",
+      "totalEmails": 0,
+      "lockPin": "5566",
+      "lockedAt": "2026-10-31T16:41:36.908Z"
     }
   },
   "emails": [
