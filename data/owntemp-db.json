@@ -1,0 +1,57 @@
+{
+  "inboxes": {
+    "xyz@mybusiness.com": {
+      "address": "xyz@mybusiness.com",
+      "isLocked": false,
+      "createdAt": "2026-10-31T16:31:01.625Z",
+      "lastActiveAt": "2026-10-31T16:31:01.628Z",
+      "totalEmails": 1
+    }
+  },
+  "emails": [
+    {
+      "address": "xyz@mybusiness.com",
+      "sender": "accounts@google.com",
+      "senderName": "accounts",
+      "subject": "Your Google verification code",
+      "textBody": "Hi! Your verification code is 492015. Confirm here: https://example.com/verify",
+      "htmlBody": "<p>Hi! Your verification code is 492015. Confirm here: https://example.com/verify</p>",
+      "otpCode": "492015",
+      "verificationLinks": [
+        "https://example.com/verify"
+      ],
+      "sizeBytes": 163,
+      "id": "em_1793464261627_40xqt3",
+      "receivedAt": "2026-10-31T16:31:01.628Z",
+      "isRead": false,
+      "isLocked": false
+    }
+  ],
+  "domains": [
+    {
+      "id": "dom-1",
+      "domain": "owntemp.live",
+      "isDefault": true,
+      "isCustom": false,
+      "status": "active",
+      "createdAt": "2026-10-31T16:30:30.594Z"
+    },
+    {
+      "id": "dom-2",
+      "domain": "mybusiness.com",
+      "isDefault": false,
+      "isCustom": true,
+      "status": "active",
+      "createdAt": "2026-10-31T16:30:30.604Z"
+    },
+    {
+      "id": "dom-3",
+      "domain": "tempinbox.click",
+      "isDefault": false,
+      "isCustom": false,
+      "status": "active",
+      "createdAt": "2026-10-31T16:30:30.604Z"
+    }
+  ],
+  "version": "1.0.0"
+}
