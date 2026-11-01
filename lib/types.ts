@@ -39,10 +39,18 @@ export interface InboxMetadata {
 export interface DomainItem {
   id: string;
   domain: string;
+  businessName?: string;
   isDefault: boolean;
   isCustom: boolean;
   status: 'active' | 'pending' | 'verified';
   createdAt: string;
+}
+
+export interface BusinessProfile {
+  businessName: string;
+  tagline?: string;
+  primaryDomain: string;
+  updatedAt: string;
 }
 
 export interface ApiResponse<T = any> {

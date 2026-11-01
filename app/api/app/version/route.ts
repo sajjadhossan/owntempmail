@@ -5,15 +5,15 @@ export async function GET() {
     success: true,
     data: {
       appName: 'Owntemp',
-      latestVersion: '1.3.0',
-      edition: 'Enterprise Gold Release',
+      latestVersion: '1.4.0',
+      edition: 'Custom Business Setup & Multi-Domain Engine',
       minimumSupportedVersion: '1.0.0',
-      apkDownloadUrl: 'https://github.com/owntemp/releases/latest/app-v1.3.0-android.apk',
-      windowsDownloadUrl: 'https://github.com/owntemp/releases/latest/Owntemp-v1.3.0-windows-x64.exe',
-      macDownloadUrl: 'https://github.com/owntemp/releases/latest/Owntemp-v1.3.0-mac-universal.dmg',
+      apkDownloadUrl: 'https://github.com/owntemp/releases/latest/app-v1.4.0-android.apk',
+      windowsDownloadUrl: 'https://github.com/owntemp/releases/latest/Owntemp-v1.4.0-windows-x64.exe',
+      macDownloadUrl: 'https://github.com/owntemp/releases/latest/Owntemp-v1.4.0-mac-universal.dmg',
       releaseNotes: {
-        bn: 'Owntemp v1.3.0 এন্টারপ্রাইজ গোল্ড রিলিজ: নেটিভ অ্যান্ড্রয়েড প্রজেক্ট (android/), ডুয়াল স্টোরেজ ইঞ্জিন (PostgreSQL/Supabase + Local fallback), স্বয়ংক্রিয় ক্লিনআপ ক্রন জব (/api/cron/cleanup), ইমেইল অ্যাটাচমেন্ট সাপোর্ট এবং পিন ব্রুট-ফোর্স রেট-লিমিটিং সিকিউরিটি।',
-        en: 'Owntemp v1.3.0 Enterprise Gold Release: Native Android Gradle project (android/), Dual Storage Engine (PostgreSQL/Supabase + Local fallback), Automated Cleanup Cron (/api/cron/cleanup) protecting lifetime locks, Email Attachments viewer/downloader, and PIN brute-force rate-limiting security.',
+        bn: 'Owntemp v1.4.0 আপডেট: যেকোনো কাস্টম বিজনেস সেটআপ ও ব্র্যান্ডিং ইঞ্জিন, সরাসরি যেকোনো বিজনেস ডোমেইন টাইপ ও যোগ করার সুবিধা, প্রতিটি ডোমেইনের জন্য তাৎক্ষণিক ক্লাউডফ্লেয়ার DNS রেকর্ড জেনারেটর।',
+        en: 'Owntemp v1.4.0 Update: Custom Business Workspace & Branding engine, Direct business domain input & management, Automatic instant Cloudflare DNS records generator for any domain.',
       },
       platforms: {
         android: {

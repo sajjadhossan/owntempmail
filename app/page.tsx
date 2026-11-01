@@ -32,7 +32,7 @@ import {
   Laptop,
   Apple,
 } from 'lucide-react';
-import { EmailRecord, InboxMetadata, DomainItem } from '@/lib/types';
+import { EmailRecord, InboxMetadata, DomainItem, BusinessProfile } from '@/lib/types';
 import { translations, Language } from '@/lib/translations';
 import { generateQrSvgUri } from '@/lib/qr';
 
@@ -45,6 +45,18 @@ export default function OwntempHome() {
   const [domains, setDomains] = useState<DomainItem[]>([]);
   const [selectedDomain, setSelectedDomain] = useState('owntemp.live');
   const [activeEmail, setActiveEmail] = useState('demo-user@owntemp.live');
+  const [isDirectDomainMode, setIsDirectDomainMode] = useState(false);
+  const [directDomainInput, setDirectDomainInput] = useState('');
+
+  // Business Profile
+  const [businessProfile, setBusinessProfile] = useState<BusinessProfile>({
+    businessName: 'Owntemp Business',
+    tagline: 'Custom Domain Temp Mail Engine',
+    primaryDomain: 'owntemp.live',
+    updatedAt: new Date().toISOString(),
+  });
+  const [businessNameInput, setBusinessNameInput] = useState('');
+  const [businessTaglineInput, setBusinessTaglineInput] = useState('');
 
   // Inbox & Emails
   const [inboxMeta, setInboxMeta] = useState<InboxMetadata | null>(null);
@@ -111,7 +123,66 @@ export default function OwntempHome() {
     }
   }, [soundEnabled]);
 
-  // Load available domains
+  // Load business profile
+  const fetchBusinessProfile = useCallback(async () => {
+    try {
+      const res = await fetch('/api/business');
+      const data = await res.json();
+      if (data.success && data.data) {
+        setBusinessProfile(data.data);
+        setBusinessNameInput(data.data.businessName || '');
+        setBusinessTaglineInput(data.data.tagline || '');
+      }
+    } catch (e) {
+      console.error('Failed to load business profile', e);
+    }
+  }, []);
+
+  // Save business profile
+  const handleSaveBusinessProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!businessNameInput.trim()) return;
+    try {
+      const res = await fetch('/api/business', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessName: businessNameInput.trim(),
+          tagline: businessTaglineInput.trim(),
+          primaryDomain: selectedDomain,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setBusinessProfile(data.data);
+        setActionSuccess(lang === 'bn' ? 'বিজনেস প্রোফাইল সেভ হয়েছে!' : 'Business profile saved successfully!');
+        setTimeout(() => setActionSuccess(null), 3000);
+      }
+    } catch (err: any) {
+      setActionError(err.message);
+    }
+  };
+
+  // Delete custom domain
+  const handleDeleteDomain = async (domainId: string) => {
+    try {
+      const res = await fetch('/api/domains', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: domainId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchDomains();
+        setActionSuccess(lang === 'bn' ? 'ডোমেইন মুছে ফেলা হয়েছে।' : 'Custom domain removed.');
+        setTimeout(() => setActionSuccess(null), 2500);
+      } else {
+        setActionError(data.message);
+      }
+    } catch (e: any) {
+      setActionError(e.message);
+    }
+  };
   const fetchDomains = useCallback(async () => {
     try {
       const res = await fetch('/api/domains');
@@ -171,6 +242,7 @@ export default function OwntempHome() {
   useEffect(() => {
     fetchDomains();
     fetchLockedInboxes();
+    fetchBusinessProfile();
 
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     const initialPrefix = `user_${randomSuffix}`;
@@ -195,11 +267,30 @@ export default function OwntempHome() {
   }, [activeEmail, fetchEmails]);
 
   // Switch to custom username and domain
-  const handleApplyAddress = (e?: React.FormEvent) => {
+  const handleApplyAddress = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const cleanPrefix = usernamePrefix.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '');
     if (!cleanPrefix) return;
-    const newAddress = `${cleanPrefix}@${selectedDomain}`;
+
+    let targetDomain = selectedDomain;
+    if (isDirectDomainMode && directDomainInput.trim()) {
+      const cleanCustom = directDomainInput.trim().toLowerCase().replace(/^@+/, '');
+      if (cleanCustom.includes('.')) {
+        targetDomain = cleanCustom;
+        // Auto register custom domain in backend
+        try {
+          await fetch('/api/domains', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ domain: cleanCustom, businessName: businessProfile.businessName }),
+          });
+          fetchDomains();
+          setSelectedDomain(cleanCustom);
+        } catch (e) {}
+      }
+    }
+
+    const newAddress = `${cleanPrefix}@${targetDomain}`;
     setActiveEmail(newAddress);
     fetchEmails(newAddress);
     setActionSuccess(lang === 'bn' ? 'সক্রিয় ইনবক্স পরিবর্তন করা হয়েছে!' : 'Active inbox updated successfully!');
@@ -441,11 +532,16 @@ export default function OwntempHome() {
                   {t.appTitle}
                 </span>
                 <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                  v1.3.0
+                  v1.4.0
                 </span>
+                {businessProfile?.businessName && businessProfile.businessName !== 'Owntemp Business' && (
+                  <span className="hidden md:inline-flex text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    🏢 {businessProfile.businessName}
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-slate-400 hidden sm:block">
-                {lang === 'bn' ? 'কাস্টম ডোমেইন ও লাইফটাইম লক সুবিধাযুক্ত ফ্রি টেম্প মেইল' : 'Free Custom Domain Temp Mail with Lifetime Lock'}
+                {businessProfile?.tagline || (lang === 'bn' ? 'যেকোনো বিজনেস ডোমেইন ও লাইফটাইম লক সুবিধাযুক্ত ফ্রি টেম্প মেইল' : 'Free Custom Business Domain Temp Mail with Lifetime Lock')}
               </p>
             </div>
           </div>
@@ -647,17 +743,39 @@ export default function OwntempHome() {
               </div>
 
               <div className="w-full sm:w-auto flex items-center space-x-2">
-                <select
-                  value={selectedDomain}
-                  onChange={(e) => setSelectedDomain(e.target.value)}
-                  className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-300 outline-none focus:border-indigo-500 font-mono w-full sm:w-auto"
+                {isDirectDomainMode ? (
+                  <div className="flex-1 sm:w-64 flex items-center bg-slate-950 border border-indigo-500 rounded-xl px-3 py-1.5 transition">
+                    <span className="text-indigo-400 font-mono text-xs mr-1">@</span>
+                    <input
+                      type="text"
+                      value={directDomainInput}
+                      onChange={(e) => setDirectDomainInput(e.target.value)}
+                      placeholder="e.g. sajjadholding.com"
+                      className="bg-transparent border-none outline-none text-xs text-indigo-200 placeholder:text-slate-600 w-full font-mono"
+                    />
+                  </div>
+                ) : (
+                  <select
+                    value={selectedDomain}
+                    onChange={(e) => setSelectedDomain(e.target.value)}
+                    className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 outline-none focus:border-indigo-500 font-mono w-full sm:w-auto"
+                  >
+                    {domains.map((dom) => (
+                      <option key={dom.id} value={dom.domain}>
+                        @{dom.domain} {dom.businessName ? `(${dom.businessName})` : dom.isCustom ? '(Custom)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setIsDirectDomainMode(!isDirectDomainMode)}
+                  className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-indigo-300 text-xs transition"
+                  title={isDirectDomainMode ? 'Switch to dropdown' : 'Type custom domain directly'}
                 >
-                  {domains.map((dom) => (
-                    <option key={dom.id} value={dom.domain}>
-                      @{dom.domain} {dom.isCustom ? '(Custom)' : ''}
-                    </option>
-                  ))}
-                </select>
+                  {isDirectDomainMode ? <Layers className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                </button>
 
                 <button
                   type="submit"
@@ -1225,28 +1343,64 @@ export default function OwntempHome() {
         </div>
       )}
 
-      {/* Custom Domain Modal */}
+      {/* Custom Domain & Business Workspace Modal (v1.4.0) */}
       {showDomainModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-5 shadow-2xl">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 space-y-6 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center space-x-2">
                 <Globe className="w-5 h-5 text-indigo-400" />
-                <h3 className="font-bold text-base text-slate-100">{t.customDomainTitle}</h3>
+                <h3 className="font-bold text-base text-slate-100">{t.businessSetupTitle}</h3>
               </div>
               <button onClick={() => setShowDomainModal(false)} className="text-slate-400 hover:text-white">✕</button>
             </div>
 
-            <p className="text-xs text-slate-400 leading-relaxed">{t.customDomainDesc}</p>
+            {/* Business Profile Card */}
+            <form onSubmit={handleSaveBusinessProfile} className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+              <div className="text-xs font-bold text-indigo-300">🏢 {t.businessSetupTitle}</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-400 block mb-1">{t.businessNameLabel}</label>
+                  <input
+                    type="text"
+                    value={businessNameInput}
+                    onChange={(e) => setBusinessNameInput(e.target.value)}
+                    placeholder={t.businessNamePlaceholder}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 outline-none focus:border-indigo-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-400 block mb-1">{t.businessTaglineLabel}</label>
+                  <input
+                    type="text"
+                    value={businessTaglineInput}
+                    onChange={(e) => setBusinessTaglineInput(e.target.value)}
+                    placeholder="e.g. Official Secure Mail Service"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm transition"
+                >
+                  {t.saveBusiness}
+                </button>
+              </div>
+            </form>
 
+            {/* Add New Business Domain */}
             <form onSubmit={handleAddDomain} className="space-y-3">
+              <div className="text-xs font-bold text-slate-300">➕ {t.addNewBusinessDomain}</div>
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={newDomainInput}
                   onChange={(e) => setNewDomainInput(e.target.value)}
-                  placeholder={t.domainPlaceholder}
-                  className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 outline-none focus:border-indigo-500 font-mono"
+                  placeholder={t.directDomainPlaceholder}
+                  className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500 font-mono"
                   required
                 />
                 <button
@@ -1258,25 +1412,106 @@ export default function OwntempHome() {
               </div>
             </form>
 
-            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs">
-              <div className="font-bold text-indigo-300">{t.dnsGuideTitle}</div>
-              <p className="text-slate-400">{t.dnsGuideStep1}</p>
-              <p className="text-slate-400">{t.dnsGuideStep2}</p>
-              <p className="text-slate-400">{t.dnsGuideStep3}</p>
+            {/* Live Instant Cloudflare DNS Table for Active Business Domain */}
+            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-indigo-300">
+                  ⚡ {t.dnsRecordsFor} <span className="font-mono text-white">@{selectedDomain}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const dnsText = `MX @ route1.mx.cloudflare.net (Priority 1)\nMX @ route2.mx.cloudflare.net (Priority 2)\nMX @ route3.mx.cloudflare.net (Priority 3)\nTXT @ v=spf1 include:_spf.mx.cloudflare.net ~all`;
+                    navigator.clipboard.writeText(dnsText);
+                    setActionSuccess(lang === 'bn' ? 'DNS কনফিগ কপি হয়েছে!' : 'DNS Config copied!');
+                    setTimeout(() => setActionSuccess(null), 2500);
+                  }}
+                  className="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-indigo-600/30 text-indigo-300 text-[11px] font-medium border border-slate-700 transition"
+                >
+                  {t.copyDnsConfig}
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left font-mono text-[11px] border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-800 text-slate-500">
+                      <th className="pb-1.5">Type</th>
+                      <th className="pb-1.5">Name</th>
+                      <th className="pb-1.5">Value / Server</th>
+                      <th className="pb-1.5">Priority</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-900 text-slate-300">
+                    <tr>
+                      <td className="py-1 text-emerald-400 font-bold">MX</td>
+                      <td className="py-1">@</td>
+                      <td className="py-1 text-indigo-200">route1.mx.cloudflare.net</td>
+                      <td className="py-1">1</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1 text-emerald-400 font-bold">MX</td>
+                      <td className="py-1">@</td>
+                      <td className="py-1 text-indigo-200">route2.mx.cloudflare.net</td>
+                      <td className="py-1">2</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1 text-emerald-400 font-bold">MX</td>
+                      <td className="py-1">@</td>
+                      <td className="py-1 text-indigo-200">route3.mx.cloudflare.net</td>
+                      <td className="py-1">3</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1 text-amber-400 font-bold">TXT</td>
+                      <td className="py-1">@</td>
+                      <td className="py-1 text-slate-400">v=spf1 include:_spf.mx.cloudflare.net ~all</td>
+                      <td className="py-1">-</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
 
-            <div className="space-y-1.5 pt-2">
+            {/* Connected Business Domains List */}
+            <div className="space-y-2 pt-1">
               <div className="text-xs font-semibold text-slate-400">
-                {lang === 'bn' ? 'বর্তমান ডোমেইনসমূহ:' : 'Current Domains:'}
+                {lang === 'bn' ? 'যুক্ত থাকা বিজনেস ডোমেইনসমূহ:' : 'Registered Business Domains:'}
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {domains.map((dom) => (
-                  <span
+                  <div
                     key={dom.id}
-                    className="px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-800 border border-slate-700 text-slate-300"
+                    onClick={() => {
+                      setSelectedDomain(dom.domain);
+                      setActionSuccess(lang === 'bn' ? `ডোমেইন @${dom.domain} নির্বাচিত হয়েছে!` : `Selected domain @${dom.domain}`);
+                      setTimeout(() => setActionSuccess(null), 2000);
+                    }}
+                    className={`flex items-center justify-between p-2.5 rounded-xl border text-xs cursor-pointer transition ${
+                      selectedDomain === dom.domain
+                        ? 'bg-indigo-600/20 border-indigo-500/50 text-indigo-200 shadow-sm'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
                   >
-                    @{dom.domain} {dom.isCustom ? '⭐' : ''}
-                  </span>
+                    <div className="truncate mr-2">
+                      <div className="font-mono font-semibold text-slate-200 truncate">@{dom.domain}</div>
+                      <div className="text-[10px] text-slate-500 truncate">
+                        {dom.businessName || (dom.isCustom ? 'Custom Business' : 'Default System')}
+                      </div>
+                    </div>
+                    {dom.isCustom && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteDomain(dom.id);
+                        }}
+                        className="text-slate-500 hover:text-rose-400 p-1 rounded transition"
+                        title="Delete domain"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>

@@ -1,11 +1,12 @@
 import fs from 'fs';
 import path from 'path';
-import { EmailRecord, InboxMetadata, DomainItem, EmailAttachment } from './types';
+import { EmailRecord, InboxMetadata, DomainItem, EmailAttachment, BusinessProfile } from './types';
 
 interface DatabaseSchema {
   inboxes: Record<string, InboxMetadata>;
   emails: EmailRecord[];
   domains: DomainItem[];
+  businessProfile?: BusinessProfile;
   version: string;
 }
 
@@ -257,16 +258,47 @@ export function getAllDomains(): DomainItem[] {
   return db.domains;
 }
 
-export function addCustomDomain(domainName: string): DomainItem {
+export function getBusinessProfile(): BusinessProfile {
+  const db = ensureDbLoaded();
+  if (!db.businessProfile) {
+    db.businessProfile = {
+      businessName: 'My Business Workspace',
+      tagline: 'Custom Domain Temp Mail Engine',
+      primaryDomain: 'owntemp.live',
+      updatedAt: new Date().toISOString(),
+    };
+    persistDb();
+  }
+  return db.businessProfile;
+}
+
+export function updateBusinessProfile(businessName: string, tagline?: string, primaryDomain?: string): BusinessProfile {
+  const db = ensureDbLoaded();
+  db.businessProfile = {
+    businessName: businessName.trim() || 'My Business Workspace',
+    tagline: tagline?.trim() || '',
+    primaryDomain: primaryDomain?.trim().toLowerCase() || db.businessProfile?.primaryDomain || 'owntemp.live',
+    updatedAt: new Date().toISOString(),
+  };
+  persistDb();
+  return db.businessProfile;
+}
+
+export function addCustomDomain(domainName: string, businessName?: string): DomainItem {
   const db = ensureDbLoaded();
   const cleanDomain = domainName.trim().toLowerCase().replace(/^@+/, '');
 
   const existing = db.domains.find((d) => d.domain === cleanDomain);
-  if (existing) return existing;
+  if (existing) {
+    if (businessName) existing.businessName = businessName.trim();
+    persistDb();
+    return existing;
+  }
 
   const newDomain: DomainItem = {
     id: `dom_${Date.now()}`,
     domain: cleanDomain,
+    businessName: businessName?.trim() || undefined,
     isDefault: false,
     isCustom: true,
     status: 'active',
@@ -276,4 +308,15 @@ export function addCustomDomain(domainName: string): DomainItem {
   db.domains.push(newDomain);
   persistDb();
   return newDomain;
+}
+
+export function deleteCustomDomain(idOrDomain: string): boolean {
+  const db = ensureDbLoaded();
+  const initialLen = db.domains.length;
+  db.domains = db.domains.filter((d) => d.id !== idOrDomain && d.domain !== idOrDomain && !d.isDefault);
+  if (db.domains.length !== initialLen) {
+    persistDb();
+    return true;
+  }
+  return false;
 }
