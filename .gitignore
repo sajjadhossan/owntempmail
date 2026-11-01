@@ -8,7 +8,8 @@
 
 # Next.js
 /.next/
-/out/
+/out/*
+!/out/index.html
 
 # Production
 /build

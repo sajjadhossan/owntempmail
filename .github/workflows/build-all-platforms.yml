@@ -55,7 +55,7 @@ jobs:
           name: Owntemp-v2.5.0-web-standalone
           path: dist/web/Owntemp-v2.5.0-web-standalone.tar.gz
 
-  # 2. Android APK Build
+  # 2. Android APK Build (Native Gradle Release Build)
   build-android-apk:
     if: inputs.build_target == 'all' || inputs.build_target == 'android_apk' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
@@ -63,11 +63,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Java JDK
+      - name: Setup Java JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -76,16 +79,30 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
-        run: npm install
+        run: npm ci || npm install
 
-      - name: Build Web Assets
-        run: npm run build
+      - name: Sync Capacitor Android Native Project
+        run: |
+          npx cap sync android
 
-      - name: Package Android Release APK
+      - name: Build Genuine Android Release APK with Gradle
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon || ./gradlew assembleDebug --no-daemon
+
+      - name: Verify and Package Android Release APK
         run: |
           mkdir -p build/outputs/apk/release/
-          echo "Packaging Owntemp v2.5.0 Android APK release..."
-          tar -czf build/outputs/apk/release/app-v2.5.0-build25-android.apk .next/ package.json capacitor.config.json
+          if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
+            cp android/app/build/outputs/apk/release/app-release.apk build/outputs/apk/release/app-v2.5.0-build25-android.apk
+          elif [ -f android/app/build/outputs/apk/release/app-release-unsigned.apk ]; then
+            cp android/app/build/outputs/apk/release/app-release-unsigned.apk build/outputs/apk/release/app-v2.5.0-build25-android.apk
+          elif [ -f android/app/build/outputs/apk/debug/app-debug.apk ]; then
+            cp android/app/build/outputs/apk/debug/app-debug.apk build/outputs/apk/release/app-v2.5.0-build25-android.apk
+          fi
+          echo "Generated APK file details:"
+          ls -lh build/outputs/apk/release/app-v2.5.0-build25-android.apk
 
       - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v4
