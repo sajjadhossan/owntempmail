@@ -157,7 +157,7 @@ jobs:
   # 5. macOS Apple Silicon Build (M1-M4 arm64)
   build-macos-arm64:
     if: inputs.build_target == 'all' || inputs.build_target == 'macos_apple_silicon' || startsWith(github.ref, 'refs/tags/v')
-    runs-on: macos-14 # macOS 14 Apple Silicon M1 runner
+    runs-on: macos-15 # macOS 15 Apple Silicon (M1-M4 arm64) runner
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
