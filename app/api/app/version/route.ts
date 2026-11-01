@@ -5,15 +5,15 @@ export async function GET() {
     success: true,
     data: {
       appName: 'Owntemp',
-      latestVersion: '1.4.0',
-      edition: 'Custom Business Setup & Multi-Domain Engine',
+      latestVersion: '1.5.0',
+      edition: 'Dual Cloudflare Automation & Vercel Integration Hub',
       minimumSupportedVersion: '1.0.0',
-      apkDownloadUrl: 'https://github.com/owntemp/releases/latest/app-v1.4.0-android.apk',
-      windowsDownloadUrl: 'https://github.com/owntemp/releases/latest/Owntemp-v1.4.0-windows-x64.exe',
-      macDownloadUrl: 'https://github.com/owntemp/releases/latest/Owntemp-v1.4.0-mac-universal.dmg',
+      apkDownloadUrl: 'https://github.com/owntemp/releases/latest/app-v1.5.0-android.apk',
+      windowsDownloadUrl: 'https://github.com/owntemp/releases/latest/Owntemp-v1.5.0-windows-x64.exe',
+      macDownloadUrl: 'https://github.com/owntemp/releases/latest/Owntemp-v1.5.0-mac-universal.dmg',
       releaseNotes: {
-        bn: 'Owntemp v1.4.0 আপডেট: যেকোনো কাস্টম বিজনেস সেটআপ ও ব্র্যান্ডিং ইঞ্জিন, সরাসরি যেকোনো বিজনেস ডোমেইন টাইপ ও যোগ করার সুবিধা, প্রতিটি ডোমেইনের জন্য তাৎক্ষণিক ক্লাউডফ্লেয়ার DNS রেকর্ড জেনারেটর।',
-        en: 'Owntemp v1.4.0 Update: Custom Business Workspace & Branding engine, Direct business domain input & management, Automatic instant Cloudflare DNS records generator for any domain.',
+        bn: 'Owntemp v1.5.0 রিলিজ: ক্লাউডফ্লেয়ার ১-ক্লিক অটোমেটিক API টোকেন সেটআপ (/api/cloudflare/setup), কাস্টম Vercel লাইভ ওয়েবসাইট URL ইনপুট সাপোর্ট, এবং উভয় পদ্ধতির জন্য ধাপে ধাপে এ-টু-জেড বিস্তারিত গাইড।',
+        en: 'Owntemp v1.5.0 Release: 1-Click Cloudflare Automated Setup via API Token (/api/cloudflare/setup), Custom Vercel Live Website URL input, and complete step-by-step A-to-Z setup guides for both automated and manual methods.',
       },
       platforms: {
         android: {
