@@ -1,3 +1,12 @@
+export interface EmailAttachment {
+  id: string;
+  filename: string;
+  contentType: string;
+  sizeBytes: number;
+  downloadUrl?: string;
+  dataBase64?: string;
+}
+
 export interface EmailRecord {
   id: string;
   address: string;
@@ -8,6 +17,7 @@ export interface EmailRecord {
   htmlBody?: string;
   otpCode?: string | null;
   verificationLinks?: string[];
+  attachments?: EmailAttachment[];
   receivedAt: string;
   isRead: boolean;
   isLocked: boolean;
@@ -19,6 +29,8 @@ export interface InboxMetadata {
   isLocked: boolean;
   lockPin?: string;
   lockedAt?: string;
+  failedAttempts?: number;
+  lockedUntil?: string | null;
   createdAt: string;
   lastActiveAt: string;
   totalEmails: number;
@@ -41,6 +53,9 @@ export interface ApiResponse<T = any> {
     page?: number;
     limit?: number;
     total?: number;
+    purgedEmailsCount?: number;
+    preservedLockedEmailsCount?: number;
+    preservedLockedInboxesCount?: number;
   };
   errorCode?: string;
   errors?: Array<{ field: string; message: string }>;

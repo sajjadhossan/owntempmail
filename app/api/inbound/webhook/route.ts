@@ -29,6 +29,17 @@ export async function POST(req: NextRequest) {
     const otpCode = extractOtpCode(textBody, subject);
     const verificationLinks = extractVerificationLinks(htmlBody || textBody);
 
+    // Parse attachments if present
+    const rawAttachments = Array.isArray(body.attachments) ? body.attachments : [];
+    const attachments = rawAttachments.map((att: any, idx: number) => ({
+      id: att.id || `att_${Date.now()}_${idx}`,
+      filename: att.filename || att.name || `attachment_${idx + 1}.dat`,
+      contentType: att.contentType || att.type || 'application/octet-stream',
+      sizeBytes: att.size || att.sizeBytes || 0,
+      downloadUrl: att.downloadUrl || att.url,
+      dataBase64: att.dataBase64 || att.data,
+    }));
+
     const saved = saveInboundEmail({
       address: toAddress,
       sender: fromAddress,
@@ -38,6 +49,7 @@ export async function POST(req: NextRequest) {
       htmlBody,
       otpCode,
       verificationLinks,
+      attachments,
       sizeBytes: Buffer.byteLength(textBody + (htmlBody || '')),
     });
 

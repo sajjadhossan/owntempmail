@@ -1,0 +1,56 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Inbox {
+  id              String    @id @default(uuid())
+  address         String    @unique
+  domain          String
+  isLocked        Boolean   @default(false)
+  lockPin         String?
+  lockedAt        DateTime?
+  failedAttempts  Int       @default(0)
+  lockedUntil     DateTime?
+  totalEmails     Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  lastActiveAt    DateTime  @default(now())
+
+  emails          Email[]
+}
+
+model Email {
+  id                String    @id @default(uuid())
+  inboxId           String
+  address           String
+  sender            String
+  senderName        String?
+  subject           String
+  textBody          String
+  htmlBody          String?
+  otpCode           String?
+  verificationLinks Json?
+  attachments       Json?
+  sizeBytes         Int       @default(0)
+  isRead            Boolean   @default(false)
+  isLocked          Boolean   @default(false)
+  receivedAt        DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+
+  inbox             Inbox     @relation(fields: [inboxId], references: [id], onDelete: Cascade)
+}
+
+model Domain {
+  id          String    @id @default(uuid())
+  domain      String    @unique
+  isDefault   Boolean   @default(false)
+  isCustom    Boolean   @default(true)
+  status      String    @default("active")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}

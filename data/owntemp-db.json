@@ -29,9 +29,33 @@
       "totalEmails": 0,
       "lockPin": "5566",
       "lockedAt": "2026-10-31T16:41:36.908Z"
+    },
+    "user_8701@owntemp.live": {
+      "address": "user_8701@owntemp.live",
+      "isLocked": false,
+      "createdAt": "2026-11-01T03:30:56.185Z",
+      "lastActiveAt": "2026-11-01T03:31:56.540Z",
+      "totalEmails": 1
     }
   },
   "emails": [
+    {
+      "address": "user_8701@owntemp.live",
+      "sender": "security@google.com",
+      "senderName": "SECURITY",
+      "subject": "hossansajjad1994@gmail.com",
+      "textBody": "Hello,\n\nYour security verification code is: 778070\n\nThis code will expire in 10 minutes. If you did not request this code, please ignore this email.\n\nVerify online: https://example.com/verify?token=tok_qw6dus2s",
+      "htmlBody": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;\">\n        <h2 style=\"color: #4f46e5; margin-top: 0;\">🔒 Security Verification</h2>\n        <p style=\"color: #475569; font-size: 15px;\">Please use the following single-use verification code to complete your sign-in / registration:</p>\n        <div style=\"background: #f8fafc; border: 2px dashed #6366f1; border-radius: 8px; padding: 18px; text-align: center; margin: 24px 0;\">\n          <span style=\"font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #1e1b4b;\">778070</span>\n        </div>\n        <p style=\"color: #64748b; font-size: 13px;\">If you prefer, you can also confirm by clicking the button below:</p>\n        <div style=\"text-align: center; margin: 20px 0;\">\n          <a href=\"https://example.com/verify?token=tok_7a967de9\" style=\"display: inline-block; background: #4f46e5; color: #ffffff; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: bold;\">Confirm Account Now</a>\n        </div>\n        <hr style=\"border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;\" />\n        <p style=\"color: #94a3b8; font-size: 12px;\">This is an automated test message dispatched to <b>user_8701@owntemp.live</b>.</p>\n      </div>\n    ",
+      "otpCode": "778070",
+      "verificationLinks": [
+        "https://example.com/verify?token=tok_7a967de9"
+      ],
+      "sizeBytes": 1554,
+      "id": "em_1793503916539_ojvqf6",
+      "receivedAt": "2026-11-01T03:31:56.540Z",
+      "isRead": false,
+      "isLocked": false
+    },
     {
       "address": "xyz@mybusiness.com",
       "sender": "accounts@google.com",

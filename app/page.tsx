@@ -441,7 +441,7 @@ export default function OwntempHome() {
                   {t.appTitle}
                 </span>
                 <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                  v1.2.0
+                  v1.3.0
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 hidden sm:block">
@@ -936,6 +936,41 @@ export default function OwntempHome() {
                   {selectedEmail.textBody}
                 </pre>
               )}
+              {/* Attachments if present */}
+              {selectedEmail.attachments && selectedEmail.attachments.length > 0 && (
+                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                  <div className="text-xs font-bold text-slate-300 flex items-center space-x-1.5">
+                    <Download className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Attachments ({selectedEmail.attachments.length})</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {selectedEmail.attachments.map((att) => (
+                      <div
+                        key={att.id}
+                        className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs"
+                      >
+                        <div className="truncate mr-2">
+                          <div className="font-semibold text-slate-200 truncate">{att.filename}</div>
+                          <div className="text-[10px] text-slate-500 font-mono">
+                            {(att.sizeBytes / 1024).toFixed(1)} KB • {att.contentType}
+                          </div>
+                        </div>
+                        {att.downloadUrl ? (
+                          <a
+                            href={att.downloadUrl}
+                            download={att.filename}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="p-1.5 rounded bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600 hover:text-white transition"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </a>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Modal Footer with Export options */}
@@ -1021,7 +1056,7 @@ export default function OwntempHome() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-bold text-slate-200">Owntemp Engine</div>
-                  <div className="text-xs text-indigo-400 font-mono">Current Version: v1.2.0</div>
+                  <div className="text-xs text-indigo-400 font-mono">Current Version: v1.3.0 (Enterprise Gold)</div>
                 </div>
                 <button
                   onClick={handleCheckVersion}
