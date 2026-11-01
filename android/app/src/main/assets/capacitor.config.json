@@ -1,0 +1,17 @@
+{
+	"appId": "live.owntemp.app",
+	"appName": "Owntemp",
+	"webDir": "out",
+	"server": {
+		"androidScheme": "https",
+		"cleartext": true
+	},
+	"android": {},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 2000,
+			"backgroundColor": "#0b0f19",
+			"showSpinner": false
+		}
+	}
+}

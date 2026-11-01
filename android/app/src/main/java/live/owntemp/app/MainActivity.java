@@ -37,8 +37,10 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private ValueCallback<Uri[]> filePathCallback;
     private final static int FILE_CHOOSER_RESULT_CODE = 1001;
+    private final static String PREFS_NAME = "OwntempPrefs";
+    private final static String KEY_SERVER_URL = "custom_server_url";
 
-    private static final String DEFAULT_URL = "https://owntemp.live";
+    public static final String DEFAULT_URL = "https://owntempmail.vercel.app";
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -128,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                if (request.isForMainFrame() && !isNetworkAvailable()) {
+                if (request.isForMainFrame()) {
                     loadOfflineFallback();
                 }
             }
@@ -205,12 +207,49 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // Expose JavaScript Interface for offline page controls
+        webView.addJavascriptInterface(new Object() {
+            @android.webkit.JavascriptInterface
+            public void saveServerUrl(String url) {
+                if (url != null && !url.trim().isEmpty()) {
+                    String cleanUrl = url.trim();
+                    if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
+                        cleanUrl = "https://" + cleanUrl;
+                    }
+                    getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                            .edit()
+                            .putString(KEY_SERVER_URL, cleanUrl)
+                            .apply();
+                    final String target = cleanUrl;
+                    runOnUiThread(() -> webView.loadUrl(target));
+                }
+            }
+
+            @android.webkit.JavascriptInterface
+            public void retryConnection() {
+                runOnUiThread(() -> {
+                    String target = getServerUrl();
+                    webView.loadUrl(target);
+                });
+            }
+
+            @android.webkit.JavascriptInterface
+            public String getCurrentServerUrl() {
+                return getServerUrl();
+            }
+        }, "OwntempNative");
+
         // Initial load
         if (isNetworkAvailable()) {
-            webView.loadUrl(DEFAULT_URL);
+            webView.loadUrl(getServerUrl());
         } else {
             loadOfflineFallback();
         }
+    }
+
+    private String getServerUrl() {
+        return getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                .getString(KEY_SERVER_URL, DEFAULT_URL);
     }
 
     private boolean isNetworkAvailable() {

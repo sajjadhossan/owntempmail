@@ -54,19 +54,32 @@
   <div class="spinner" id="loader"></div>
 
   <div class="card" id="config-card" style="display: none;">
-    <p style="font-size: 12px; margin-bottom: 12px;">Enter your Owntemp Web / Vercel instance URL to connect:</p>
-    <input type="url" id="server-input" placeholder="https://your-owntemp.vercel.app" value="https://owntemp.live" />
-    <button onclick="saveAndConnect()">Connect Now</button>
+    <p style="font-size: 13px; margin-bottom: 12px; color: #cbd5e1;">Connected Server URL:</p>
+    <input type="url" id="server-input" placeholder="https://owntempmail.vercel.app" value="https://owntempmail.vercel.app" />
+    <button onclick="saveAndConnect()" style="margin-bottom: 8px;">Retry / Connect Now</button>
   </div>
 
   <script>
-    const savedUrl = localStorage.getItem('owntemp_server_url') || 'https://owntemp.live';
+    const defaultUrl = 'https://owntempmail.vercel.app';
+    let savedUrl = defaultUrl;
     
+    if (window.OwntempNative && typeof window.OwntempNative.getCurrentServerUrl === 'function') {
+      try {
+        savedUrl = window.OwntempNative.getCurrentServerUrl() || defaultUrl;
+      } catch (e) {}
+    } else {
+      savedUrl = localStorage.getItem('owntemp_server_url') || defaultUrl;
+    }
+    
+    document.getElementById('server-input').value = savedUrl;
+
     function tryRedirect(url) {
       document.getElementById('status-text').innerText = 'Loading ' + url + '...';
-      setTimeout(() => {
+      if (window.OwntempNative && typeof window.OwntempNative.retryConnection === 'function') {
+        window.OwntempNative.retryConnection();
+      } else {
         window.location.href = url;
-      }, 500);
+      }
     }
 
     function saveAndConnect() {
@@ -74,20 +87,24 @@
       if (!input) return;
       const formatted = input.startsWith('http') ? input : 'https://' + input;
       localStorage.setItem('owntemp_server_url', formatted);
-      tryRedirect(formatted);
+      if (window.OwntempNative && typeof window.OwntempNative.saveServerUrl === 'function') {
+        window.OwntempNative.saveServerUrl(formatted);
+      } else {
+        window.location.href = formatted;
+      }
     }
 
-    // Try auto-redirect to savedUrl after 1.2s, or show config card if user cancels
+    // Try auto-redirect to savedUrl after 800ms
     setTimeout(() => {
       tryRedirect(savedUrl);
-    }, 1200);
+    }, 800);
 
-    // If still here after 4s (e.g. offline or slow network), show server input card
+    // If still here after 3s (e.g. offline or unreachable network), reveal server input card
     setTimeout(() => {
       document.getElementById('loader').style.display = 'none';
       document.getElementById('config-card').style.display = 'block';
-      document.getElementById('status-text').innerText = 'Select or enter your server URL:';
-    }, 4000);
+      document.getElementById('status-text').innerText = 'Unable to reach online server. Tap retry or verify URL:';
+    }, 3000);
   </script>
 </body>
 </html>

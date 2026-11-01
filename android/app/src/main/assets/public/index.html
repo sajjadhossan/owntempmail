@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Owntemp</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 24px;
+      background-color: #0b0f19; color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 100vh; text-align: center;
+    }
+    .logo-badge {
+      width: 64px; height: 64px; border-radius: 16px;
+      background: linear-gradient(135deg, #6366f1, #9333ea);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 20px; box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid rgba(99, 102, 241, 0.2);
+      border-top-color: #6366f1; border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 16px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    h1 { margin: 0 0 8px; font-size: 24px; font-weight: 700; }
+    p { margin: 0 0 24px; font-size: 14px; color: #94a3b8; }
+    .card {
+      background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px; padding: 20px; width: 100%; max-width: 360px;
+    }
+    input {
+      width: 100%; padding: 12px 14px; background: #0f172a;
+      border: 1px solid #334155; border-radius: 10px; color: #fff;
+      font-size: 14px; margin-bottom: 12px; outline: none;
+    }
+    input:focus { border-color: #6366f1; }
+    button {
+      width: 100%; padding: 12px; background: #6366f1; color: white;
+      border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    button:active { background: #4f46e5; }
+  </style>
+</head>
+<body>
+  <div class="logo-badge">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+  </div>
+  <h1>Owntemp Mobile</h1>
+  <p id="status-text">Connecting to Owntemp web instance...</p>
+  <div class="spinner" id="loader"></div>
+
+  <div class="card" id="config-card" style="display: none;">
+    <p style="font-size: 13px; margin-bottom: 12px; color: #cbd5e1;">Connected Server URL:</p>
+    <input type="url" id="server-input" placeholder="https://owntempmail.vercel.app" value="https://owntempmail.vercel.app" />
+    <button onclick="saveAndConnect()" style="margin-bottom: 8px;">Retry / Connect Now</button>
+  </div>
+
+  <script>
+    const defaultUrl = 'https://owntempmail.vercel.app';
+    let savedUrl = defaultUrl;
+    
+    if (window.OwntempNative && typeof window.OwntempNative.getCurrentServerUrl === 'function') {
+      try {
+        savedUrl = window.OwntempNative.getCurrentServerUrl() || defaultUrl;
+      } catch (e) {}
+    } else {
+      savedUrl = localStorage.getItem('owntemp_server_url') || defaultUrl;
+    }
+    
+    document.getElementById('server-input').value = savedUrl;
+
+    function tryRedirect(url) {
+      document.getElementById('status-text').innerText = 'Loading ' + url + '...';
+      if (window.OwntempNative && typeof window.OwntempNative.retryConnection === 'function') {
+        window.OwntempNative.retryConnection();
+      } else {
+        window.location.href = url;
+      }
+    }
+
+    function saveAndConnect() {
+      const input = document.getElementById('server-input').value.trim();
+      if (!input) return;
+      const formatted = input.startsWith('http') ? input : 'https://' + input;
+      localStorage.setItem('owntemp_server_url', formatted);
+      if (window.OwntempNative && typeof window.OwntempNative.saveServerUrl === 'function') {
+        window.OwntempNative.saveServerUrl(formatted);
+      } else {
+        window.location.href = formatted;
+      }
+    }
+
+    // Try auto-redirect to savedUrl after 800ms
+    setTimeout(() => {
+      tryRedirect(savedUrl);
+    }, 800);
+
+    // If still here after 3s (e.g. offline or unreachable network), reveal server input card
+    setTimeout(() => {
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('config-card').style.display = 'block';
+      document.getElementById('status-text').innerText = 'Unable to reach online server. Tap retry or verify URL:';
+    }, 3000);
+  </script>
+</body>
+</html>

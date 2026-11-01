@@ -5,7 +5,7 @@ let mainWindow = null;
 let tray = null;
 
 const isDev = process.env.NODE_ENV === 'development';
-const APP_URL = process.env.OWNTEMP_URL || 'http://localhost:3000';
+const APP_URL = process.env.OWNTEMP_URL || 'https://owntempmail.vercel.app';
 
 function createWindow() {
   mainWindow = new BrowserWindow({
