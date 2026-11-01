@@ -34,7 +34,7 @@ function ensureDbLoaded(): DatabaseSchema {
       memoryDb = JSON.parse(raw);
     }
   } catch (err) {
-    console.warn('[Storage] Initializing fresh schema:', err);
+    console.warn('[Storage] Error reading DB_FILE, fallback to memory:', err);
   }
 
   if (!memoryDb) {
@@ -42,7 +42,7 @@ function ensureDbLoaded(): DatabaseSchema {
       inboxes: {},
       emails: [],
       domains: DEFAULT_DOMAINS,
-      version: '1.3.0',
+      version: '1.5.0',
     };
     persistDb();
   }
@@ -170,7 +170,18 @@ export function getEmailsForAddress(address: string): EmailRecord[] {
 export function saveInboundEmail(record: Omit<EmailRecord, 'id' | 'receivedAt' | 'isRead' | 'isLocked'>): EmailRecord {
   const db = ensureDbLoaded();
   const normalizedAddress = record.address.trim().toLowerCase();
-  const meta = getInboxMetadata(normalizedAddress);
+
+  if (!db.inboxes[normalizedAddress]) {
+    db.inboxes[normalizedAddress] = {
+      address: normalizedAddress,
+      isLocked: false,
+      failedAttempts: 0,
+      createdAt: new Date().toISOString(),
+      lastActiveAt: new Date().toISOString(),
+      totalEmails: 0,
+    };
+  }
+  const meta = db.inboxes[normalizedAddress];
 
   const newEmail: EmailRecord = {
     ...record,

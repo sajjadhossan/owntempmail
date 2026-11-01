@@ -84,9 +84,185 @@
       "createdAt": "2026-11-01T03:50:52.474Z",
       "lastActiveAt": "2026-11-01T03:50:52.474Z",
       "totalEmails": 0
+    },
+    "user_8417@owntemp.live": {
+      "address": "user_8417@owntemp.live",
+      "isLocked": false,
+      "failedAttempts": 0,
+      "createdAt": "2026-11-01T04:09:35.553Z",
+      "lastActiveAt": "2026-11-01T04:09:35.553Z",
+      "totalEmails": 0
+    },
+    "user_6841@owntemp.live": {
+      "address": "user_6841@owntemp.live",
+      "isLocked": false,
+      "failedAttempts": 0,
+      "createdAt": "2026-11-01T04:11:10.113Z",
+      "lastActiveAt": "2026-11-01T04:11:10.113Z",
+      "totalEmails": 0
+    },
+    "user_7415@owntemp.live": {
+      "address": "user_7415@owntemp.live",
+      "isLocked": false,
+      "failedAttempts": 0,
+      "createdAt": "2026-11-01T04:11:17.118Z",
+      "lastActiveAt": "2026-11-01T04:11:17.118Z",
+      "totalEmails": 0
+    },
+    "user_9035@owntemp.live": {
+      "address": "user_9035@owntemp.live",
+      "isLocked": false,
+      "failedAttempts": 0,
+      "createdAt": "2026-11-01T04:11:18.075Z",
+      "lastActiveAt": "2026-11-01T04:11:18.075Z",
+      "totalEmails": 0
+    },
+    "user_6879@owntemp.live": {
+      "address": "user_6879@owntemp.live",
+      "isLocked": false,
+      "failedAttempts": 0,
+      "createdAt": "2026-11-01T04:11:34.668Z",
+      "lastActiveAt": "2026-11-01T04:14:22.235Z",
+      "totalEmails": 1
+    },
+    "user_4445@owntemp.live": {
+      "address": "user_4445@owntemp.live",
+      "isLocked": false,
+      "failedAttempts": 0,
+      "createdAt": "2026-11-01T04:41:44.858Z",
+      "lastActiveAt": "2026-11-01T04:44:44.527Z",
+      "totalEmails": 1
+    },
+    "user_test1@owntemp.live": {
+      "address": "user_test1@owntemp.live",
+      "isLocked": false,
+      "failedAttempts": 0,
+      "createdAt": "2026-11-01T04:46:39.139Z",
+      "lastActiveAt": "2026-11-01T04:46:39.141Z",
+      "totalEmails": 1
+    },
+    "user_4264@owntemp.live": {
+      "address": "user_4264@owntemp.live",
+      "isLocked": false,
+      "failedAttempts": 0,
+      "createdAt": "2026-11-01T04:46:42.184Z",
+      "lastActiveAt": "2026-11-01T04:46:42.184Z",
+      "totalEmails": 0
+    },
+    "user_7750@owntemp.live": {
+      "address": "user_7750@owntemp.live",
+      "isLocked": false,
+      "failedAttempts": 0,
+      "createdAt": "2026-11-01T04:46:42.389Z",
+      "lastActiveAt": "2026-11-01T04:46:42.389Z",
+      "totalEmails": 0
+    },
+    "test_verify@owntemp.live": {
+      "address": "test_verify@owntemp.live",
+      "isLocked": false,
+      "failedAttempts": 0,
+      "createdAt": "2026-11-01T04:52:31.161Z",
+      "lastActiveAt": "2026-11-01T04:52:31.163Z",
+      "totalEmails": 1
+    },
+    "my_inbox@owntemp.live": {
+      "address": "my_inbox@owntemp.live",
+      "isLocked": false,
+      "failedAttempts": 0,
+      "createdAt": "2026-11-01T04:53:39.839Z",
+      "lastActiveAt": "2026-11-01T04:53:39.841Z",
+      "totalEmails": 1
+    },
+    "debug1@owntemp.live": {
+      "address": "debug1@owntemp.live",
+      "isLocked": false,
+      "failedAttempts": 0,
+      "createdAt": "2026-11-01T04:54:38.109Z",
+      "lastActiveAt": "2026-11-01T04:54:38.112Z",
+      "totalEmails": 1
+    },
+    "verify_now@owntemp.live": {
+      "address": "verify_now@owntemp.live",
+      "isLocked": false,
+      "failedAttempts": 0,
+      "createdAt": "2026-11-01T04:57:06.504Z",
+      "lastActiveAt": "2026-11-01T04:57:06.505Z",
+      "totalEmails": 1
     }
   },
   "emails": [
+    {
+      "address": "verify_now@owntemp.live",
+      "sender": "accounts@google.com",
+      "senderName": "ACCOUNTS",
+      "subject": "Google Verification Code / ???? ???????? ???",
+      "textBody": "Hello,\n\nYour security verification code is: 654321\n\nThis code will expire in 10 minutes. If you did not request this code, please ignore this email.\n\nVerify online: https://example.com/verify?token=tok_d8ihpyqg",
+      "htmlBody": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;\">\n        <h2 style=\"color: #4f46e5; margin-top: 0;\">🔒 Security Verification</h2>\n        <p style=\"color: #475569; font-size: 15px;\">Please use the following single-use verification code to complete your sign-in / registration:</p>\n        <div style=\"background: #f8fafc; border: 2px dashed #6366f1; border-radius: 8px; padding: 18px; text-align: center; margin: 24px 0;\">\n          <span style=\"font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #1e1b4b;\">654321</span>\n        </div>\n        <p style=\"color: #64748b; font-size: 13px;\">If you prefer, you can also confirm by clicking the button below:</p>\n        <div style=\"text-align: center; margin: 20px 0;\">\n          <a href=\"https://example.com/verify?token=tok_h0dmg894\" style=\"display: inline-block; background: #4f46e5; color: #ffffff; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: bold;\">Confirm Account Now</a>\n        </div>\n        <hr style=\"border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;\" />\n        <p style=\"color: #94a3b8; font-size: 12px;\">This is an automated test message dispatched to <b>verify_now@owntemp.live</b>.</p>\n      </div>\n    ",
+      "otpCode": "654321",
+      "verificationLinks": [
+        "https://example.com/verify?token=tok_h0dmg894"
+      ],
+      "sizeBytes": 1555,
+      "id": "em_1793509026504_w32pk4",
+      "receivedAt": "2026-11-01T04:57:06.504Z",
+      "isRead": false,
+      "isLocked": false,
+      "attachments": []
+    },
+    {
+      "address": "user_test1@owntemp.live",
+      "sender": "accounts@google.com",
+      "senderName": "ACCOUNTS",
+      "subject": "Your Google Code",
+      "textBody": "Hello,\n\nYour security verification code is: 123456\n\nThis code will expire in 10 minutes. If you did not request this code, please ignore this email.\n\nVerify online: https://example.com/verify?token=tok_0azkovxc",
+      "htmlBody": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;\">\n        <h2 style=\"color: #4f46e5; margin-top: 0;\">🔒 Security Verification</h2>\n        <p style=\"color: #475569; font-size: 15px;\">Please use the following single-use verification code to complete your sign-in / registration:</p>\n        <div style=\"background: #f8fafc; border: 2px dashed #6366f1; border-radius: 8px; padding: 18px; text-align: center; margin: 24px 0;\">\n          <span style=\"font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #1e1b4b;\">123456</span>\n        </div>\n        <p style=\"color: #64748b; font-size: 13px;\">If you prefer, you can also confirm by clicking the button below:</p>\n        <div style=\"text-align: center; margin: 20px 0;\">\n          <a href=\"https://example.com/verify?token=tok_s6f4ggck\" style=\"display: inline-block; background: #4f46e5; color: #ffffff; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: bold;\">Confirm Account Now</a>\n        </div>\n        <hr style=\"border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;\" />\n        <p style=\"color: #94a3b8; font-size: 12px;\">This is an automated test message dispatched to <b>user_test1@owntemp.live</b>.</p>\n      </div>\n    ",
+      "otpCode": "123456",
+      "verificationLinks": [
+        "https://example.com/verify?token=tok_s6f4ggck"
+      ],
+      "sizeBytes": 1555,
+      "id": "em_1793508399141_4pnidc",
+      "receivedAt": "2026-11-01T04:46:39.141Z",
+      "isRead": false,
+      "isLocked": false,
+      "attachments": []
+    },
+    {
+      "address": "user_4445@owntemp.live",
+      "sender": "security@google.com",
+      "senderName": "SECURITY",
+      "subject": "Google Verification Code / গুগল যাচাইকরণ কোড",
+      "textBody": "Hello,\n\nYour security verification code is: 497758\n\nThis code will expire in 10 minutes. If you did not request this code, please ignore this email.\n\nVerify online: https://example.com/verify?token=tok_hhhzvdmw",
+      "htmlBody": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;\">\n        <h2 style=\"color: #4f46e5; margin-top: 0;\">🔒 Security Verification</h2>\n        <p style=\"color: #475569; font-size: 15px;\">Please use the following single-use verification code to complete your sign-in / registration:</p>\n        <div style=\"background: #f8fafc; border: 2px dashed #6366f1; border-radius: 8px; padding: 18px; text-align: center; margin: 24px 0;\">\n          <span style=\"font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #1e1b4b;\">497758</span>\n        </div>\n        <p style=\"color: #64748b; font-size: 13px;\">If you prefer, you can also confirm by clicking the button below:</p>\n        <div style=\"text-align: center; margin: 20px 0;\">\n          <a href=\"https://example.com/verify?token=tok_ofu4eolx\" style=\"display: inline-block; background: #4f46e5; color: #ffffff; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: bold;\">Confirm Account Now</a>\n        </div>\n        <hr style=\"border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;\" />\n        <p style=\"color: #94a3b8; font-size: 12px;\">This is an automated test message dispatched to <b>user_4445@owntemp.live</b>.</p>\n      </div>\n    ",
+      "otpCode": "497758",
+      "verificationLinks": [
+        "https://example.com/verify?token=tok_ofu4eolx"
+      ],
+      "sizeBytes": 1554,
+      "id": "em_1793508284526_jfnqzf",
+      "receivedAt": "2026-11-01T04:44:44.527Z",
+      "isRead": false,
+      "isLocked": false,
+      "attachments": []
+    },
+    {
+      "address": "user_6879@owntemp.live",
+      "sender": "security@google.com",
+      "senderName": "SECURITY",
+      "subject": "Google Verification Code / গুগল যাচাইকরণ কোড",
+      "textBody": "Hello,\n\nYour security verification code is: 840478\n\nThis code will expire in 10 minutes. If you did not request this code, please ignore this email.\n\nVerify online: https://example.com/verify?token=tok_0oi985o9",
+      "htmlBody": "\n      <div style=\"font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;\">\n        <h2 style=\"color: #4f46e5; margin-top: 0;\">🔒 Security Verification</h2>\n        <p style=\"color: #475569; font-size: 15px;\">Please use the following single-use verification code to complete your sign-in / registration:</p>\n        <div style=\"background: #f8fafc; border: 2px dashed #6366f1; border-radius: 8px; padding: 18px; text-align: center; margin: 24px 0;\">\n          <span style=\"font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #1e1b4b;\">840478</span>\n        </div>\n        <p style=\"color: #64748b; font-size: 13px;\">If you prefer, you can also confirm by clicking the button below:</p>\n        <div style=\"text-align: center; margin: 20px 0;\">\n          <a href=\"https://example.com/verify?token=tok_x13k6qef\" style=\"display: inline-block; background: #4f46e5; color: #ffffff; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: bold;\">Confirm Account Now</a>\n        </div>\n        <hr style=\"border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;\" />\n        <p style=\"color: #94a3b8; font-size: 12px;\">This is an automated test message dispatched to <b>user_6879@owntemp.live</b>.</p>\n      </div>\n    ",
+      "otpCode": "840478",
+      "verificationLinks": [
+        "https://example.com/verify?token=tok_x13k6qef"
+      ],
+      "sizeBytes": 1554,
+      "id": "em_1793506462233_m27ilv",
+      "receivedAt": "2026-11-01T04:14:22.234Z",
+      "isRead": false,
+      "isLocked": false,
+      "attachments": []
+    },
     {
       "address": "user_4779@owntemp.live",
       "sender": "security@google.com",

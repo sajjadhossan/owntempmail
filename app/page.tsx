@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Mail,
   Lock,
@@ -245,19 +245,41 @@ export default function OwntempHome() {
     [playChime]
   );
 
-  // Initial load
+  const isInitializedRef = useRef(false);
+
+  // Initial load - runs strictly once on mount
   useEffect(() => {
+    if (isInitializedRef.current) return;
+    isInitializedRef.current = true;
+
     fetchDomains();
     fetchLockedInboxes();
     fetchBusinessProfile();
 
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const initialPrefix = `user_${randomSuffix}`;
-    setUsernamePrefix(initialPrefix);
-    const full = `${initialPrefix}@owntemp.live`;
-    setActiveEmail(full);
-    fetchEmails(full);
-  }, [fetchDomains, fetchEmails, fetchLockedInboxes]);
+    let savedEmail = '';
+    try {
+      savedEmail = localStorage.getItem('owntemp_active_email') || '';
+    } catch (e) {}
+
+    let initialEmail = '';
+    if (savedEmail && savedEmail.includes('@')) {
+      initialEmail = savedEmail;
+    } else {
+      const words = ['user', 'swift', 'temp', 'spark', 'nexus', 'cloud', 'secure'];
+      const word = words[Math.floor(Math.random() * words.length)];
+      const num = Math.floor(1000 + Math.random() * 9000);
+      initialEmail = `${word}_${num}@owntemp.live`;
+      try {
+        localStorage.setItem('owntemp_active_email', initialEmail);
+      } catch (e) {}
+    }
+
+    const parts = initialEmail.split('@');
+    setUsernamePrefix(parts[0]);
+    if (parts[1]) setSelectedDomain(parts[1]);
+    setActiveEmail(initialEmail);
+    fetchEmails(initialEmail);
+  }, []); // Run strictly once on mount
 
   // Countdown auto-refresh
   useEffect(() => {
@@ -335,6 +357,9 @@ export default function OwntempHome() {
 
     const newAddress = `${cleanPrefix}@${targetDomain}`;
     setActiveEmail(newAddress);
+    try {
+      localStorage.setItem('owntemp_active_email', newAddress);
+    } catch (e) {}
     fetchEmails(newAddress);
     setActionSuccess(lang === 'bn' ? 'সক্রিয় ইনবক্স পরিবর্তন করা হয়েছে!' : 'Active inbox updated successfully!');
     setTimeout(() => setActionSuccess(null), 3000);
@@ -348,6 +373,9 @@ export default function OwntempHome() {
       setSelectedDomain(parts[1]);
     }
     setActiveEmail(address);
+    try {
+      localStorage.setItem('owntemp_active_email', address);
+    } catch (e) {}
     fetchEmails(address);
     setActionSuccess(lang === 'bn' ? `লক করা ইনবক্স (${address}) সক্রিয় করা হয়েছে!` : `Switched to locked inbox: ${address}`);
     setTimeout(() => setActionSuccess(null), 3000);
@@ -362,6 +390,9 @@ export default function OwntempHome() {
     setUsernamePrefix(randomUser);
     const newAddr = `${randomUser}@${selectedDomain}`;
     setActiveEmail(newAddr);
+    try {
+      localStorage.setItem('owntemp_active_email', newAddr);
+    } catch (e) {}
     fetchEmails(newAddr);
   };
 
@@ -460,11 +491,15 @@ export default function OwntempHome() {
     }
   };
 
-  // Send simulated test email
-  const handleSimulateInbound = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Send simulated test email (instant 1-click & custom modal support)
+  const handleSimulateInbound = async (e?: React.FormEvent, directOtp?: string) => {
+    if (e) e.preventDefault();
     setIsSimulating(true);
     setActionError(null);
+
+    const otpVal = directOtp || (simOtp.trim() ? simOtp.trim() : Math.floor(100000 + Math.random() * 900000).toString());
+    const senderVal = simSender.trim() || 'security@google.com';
+    const subjectVal = simSubject.trim() || (lang === 'bn' ? 'Google Verification Code / গুগল যাচাইকরণ কোড' : 'Google Verification Code');
 
     try {
       const res = await fetch('/api/simulate', {
@@ -472,22 +507,31 @@ export default function OwntempHome() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: activeEmail,
-          from: simSender,
-          subject: simSubject,
-          otp: simOtp.trim() || undefined,
+          from: senderVal,
+          subject: subjectVal,
+          otp: otpVal,
         }),
       });
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.data) {
         setShowSimModal(false);
         setSimOtp('');
-        setActionSuccess(t.successSim);
-        fetchEmails(activeEmail);
+        // Instantly prepend into state so user sees it right away with 0ms delay!
+        setEmails((prev) => [data.data, ...prev.filter((em) => em.id !== data.data.id)]);
+        playChime();
+        setActionSuccess(
+          lang === 'bn'
+            ? `টেস্ট ইমেইল ও ওটিপি কোড (${data.data.otpCode || otpVal}) সফলভাবে ইনবক্সে এসেছে!`
+            : `Test email with OTP (${data.data.otpCode || otpVal}) delivered to inbox!`
+        );
+        setTimeout(() => setActionSuccess(null), 4000);
+        // Sync server copy quietly
+        fetchEmails(activeEmail, true);
       } else {
-        setActionError(data.message);
+        setActionError(data.message || 'Simulation failed');
       }
     } catch (err: any) {
-      setActionError(err.message);
+      setActionError(err.message || 'Simulation failed');
     } finally {
       setIsSimulating(false);
     }
@@ -928,24 +972,78 @@ export default function OwntempHome() {
 
           {/* Messages List or Empty State */}
           {filteredEmails.length === 0 ? (
-            <div className="rounded-2xl border border-slate-800/80 bg-slate-900/30 p-12 text-center space-y-4">
+            <div className="rounded-2xl border border-slate-800/80 bg-slate-900/30 p-8 md:p-12 text-center space-y-6">
               <div className="relative w-16 h-16 mx-auto">
                 <div className="absolute inset-0 rounded-full bg-indigo-500/20 animate-ping"></div>
                 <div className="relative w-16 h-16 rounded-full bg-slate-900 border border-indigo-500/30 flex items-center justify-center">
                   <Mail className="w-8 h-8 text-indigo-400" />
                 </div>
               </div>
-              <div className="max-w-md mx-auto space-y-1">
+
+              <div className="max-w-md mx-auto space-y-2">
                 <h3 className="text-base font-semibold text-slate-200">{t.waitingMails}</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">{t.waitingSub}</p>
               </div>
-              <div className="pt-2">
+
+              {/* 3 Step Live Guide for Real Emails */}
+              <div className="max-w-xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
+                <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 space-y-1">
+                  <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">
+                    {lang === 'bn' ? 'ধাপ ১ : কপি করুন' : 'Step 1 : Copy'}
+                  </div>
+                  <div className="text-xs font-semibold text-slate-200">
+                    {lang === 'bn' ? 'ইমেইল অ্যাড্রেস কপি' : 'Copy Email Address'}
+                  </div>
+                  <div className="text-[11px] text-slate-400 leading-snug">
+                    {lang === 'bn' ? 'উপরের কপি বাটনে ক্লিক করে ইমেইলটি কপি করুন।' : 'Copy the active email shown above.'}
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 space-y-1">
+                  <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">
+                    {lang === 'bn' ? 'ধাপ ২ : সাইন-আপ' : 'Step 2 : Sign Up'}
+                  </div>
+                  <div className="text-xs font-semibold text-slate-200">
+                    {lang === 'bn' ? 'যেকোনো ওয়েবসাইটে দিন' : 'Use Anywhere'}
+                  </div>
+                  <div className="text-[11px] text-slate-400 leading-snug">
+                    {lang === 'bn' ? 'Facebook, Google বা যেকোনো রেজিস্ট্রেশনে দিন।' : 'Paste in Facebook, Google or any sign-up.'}
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-slate-950/70 border border-emerald-500/30 space-y-1">
+                  <div className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
+                    {lang === 'bn' ? 'ধাপ ৩ : কোড গ্রহণ' : 'Step 3 : Receive'}
+                  </div>
+                  <div className="text-xs font-semibold text-slate-200">
+                    {lang === 'bn' ? 'স্বয়ংক্রিয় ওটিপি কার্ড' : 'Instant OTP Card'}
+                  </div>
+                  <div className="text-[11px] text-slate-400 leading-snug">
+                    {lang === 'bn' ? 'কোড আসার সাথে সাথে বেল বাজবে ও ওটিপি দেখাবে।' : 'Chime sounds and OTP appears for 1-click copy.'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Instant Test Buttons for Localhost Testing */}
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button
+                  onClick={() => handleSimulateInbound(undefined, Math.floor(100000 + Math.random() * 900000).toString())}
+                  disabled={isSimulating}
+                  className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 text-xs font-bold px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-lg shadow-indigo-600/30 transition transform active:scale-95"
+                >
+                  <Sparkles className="w-4 h-4 text-yellow-300" />
+                  <span>
+                    {isSimulating
+                      ? (lang === 'bn' ? 'কোড পাঠানো হচ্ছে...' : 'Sending...')
+                      : (lang === 'bn' ? '⚡ ১-ক্লিকে তাৎক্ষণিক টেস্ট কোড পাঠান' : '⚡ Send Instant Test OTP')}
+                  </span>
+                </button>
+
                 <button
                   onClick={() => setShowSimModal(true)}
-                  className="inline-flex items-center space-x-2 text-xs font-semibold px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20 transition"
+                  className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 text-xs font-semibold px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
                 >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>{lang === 'bn' ? 'একটি টেস্ট ইমেইল পাঠিয়ে পরীক্ষা করুন' : 'Simulate Test Inbound Email'}</span>
+                  <span>{lang === 'bn' ? 'কাস্টম প্রেরক/কোড সেট করুন' : 'Custom Sender/Code'}</span>
                 </button>
               </div>
             </div>
@@ -1722,13 +1820,32 @@ export default function OwntempHome() {
               <button onClick={() => setShowSimModal(false)} className="text-slate-400 hover:text-white">✕</button>
             </div>
 
-            <p className="text-xs text-slate-400">
-              {lang === 'bn'
-                ? `বর্তমান সক্রিয় ইনবক্স (${activeEmail}) এর জন্য টেস্ট ইমেইল প্রেরণ করুন এবং ওটিপি এক্সট্রাকশন দেখুন।`
-                : `Send a simulated live email to active inbox (${activeEmail}) to test instant OTP extraction.`}
-            </p>
+            {/* Target Active Inbox Badge */}
+            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold">
+                  {lang === 'bn' ? 'প্রাপক ইনবক্স (Recipient)' : 'Target Inbox'}
+                </span>
+                <span className="font-mono text-xs font-semibold text-indigo-300">{activeEmail}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleSimulateInbound(undefined, Math.floor(100000 + Math.random() * 900000).toString())}
+                disabled={isSimulating}
+                className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm transition flex items-center space-x-1"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+                <span>{lang === 'bn' ? '১-ক্লিকে কোড পাঠান' : 'Instant 1-Click'}</span>
+              </button>
+            </div>
 
-            <form onSubmit={handleSimulateInbound} className="space-y-3">
+            <div className="border-t border-slate-800/80 pt-2">
+              <span className="text-[11px] font-semibold text-slate-400 block mb-2">
+                {lang === 'bn' ? 'অথবা কাস্টম তথ্য লিখুন:' : 'Or enter custom details:'}
+              </span>
+            </div>
+
+            <form onSubmit={(e) => handleSimulateInbound(e)} className="space-y-3">
               <div>
                 <label className="text-xs font-semibold text-slate-300 block mb-1">{t.simSender}</label>
                 <input
