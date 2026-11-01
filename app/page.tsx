@@ -108,6 +108,7 @@ export default function OwntempHome() {
   const [cfApiToken, setCfApiToken] = useState('');
   const [isSettingUpCf, setIsSettingUpCf] = useState(false);
   const [cfSetupResult, setCfSetupResult] = useState<string | null>(null);
+  const [cfSetupError, setCfSetupError] = useState<string | null>(null);
 
   // Play audio chime when new email arrives
   const playChime = useCallback(() => {
@@ -304,6 +305,7 @@ export default function OwntempHome() {
     }
     setIsSettingUpCf(true);
     setCfSetupResult(null);
+    setCfSetupError(null);
     setActionError(null);
 
     try {
@@ -320,11 +322,15 @@ export default function OwntempHome() {
       const data = await res.json();
       if (data.success) {
         setCfSetupResult(data.message);
+        setCfSetupError(null);
         setActionSuccess(lang === 'bn' ? 'ক্লাউডফ্লেয়ার অটোমেটিক সেটআপ সফল হয়েছে!' : 'Cloudflare Auto-Setup Succeeded!');
       } else {
+        setCfSetupError(data.message || 'Cloudflare setup failed.');
+        setCfSetupResult(null);
         setActionError(data.message);
       }
     } catch (err: any) {
+      setCfSetupError(err.message || 'Failed to auto setup Cloudflare');
       setActionError(err.message || 'Failed to auto setup Cloudflare');
     } finally {
       setIsSettingUpCf(false);
@@ -1666,6 +1672,20 @@ export default function OwntempHome() {
                 <div className="space-y-4">
                   <form onSubmit={handleAutoSetupCloudflare} className="bg-slate-950 p-4 rounded-xl border border-indigo-500/30 space-y-3">
                     <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-slate-300 block">
+                        {lang === 'bn' ? 'টার্গেট ডোমেইন (ক্লাউডফ্লেয়ারে থাকা আপনার ডোমেইনের নাম)' : 'Target Domain (as listed in Cloudflare)'}
+                      </label>
+                      <input
+                        type="text"
+                        value={selectedDomain}
+                        onChange={(e) => setSelectedDomain(e.target.value.trim().toLowerCase())}
+                        placeholder="যেমন: yourdomain.com"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-indigo-300 font-bold outline-none focus:border-indigo-500"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1">
                       <label className="text-[11px] font-semibold text-slate-300 block">{t.cfTokenLabel}</label>
                       <input
                         type="password"
@@ -1687,8 +1707,22 @@ export default function OwntempHome() {
                     </button>
 
                     {cfSetupResult && (
-                      <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs">
-                        {cfSetupResult}
+                      <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs space-y-1">
+                        <div className="font-bold flex items-center space-x-1.5 text-emerald-400">
+                          <Check className="w-4 h-4" />
+                          <span>{lang === 'bn' ? 'সেটআপ সফল হয়েছে!' : 'Setup Successful!'}</span>
+                        </div>
+                        <p className="text-slate-300 text-[11px] leading-relaxed">{cfSetupResult}</p>
+                      </div>
+                    )}
+
+                    {cfSetupError && (
+                      <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs space-y-1">
+                        <div className="font-bold flex items-center space-x-1.5 text-rose-400">
+                          <AlertCircle className="w-4 h-4" />
+                          <span>{lang === 'bn' ? 'সেটআপ ব্যর্থ হয়েছে' : 'Setup Failed'}</span>
+                        </div>
+                        <p className="text-slate-300 text-[11px] leading-relaxed">{cfSetupError}</p>
                       </div>
                     )}
                   </form>
