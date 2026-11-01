@@ -111,6 +111,9 @@ export const translations = {
     manualStep4: '৪. Catch-all রুলে সেই Worker সিলেক্ট করুন। ব্যস, সব মেইল লাইভ চলে আসবে!',
     copyWorkerCode: 'Worker কোড কপি করুন',
     generatedWebhookLabel: 'আপনার লাইভ ইনবাউন্ড ওয়েব হুক URL:',
+    settingsTabApi: 'ক্লাউডফ্লেয়ার ও এপিআই (Cloudflare API)',
+    settingsTabDomains: 'ডোমেইন ও বিজনেস (Domains & Business)',
+    settingsTabGeneral: 'জেনারেল ও ডাউনলোড (General & Downloads)',
   },
   en: {
     appTitle: 'Owntemp',
@@ -222,5 +225,8 @@ export const translations = {
     manualStep4: '4. Set Catch-all rule to route to the Worker. All live emails will arrive instantly!',
     copyWorkerCode: 'Copy Worker Script',
     generatedWebhookLabel: 'Your Live Inbound Webhook URL:',
+    settingsTabApi: 'Cloudflare & API Setup',
+    settingsTabDomains: 'Domains & Business',
+    settingsTabGeneral: 'General & Downloads',
   },
 };

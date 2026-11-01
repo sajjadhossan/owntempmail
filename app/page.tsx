@@ -103,6 +103,7 @@ export default function OwntempHome() {
   const [updateStatus, setUpdateStatus] = useState<string | null>(null);
 
   // Cloudflare & Vercel Integration Hub (v1.5.0)
+  const [settingsTab, setSettingsTab] = useState<'api' | 'domains' | 'general'>('api');
   const [integrationTab, setIntegrationTab] = useState<'auto' | 'manual'>('auto');
   const [vercelLiveUrl, setVercelLiveUrl] = useState('https://my-owntemp.vercel.app');
   const [cfApiToken, setCfApiToken] = useState('');
@@ -594,6 +595,21 @@ export default function OwntempHome() {
     URL.revokeObjectURL(url);
   };
 
+  // Export all inbox emails as JSON
+  const handleExportEmails = () => {
+    if (emails.length === 0) return;
+    const jsonStr = JSON.stringify(emails, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `owntemp_backup_${activeEmail.replace(/[@.]/g, '_')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setActionSuccess(lang === 'bn' ? 'সকল ইমেইল ব্যাকআপ ডাউনলোড হয়েছে!' : 'All emails exported to JSON successfully!');
+    setTimeout(() => setActionSuccess(null), 3000);
+  };
+
   // Filtered emails
   const filteredEmails = useMemo(() => {
     return emails.filter((item) => {
@@ -653,9 +669,25 @@ export default function OwntempHome() {
               {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             </button>
 
+            {/* Cloudflare API Button */}
+            <button
+              onClick={() => {
+                setSettingsTab('api');
+                setShowSettingsModal(true);
+              }}
+              className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-amber-500/20 to-indigo-500/20 hover:from-amber-500/30 hover:to-indigo-500/30 text-amber-300 border border-amber-500/40 transition shadow-sm"
+              title="Cloudflare API Setup"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>{lang === 'bn' ? 'ক্লাউডফ্লেয়ার API' : 'Cloudflare API'}</span>
+            </button>
+
             {/* Custom Domain Button */}
             <button
-              onClick={() => setShowDomainModal(true)}
+              onClick={() => {
+                setSettingsTab('domains');
+                setShowSettingsModal(true);
+              }}
               className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 transition"
             >
               <Globe className="w-3.5 h-3.5 text-indigo-400" />
@@ -673,9 +705,12 @@ export default function OwntempHome() {
 
             {/* Settings Trigger */}
             <button
-              onClick={() => setShowSettingsModal(true)}
+              onClick={() => {
+                setSettingsTab('api');
+                setShowSettingsModal(true);
+              }}
               className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition"
-              title="Settings & Downloads"
+              title="Settings & Cloudflare API"
             >
               <Settings className="w-4 h-4" />
             </button>
@@ -1304,10 +1339,11 @@ export default function OwntempHome() {
         </div>
       )}
 
-      {/* App Settings & Multi-Platform Downloads Modal (New in v1.2.0) */}
+      {/* Master App Settings, Cloudflare API & Integrations Modal */}
       {showSettingsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-5 shadow-2xl">
+          <div className="bg-slate-900 border border-indigo-500/30 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-5 shadow-2xl">
+            {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center space-x-2">
                 <Settings className="w-5 h-5 text-indigo-400" />
@@ -1316,76 +1352,355 @@ export default function OwntempHome() {
               <button onClick={() => setShowSettingsModal(false)} className="text-slate-400 hover:text-white">✕</button>
             </div>
 
-            {/* Version & Update check */}
-            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-bold text-slate-200">Owntemp Engine</div>
-                  <div className="text-xs text-indigo-400 font-mono">Current Version: v1.3.0 (Enterprise Gold)</div>
+            {/* Master Navigation Tabs */}
+            <div className="flex rounded-xl bg-slate-950 p-1 border border-slate-800 gap-1">
+              <button
+                type="button"
+                onClick={() => setSettingsTab('api')}
+                className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
+                  settingsTab === 'api'
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span className="truncate">{t.settingsTabApi}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSettingsTab('domains')}
+                className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
+                  settingsTab === 'domains'
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Globe className="w-3.5 h-3.5 text-indigo-400" />
+                <span className="truncate">{t.settingsTabDomains}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSettingsTab('general')}
+                className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
+                  settingsTab === 'general'
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Settings className="w-3.5 h-3.5 text-slate-400" />
+                <span className="truncate">{t.settingsTabGeneral}</span>
+              </button>
+            </div>
+
+            {/* TAB 1: CLOUDFLARE & API INTEGRATION */}
+            {settingsTab === 'api' && (
+              <div className="space-y-4">
+                {/* Vercel Website URL Input */}
+                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-300 block">{t.vercelUrlLabel}</label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="url"
+                      value={vercelLiveUrl}
+                      onChange={(e) => setVercelLiveUrl(e.target.value)}
+                      placeholder={t.vercelUrlPlaceholder}
+                      className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-indigo-200 font-mono outline-none focus:border-indigo-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${vercelLiveUrl.replace(/\/+$/, '')}/api/inbound/webhook`);
+                        setActionSuccess(lang === 'bn' ? 'ওয়েবহুক URL কপি হয়েছে!' : 'Webhook URL copied!');
+                        setTimeout(() => setActionSuccess(null), 2000);
+                      }}
+                      className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700 transition"
+                    >
+                      {t.copy} Webhook
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-slate-500 font-mono">
+                    {t.generatedWebhookLabel} <span className="text-slate-400">{vercelLiveUrl.replace(/\/+$/, '')}/api/inbound/webhook</span>
+                  </p>
                 </div>
-                <button
-                  onClick={handleCheckVersion}
-                  disabled={isCheckingUpdate}
-                  className="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold transition"
-                >
-                  {isCheckingUpdate ? t.checkingUpdate : t.checkUpdate}
-                </button>
-              </div>
-              {updateStatus && (
-                <div className="text-xs text-emerald-400 font-medium pt-1 border-t border-slate-900">
-                  {updateStatus}
+
+                {/* Auto Setup Cloudflare Form */}
+                <form onSubmit={handleAutoSetupCloudflare} className="bg-slate-950 p-4 rounded-xl border border-indigo-500/30 space-y-3.5">
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                    <span className="text-xs font-bold text-slate-200 flex items-center space-x-1.5">
+                      <Sparkles className="w-4 h-4 text-amber-400" />
+                      <span>{lang === 'bn' ? 'অটোমেটিক ক্লাউডফ্লেয়ার API সেটআপ' : '1-Click Cloudflare Automated Setup'}</span>
+                    </span>
+                    <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                      {lang === 'bn' ? '১০০% ফ্রি' : '100% Free'}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-300 block">
+                      {lang === 'bn' ? '১. টার্গেট ডোমেইন (Cloudflare-এ থাকা ডোমেইনের নাম):' : '1. Target Domain (as listed in Cloudflare):'}
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedDomain}
+                      onChange={(e) => setSelectedDomain(e.target.value.trim().toLowerCase())}
+                      placeholder="যেমন: yourdomain.com"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-indigo-300 font-bold outline-none focus:border-indigo-500"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-300 block">
+                      {lang === 'bn' ? '২. ক্লাউডফ্লেয়ার API টোকেন (API Token):' : '2. Cloudflare API Token:'}
+                    </label>
+                    <input
+                      type="password"
+                      value={cfApiToken}
+                      onChange={(e) => setCfApiToken(e.target.value)}
+                      placeholder={t.cfTokenPlaceholder}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 outline-none focus:border-indigo-500"
+                      required
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSettingUpCf}
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition flex items-center justify-center space-x-2"
+                  >
+                    <Sparkles className="w-4 h-4 text-yellow-300" />
+                    <span>{isSettingUpCf ? t.settingUp : (lang === 'bn' ? '⚡ এখনই অটোমেটিক ক্লাউডফ্লেয়ার সেটআপ করুন' : '⚡ Auto-Configure Cloudflare Now')}</span>
+                  </button>
+
+                  {/* Status Reports */}
+                  {cfSetupResult && (
+                    <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs space-y-1">
+                      <div className="font-bold flex items-center space-x-1.5 text-emerald-400">
+                        <Check className="w-4 h-4" />
+                        <span>{lang === 'bn' ? 'সেটআপ সফল হয়েছে!' : 'Setup Successful!'}</span>
+                      </div>
+                      <p className="text-slate-300 text-[11px] leading-relaxed">{cfSetupResult}</p>
+                    </div>
+                  )}
+
+                  {cfSetupError && (
+                    <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs space-y-1">
+                      <div className="font-bold flex items-center space-x-1.5 text-rose-400">
+                        <AlertCircle className="w-4 h-4" />
+                        <span>{lang === 'bn' ? 'সেটআপ ব্যর্থ হয়েছে' : 'Setup Failed'}</span>
+                      </div>
+                      <p className="text-slate-300 text-[11px] leading-relaxed">{cfSetupError}</p>
+                    </div>
+                  )}
+                </form>
+
+                {/* Token Guide */}
+                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs">
+                  <div className="font-bold text-amber-300 flex items-center space-x-1.5">
+                    <KeyRound className="w-3.5 h-3.5" />
+                    <span>{t.tokenStepTitle}</span>
+                  </div>
+                  <p className="text-slate-400">{t.tokenStep1}</p>
+                  <p className="text-slate-400">{t.tokenStep2}</p>
+                  <p className="text-slate-400">{t.tokenStep3}</p>
+                  <p className="text-slate-400">{t.tokenStep4}</p>
                 </div>
-              )}
-            </div>
-
-            {/* Multi-Platform Download Links */}
-            <div className="space-y-2">
-              <div className="text-xs font-bold text-slate-300">{t.platformsTitle}</div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <a
-                  href="https://github.com/owntemp/releases/latest/app-v1.2.0-android.apk"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-emerald-500/50 flex flex-col items-center text-center space-y-1.5 group transition"
-                >
-                  <Smartphone className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition" />
-                  <span className="text-xs font-semibold text-slate-200">Android APK</span>
-                  <span className="text-[10px] text-slate-500 font-mono">v1.2.0</span>
-                </a>
-
-                <a
-                  href="https://github.com/owntemp/releases/latest/Owntemp-v1.2.0-windows-x64.exe"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-blue-500/50 flex flex-col items-center text-center space-y-1.5 group transition"
-                >
-                  <Laptop className="w-5 h-5 text-blue-400 group-hover:scale-110 transition" />
-                  <span className="text-xs font-semibold text-slate-200">Windows PC</span>
-                  <span className="text-[10px] text-slate-500 font-mono">x64 .exe</span>
-                </a>
-
-                <a
-                  href="https://github.com/owntemp/releases/latest/Owntemp-v1.2.0-mac-universal.dmg"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-purple-500/50 flex flex-col items-center text-center space-y-1.5 group transition"
-                >
-                  <Apple className="w-5 h-5 text-purple-400 group-hover:scale-110 transition" />
-                  <span className="text-xs font-semibold text-slate-200">macOS</span>
-                  <span className="text-[10px] text-slate-500 font-mono">Intel & M-Chip</span>
-                </a>
               </div>
-            </div>
+            )}
 
-            {/* Inbound Webhook URL */}
-            <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1.5">
-              <span className="text-xs font-semibold text-slate-400">{t.webhookUrlTitle}</span>
-              <div className="font-mono text-xs text-indigo-300 bg-slate-900 px-3 py-2 rounded-lg truncate border border-slate-800 select-all">
-                https://your-domain.vercel.app/api/inbound/webhook
+            {/* TAB 2: DOMAINS & BUSINESS PROFILE */}
+            {settingsTab === 'domains' && (
+              <div className="space-y-4">
+                {/* Business Workspace Profile Form */}
+                <form onSubmit={handleSaveBusinessProfile} className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                  <div className="font-bold text-xs text-slate-200 flex items-center space-x-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <span>{t.businessSetupTitle}</span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-slate-300 block">{t.businessNameLabel}</label>
+                    <input
+                      type="text"
+                      value={businessNameInput}
+                      onChange={(e) => setBusinessNameInput(e.target.value)}
+                      placeholder="যেমন: My Brand Workspace"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-slate-300 block">{t.businessTaglineLabel}</label>
+                    <input
+                      type="text"
+                      value={businessTaglineInput}
+                      onChange={(e) => setBusinessTaglineInput(e.target.value)}
+                      placeholder="যেমন: Disposable Temp Mail"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition"
+                  >
+                    {t.saveBusiness}
+                  </button>
+                </form>
+
+                {/* Add Custom Domain Form */}
+                <form onSubmit={handleAddDomain} className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                  <span className="text-xs font-bold text-slate-200 block">{t.customDomainTitle}</span>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newDomainInput}
+                      onChange={(e) => setNewDomainInput(e.target.value)}
+                      placeholder={t.domainPlaceholder}
+                      className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 outline-none focus:border-indigo-500"
+                    />
+                    <button
+                      type="submit"
+                      className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition"
+                    >
+                      {t.addDomainBtn}
+                    </button>
+                  </div>
+                </form>
+
+                {/* Active Domains List */}
+                <div className="space-y-2">
+                  <span className="text-xs font-bold text-slate-300 block">সক্রিয় ডোমেইনসমূহ (Active Domains):</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {domains.map((dom) => (
+                      <div
+                        key={dom.id}
+                        onClick={() => setSelectedDomain(dom.domain)}
+                        className={`p-3 rounded-xl border flex items-center justify-between text-xs cursor-pointer transition ${
+                          selectedDomain === dom.domain
+                            ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300'
+                            : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
+                        }`}
+                      >
+                        <div className="truncate mr-2">
+                          <div className="font-mono font-semibold text-slate-200 truncate">@{dom.domain}</div>
+                          <div className="text-[10px] text-slate-500 truncate">
+                            {dom.businessName || (dom.isCustom ? 'Custom Business' : 'Default System')}
+                          </div>
+                        </div>
+                        {dom.isCustom && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteDomain(dom.id);
+                            }}
+                            className="text-slate-500 hover:text-rose-400 p-1 rounded transition"
+                            title="Delete domain"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="flex justify-end pt-2">
+            {/* TAB 3: GENERAL & DOWNLOADS */}
+            {settingsTab === 'general' && (
+              <div className="space-y-4">
+                {/* Version & Update check */}
+                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-bold text-slate-200">Owntemp Engine</div>
+                      <div className="text-xs text-indigo-400 font-mono">Current Version: v1.5.0 (Dual Automation Hub)</div>
+                    </div>
+                    <button
+                      onClick={handleCheckVersion}
+                      disabled={isCheckingUpdate}
+                      className="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold transition"
+                    >
+                      {isCheckingUpdate ? t.checkingUpdate : t.checkUpdate}
+                    </button>
+                  </div>
+                  {updateStatus && (
+                    <div className="text-xs text-emerald-400 font-medium pt-1 border-t border-slate-900">
+                      {updateStatus}
+                    </div>
+                  )}
+                </div>
+
+                {/* Multi-Platform Download Links */}
+                <div className="space-y-2">
+                  <div className="text-xs font-bold text-slate-300">{t.platformsTitle}</div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <a
+                      href="https://github.com/sajjadhossan/owntempmail/releases/latest"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-emerald-500/50 flex flex-col items-center text-center space-y-1.5 group transition"
+                    >
+                      <Smartphone className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition" />
+                      <span className="text-xs font-semibold text-slate-200">Android APK</span>
+                      <span className="text-[10px] text-slate-500 font-mono">v1.5.0</span>
+                    </a>
+
+                    <a
+                      href="https://github.com/sajjadhossan/owntempmail/releases/latest"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-blue-500/50 flex flex-col items-center text-center space-y-1.5 group transition"
+                    >
+                      <Laptop className="w-5 h-5 text-blue-400 group-hover:scale-110 transition" />
+                      <span className="text-xs font-semibold text-slate-200">Windows PC</span>
+                      <span className="text-[10px] text-slate-500 font-mono">x64 .exe</span>
+                    </a>
+
+                    <a
+                      href="https://github.com/sajjadhossan/owntempmail/releases/latest"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-purple-500/50 flex flex-col items-center text-center space-y-1.5 group transition"
+                    >
+                      <Apple className="w-5 h-5 text-purple-400 group-hover:scale-110 transition" />
+                      <span className="text-xs font-semibold text-slate-200">macOS</span>
+                      <span className="text-[10px] text-slate-500 font-mono">Intel & M-Chip</span>
+                    </a>
+                  </div>
+                </div>
+
+                {/* Actions: Sound & Export */}
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setSoundEnabled(!soundEnabled)}
+                    className="flex-1 py-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-xs text-slate-300 font-medium flex items-center justify-center space-x-2 transition"
+                  >
+                    {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
+                    <span>{soundEnabled ? t.soundOn : t.soundOff}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleExportEmails}
+                    disabled={emails.length === 0}
+                    className="flex-1 py-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-xs text-slate-300 font-medium flex items-center justify-center space-x-2 transition disabled:opacity-50"
+                  >
+                    <Download className="w-4 h-4 text-indigo-400" />
+                    <span>{lang === 'bn' ? 'সব ইমেইল ব্যাকআপ (JSON)' : 'Export All (JSON)'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Modal Footer */}
+            <div className="flex justify-end pt-2 border-t border-slate-800">
               <button
                 onClick={() => setShowSettingsModal(false)}
                 className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition"
