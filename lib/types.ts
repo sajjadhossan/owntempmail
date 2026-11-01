@@ -53,6 +53,50 @@ export interface BusinessProfile {
   updatedAt: string;
 }
 
+export interface TelegramConfig {
+  enabled: boolean;
+  botToken: string;
+  chatId: string;
+  notifyOnOtpOnly: boolean;
+  updatedAt?: string;
+}
+
+export type DeploymentSlot = 'blue' | 'green';
+
+export interface DeploymentEnvironment {
+  slot: DeploymentSlot;
+  version: string;
+  url: string;
+  status: 'healthy' | 'degraded' | 'offline';
+  trafficWeight: number; // 0 to 100%
+  deployedAt: string;
+  healthMetrics: {
+    latencyMs: number;
+    uptimePercent: number;
+    dbConnected: boolean;
+    otpEngineReady: boolean;
+  };
+}
+
+export interface DeploymentSwitchLog {
+  id: string;
+  fromSlot: DeploymentSlot;
+  toSlot: DeploymentSlot;
+  switchedAt: string;
+  switchedBy: string;
+  reason: string;
+}
+
+export interface BlueGreenConfig {
+  activeSlot: DeploymentSlot;
+  autoRollbackOnError: boolean;
+  canaryPercent: number;
+  blue: DeploymentEnvironment;
+  green: DeploymentEnvironment;
+  switchHistory: DeploymentSwitchLog[];
+  updatedAt: string;
+}
+
 export interface ApiResponse<T = any> {
   success: boolean;
   message: string;

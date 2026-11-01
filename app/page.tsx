@@ -23,6 +23,9 @@ import {
   Download,
   Volume2,
   VolumeX,
+  Volume1,
+  Mic,
+  MicOff,
   Search,
   Filter,
   Bookmark,
@@ -31,10 +34,33 @@ import {
   Smartphone,
   Laptop,
   Apple,
+  MessageSquare,
+  Radio,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  ArrowDown,
+  GitFork,
+  ArrowLeftRight,
+  Activity,
+  Cpu,
 } from 'lucide-react';
-import { EmailRecord, InboxMetadata, DomainItem, BusinessProfile } from '@/lib/types';
+import {
+  EmailRecord,
+  InboxMetadata,
+  DomainItem,
+  BusinessProfile,
+  TelegramConfig,
+  BlueGreenConfig,
+  DeploymentSlot,
+} from '@/lib/types';
 import { translations, Language } from '@/lib/translations';
 import { generateQrSvgUri } from '@/lib/qr';
+import { APP_VERSION, APP_EDITION } from '@/lib/constants';
+
+// In-Memory Browser Cache for instant 0ms domain navigation
+const domainClientCache = new Map<string, any>();
 
 export default function OwntempHome() {
   const [lang, setLang] = useState<Language>('bn');
@@ -71,8 +97,9 @@ export default function OwntempHome() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMode, setFilterMode] = useState<'all' | 'otp'>('all');
 
-  // Sound settings
+  // Sound & Voice settings
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
 
   // Auto-refresh timer
   const [countdown, setCountdown] = useState(10);
@@ -84,6 +111,37 @@ export default function OwntempHome() {
   const [showSimModal, setShowSimModal] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showDirectoryModal, setShowDirectoryModal] = useState(false);
+
+  // 50,000+ Mega Domain Directory State
+  const [directorySearch, setDirectorySearch] = useState('');
+  const [directoryCategory, setDirectoryCategory] = useState('all');
+  const [directoryPage, setDirectoryPage] = useState(1);
+  const [directoryLimit, setDirectoryLimit] = useState(150);
+  const [directoryResults, setDirectoryResults] = useState<Array<{ domain: string; category: string; length: number; isUltraShort: boolean }>>([]);
+  const [directoryPagination, setDirectoryPagination] = useState({
+    page: 1,
+    limit: 150,
+    totalPages: 1,
+    totalMatches: 51774,
+    startIndex: 1,
+    endIndex: 150,
+    hasMore: true,
+  });
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({
+    all: 51774,
+    ultrashort: 11192,
+    cctld: 5593,
+    tenminute: 610,
+    developer: 864,
+    privacy: 187,
+    mailinator: 39,
+    guerrilla: 14,
+    mailtm: 12,
+  });
+  const [totalDatabaseCount, setTotalDatabaseCount] = useState(51774);
+  const [isLoadingDirectory, setIsLoadingDirectory] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Form states
   const [lockPin, setLockPin] = useState('');
@@ -102,14 +160,34 @@ export default function OwntempHome() {
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<string | null>(null);
 
-  // Cloudflare & Vercel Integration Hub (v1.5.0)
-  const [settingsTab, setSettingsTab] = useState<'api' | 'domains' | 'general'>('api');
+  // Settings Tabs & Integrations
+  const [settingsTab, setSettingsTab] = useState<'api' | 'domains' | 'telegram' | 'deployment' | 'general'>('api');
+  const [telegramConfig, setTelegramConfig] = useState<TelegramConfig>({
+    enabled: false,
+    botToken: '',
+    chatId: '',
+    notifyOnOtpOnly: true,
+  });
+  const [isSavingTelegram, setIsSavingTelegram] = useState(false);
+  const [isTestingTelegram, setIsTestingTelegram] = useState(false);
+  const [telegramStatusMsg, setTelegramStatusMsg] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Blue-Green Deployment State
+  const [blueGreenConfig, setBlueGreenConfig] = useState<BlueGreenConfig | null>(null);
+  const [isSwitchingSlot, setIsSwitchingSlot] = useState(false);
+  const [isProbingHealth, setIsProbingHealth] = useState(false);
+  const [canarySlider, setCanarySlider] = useState(0);
+
+  // Cloudflare & Vercel Integration Hub (v1.6.1)
   const [integrationTab, setIntegrationTab] = useState<'auto' | 'manual'>('auto');
-  const [vercelLiveUrl, setVercelLiveUrl] = useState('https://my-owntemp.vercel.app');
+  const [vercelLiveUrl, setVercelLiveUrl] = useState('https://owntempmail.vercel.app');
   const [cfApiToken, setCfApiToken] = useState('');
   const [isSettingUpCf, setIsSettingUpCf] = useState(false);
   const [cfSetupResult, setCfSetupResult] = useState<string | null>(null);
   const [cfSetupError, setCfSetupError] = useState<string | null>(null);
+  const [cfAvailableZones, setCfAvailableZones] = useState<Array<{ id: string; name: string; status: string }>>([]);
+  const [isFetchingCfZones, setIsFetchingCfZones] = useState(false);
+  const [cfZonesMsg, setCfZonesMsg] = useState<string | null>(null);
 
   // Play audio chime when new email arrives
   const playChime = useCallback(() => {
@@ -131,6 +209,175 @@ export default function OwntempHome() {
       // Audio fallback
     }
   }, [soundEnabled]);
+
+  // Voice OTP Announcer via Web Speech API
+  const announceOtp = useCallback((otp: string, language: Language = 'bn') => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const spacedDigits = otp.split('').join(' ');
+      const message = language === 'bn'
+        ? `আপনার ওটিপি কোড হলো: ${spacedDigits}`
+        : `Your verification code is: ${spacedDigits}`;
+      const utterance = new SpeechSynthesisUtterance(message);
+      utterance.lang = language === 'bn' ? 'bn-BD' : 'en-US';
+      utterance.rate = 0.9;
+      utterance.pitch = 1.0;
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.warn('Speech synthesis unavailable', e);
+    }
+  }, []);
+
+  // Fetch Telegram Config
+  const fetchTelegramConfig = useCallback(async () => {
+    try {
+      const res = await fetch('/api/telegram');
+      const data = await res.json();
+      if (data.success && data.data) {
+        setTelegramConfig(data.data);
+      }
+    } catch (e) {
+      console.error('Failed to load telegram config', e);
+    }
+  }, []);
+
+  // Save Telegram Config
+  const handleSaveTelegram = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingTelegram(true);
+    setTelegramStatusMsg(null);
+    try {
+      const res = await fetch('/api/telegram', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(telegramConfig),
+      });
+      const data = await res.json();
+      setTelegramStatusMsg({ success: data.success, message: data.message });
+      if (data.success && data.data) {
+        setTelegramConfig(data.data);
+      }
+    } catch (e: any) {
+      setTelegramStatusMsg({ success: false, message: e.message || 'Error saving settings' });
+    } finally {
+      setIsSavingTelegram(false);
+    }
+  };
+
+  // Test Telegram Connection
+  const handleTestTelegram = async () => {
+    setIsTestingTelegram(true);
+    setTelegramStatusMsg(null);
+    try {
+      const res = await fetch('/api/telegram', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'test',
+          botToken: telegramConfig.botToken,
+          chatId: telegramConfig.chatId,
+        }),
+      });
+      const data = await res.json();
+      setTelegramStatusMsg({ success: data.success, message: data.message });
+    } catch (e: any) {
+      setTelegramStatusMsg({ success: false, message: e.message || 'Test failed' });
+    } finally {
+      setIsTestingTelegram(false);
+    }
+  };
+
+  // Fetch Blue-Green Deployment Config
+  const fetchBlueGreenConfig = useCallback(async () => {
+    try {
+      const res = await fetch('/api/deployment');
+      const data = await res.json();
+      if (data.success && data.data) {
+        setBlueGreenConfig(data.data);
+        setCanarySlider(data.data.canaryPercent || 0);
+      }
+    } catch (e) {
+      console.error('Failed to load deployment config', e);
+    }
+  }, []);
+
+  // Switch Deployment Slot (Cutover or Rollback)
+  const handleSwitchDeploymentSlot = async (targetSlot: DeploymentSlot, reason?: string) => {
+    setIsSwitchingSlot(true);
+    setActionError(null);
+    try {
+      const res = await fetch('/api/deployment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'switch',
+          targetSlot,
+          reason: reason || (targetSlot === 'blue' ? 'Rollback to Blue slot' : 'Zero-downtime cutover to Green slot'),
+          switchedBy: 'Lead DevOps Architect',
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setBlueGreenConfig(data.data);
+        setActionSuccess(
+          lang === 'bn'
+            ? `ট্রাফিক সফলভাবে ${targetSlot.toUpperCase()} স্লটে স্থানান্তরিত হয়েছে! (জিরো ডাউনটাইম)`
+            : `Traffic cutover to ${targetSlot.toUpperCase()} slot succeeded with 0 downtime!`
+        );
+        setTimeout(() => setActionSuccess(null), 3500);
+      } else {
+        setActionError(data.message || 'Cutover failed');
+      }
+    } catch (e: any) {
+      setActionError(e.message || 'Error executing deployment cutover');
+    } finally {
+      setIsSwitchingSlot(false);
+    }
+  };
+
+  // Canary Traffic Split Change
+  const handleApplyCanarySplit = async (percent: number) => {
+    try {
+      const res = await fetch('/api/deployment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'canary',
+          canaryPercent: percent,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setBlueGreenConfig(data.data);
+        setCanarySlider(percent);
+      }
+    } catch (e) {
+      console.error('Failed to update canary traffic', e);
+    }
+  };
+
+  // Probe Deployment Health
+  const handleProbeHealth = async () => {
+    setIsProbingHealth(true);
+    try {
+      const res = await fetch('/api/deployment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'healthCheck' }),
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setBlueGreenConfig(data.data);
+        setActionSuccess(lang === 'bn' ? 'উভয় স্লটের হেলথ চেক সম্পন্ন: ১০০% সুস্থ!' : 'Live health check probe: 100% Healthy!');
+        setTimeout(() => setActionSuccess(null), 2500);
+      }
+    } catch (e) {
+      console.error('Health probe failed', e);
+    } finally {
+      setIsProbingHealth(false);
+    }
+  };
 
   // Load business profile
   const fetchBusinessProfile = useCallback(async () => {
@@ -198,14 +445,26 @@ export default function OwntempHome() {
       const data = await res.json();
       if (data.success && data.data?.length > 0) {
         setDomains(data.data);
-        if (!selectedDomain) {
-          setSelectedDomain(data.data[0].domain);
+        const firstDomain = data.data[0].domain;
+        if (!selectedDomain || selectedDomain === 'owntemp.live') {
+          setSelectedDomain(firstDomain);
+          setActiveEmail((prev) => {
+            if (!prev || prev.endsWith('@owntemp.live')) {
+              const prefix = prev ? prev.split('@')[0] : (usernamePrefix || 'user1000');
+              const updated = `${prefix}@${firstDomain}`;
+              try {
+                localStorage.setItem('owntemp_active_email', updated);
+              } catch (e) {}
+              return updated;
+            }
+            return prev;
+          });
         }
       }
     } catch (err) {
       console.error('Failed to load domains', err);
     }
-  }, [selectedDomain]);
+  }, [selectedDomain, usernamePrefix]);
 
   // Load locked inboxes list
   const fetchLockedInboxes = useCallback(async () => {
@@ -220,6 +479,114 @@ export default function OwntempHome() {
     }
   }, []);
 
+  // Search 50,000+ Mega Domain Directory with Browser Cache & CDN support
+  const fetchDirectoryDomains = useCallback(
+    async (
+      q: string = '',
+      cat: string = 'all',
+      page: number = 1,
+      limit: number = 150,
+      append: boolean = false
+    ) => {
+      const cacheKey = `dir_${q}_${cat}_${page}_${limit}`;
+
+      // Check client browser cache for instant 0ms rendering
+      if (!append && domainClientCache.has(cacheKey)) {
+        const cached = domainClientCache.get(cacheKey);
+        setDirectoryResults(cached.results || []);
+        if (cached.pagination) setDirectoryPagination(cached.pagination);
+        if (cached.categoryCounts) setCategoryCounts(cached.categoryCounts);
+        if (cached.pagination?.totalDatabase) setTotalDatabaseCount(cached.pagination.totalDatabase);
+        setIsLoadingDirectory(false);
+        return;
+      }
+
+      if (append) {
+        setIsLoadingMore(true);
+      } else {
+        setIsLoadingDirectory(true);
+      }
+
+      try {
+        const res = await fetch(
+          `/api/domains/search?q=${encodeURIComponent(q)}&category=${encodeURIComponent(cat)}&page=${page}&limit=${limit}`
+        );
+        const data = await res.json();
+        if (data.success && data.data) {
+          if (append) {
+            setDirectoryResults((prev) => [...prev, ...(data.data.results || [])]);
+          } else {
+            setDirectoryResults(data.data.results || []);
+            // Save to browser cache
+            domainClientCache.set(cacheKey, data.data);
+          }
+          if (data.data.pagination) setDirectoryPagination(data.data.pagination);
+          if (data.data.categoryCounts) setCategoryCounts(data.data.categoryCounts);
+          if (data.data.pagination?.totalDatabase) setTotalDatabaseCount(data.data.pagination.totalDatabase);
+        }
+      } catch (e) {
+        console.error('Failed to search directory domains', e);
+      } finally {
+        setIsLoadingDirectory(false);
+        setIsLoadingMore(false);
+      }
+    },
+    []
+  );
+
+  // Clear Browser Cache Handler
+  const handleClearBrowserCache = useCallback(() => {
+    domainClientCache.clear();
+    setActionSuccess(lang === 'bn' ? 'ব্রাউজার ক্যাশ সফলভাবে খালি করা হয়েছে!' : 'Browser cache cleared successfully!');
+    setTimeout(() => setActionSuccess(null), 2500);
+    fetchDirectoryDomains(directorySearch, directoryCategory, directoryPage, directoryLimit, false);
+  }, [lang, directorySearch, directoryCategory, directoryPage, directoryLimit, fetchDirectoryDomains]);
+
+  // Real-time search effect when directory modal is open
+  useEffect(() => {
+    if (!showDirectoryModal) return;
+    const timer = setTimeout(() => {
+      setDirectoryPage(1);
+      fetchDirectoryDomains(directorySearch, directoryCategory, 1, directoryLimit, false);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [showDirectoryModal, directorySearch, directoryCategory, directoryLimit, fetchDirectoryDomains]);
+
+  // Directory Pagination Handlers
+  const handleNextDirectoryPage = () => {
+    if (directoryPage < directoryPagination.totalPages) {
+      const nextPage = directoryPage + 1;
+      setDirectoryPage(nextPage);
+      fetchDirectoryDomains(directorySearch, directoryCategory, nextPage, directoryLimit, false);
+    }
+  };
+
+  const handlePrevDirectoryPage = () => {
+    if (directoryPage > 1) {
+      const prevPage = directoryPage - 1;
+      setDirectoryPage(prevPage);
+      fetchDirectoryDomains(directorySearch, directoryCategory, prevPage, directoryLimit, false);
+    }
+  };
+
+  const handleFirstDirectoryPage = () => {
+    setDirectoryPage(1);
+    fetchDirectoryDomains(directorySearch, directoryCategory, 1, directoryLimit, false);
+  };
+
+  const handleLastDirectoryPage = () => {
+    setDirectoryPage(directoryPagination.totalPages);
+    fetchDirectoryDomains(directorySearch, directoryCategory, directoryPagination.totalPages, directoryLimit, false);
+  };
+
+  const handleLoadMoreDomains = () => {
+    if (directoryPage < directoryPagination.totalPages) {
+      const nextPage = directoryPage + 1;
+      setDirectoryPage(nextPage);
+      fetchDirectoryDomains(directorySearch, directoryCategory, nextPage, directoryLimit, true);
+    }
+  };
+
   // Fetch emails for current inbox
   const fetchEmails = useCallback(
     async (targetAddress: string, silent = false) => {
@@ -233,6 +600,10 @@ export default function OwntempHome() {
           setEmails((prev) => {
             if (prev.length > 0 && newEmails.length > prev.length) {
               playChime();
+              const latest = newEmails[0];
+              if (voiceEnabled && latest && latest.otpCode) {
+                setTimeout(() => announceOtp(latest.otpCode!, lang), 300);
+              }
             }
             return newEmails;
           });
@@ -244,7 +615,7 @@ export default function OwntempHome() {
         if (!silent) setIsLoading(false);
       }
     },
-    [playChime]
+    [playChime, voiceEnabled, announceOtp, lang]
   );
 
   const isInitializedRef = useRef(false);
@@ -257,6 +628,8 @@ export default function OwntempHome() {
     fetchDomains();
     fetchLockedInboxes();
     fetchBusinessProfile();
+    fetchTelegramConfig();
+    fetchBlueGreenConfig();
 
     let savedEmail = '';
     try {
@@ -297,6 +670,47 @@ export default function OwntempHome() {
     return () => clearInterval(timer);
   }, [activeEmail, fetchEmails]);
 
+  // Fetch available domains from Cloudflare account using API Token
+  const handleFetchCloudflareZones = async () => {
+    if (!cfApiToken.trim()) {
+      setActionError(lang === 'bn' ? 'আগে আপনার Cloudflare API টোকেন প্রদান করুন।' : 'Please enter your Cloudflare API Token first.');
+      return;
+    }
+    setIsFetchingCfZones(true);
+    setCfZonesMsg(null);
+    setCfSetupError(null);
+    try {
+      const res = await fetch('/api/cloudflare/zones', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiToken: cfApiToken.trim() }),
+      });
+      const data = await res.json();
+      if (data.success && data.data?.zones) {
+        setCfAvailableZones(data.data.zones);
+        if (data.data.zones.length > 0) {
+          setCfZonesMsg(
+            lang === 'bn'
+              ? `✅ আপনার ক্লাউডফ্লেয়ার অ্যাকাউন্টে ${data.data.zones.length}টি ডোমেইন পাওয়া গেছে! নিচের তালিকা থেকে নির্বাচন করুন:`
+              : `✅ Found ${data.data.zones.length} domain(s) in your Cloudflare account! Select one below:`
+          );
+        } else {
+          setCfZonesMsg(
+            lang === 'bn'
+              ? '⚠️ এই Cloudflare অ্যাকাউন্টে কোনো ডোমেইন পাওয়া যায়নি। অনুগ্রহ করে dash.cloudflare.com এ গিয়ে আগে ডোমেইন যোগ করুন।'
+              : '⚠️ No domains found in this Cloudflare account. Please add a domain to dash.cloudflare.com first.'
+          );
+        }
+      } else {
+        setCfSetupError(data.message || 'Failed to fetch domains from Cloudflare.');
+      }
+    } catch (e: any) {
+      setCfSetupError(e.message || 'Error communicating with Cloudflare API');
+    } finally {
+      setIsFetchingCfZones(false);
+    }
+  };
+
   // Auto Setup Cloudflare via API Token
   const handleAutoSetupCloudflare = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -304,6 +718,23 @@ export default function OwntempHome() {
       setActionError(lang === 'bn' ? 'দয়া করে ক্লাউডফ্লেয়ার API টোকেন প্রদান করুন।' : 'Please enter your Cloudflare API Token.');
       return;
     }
+
+    const cleanDomain = selectedDomain
+      .trim()
+      .toLowerCase()
+      .replace(/^https?:\/\//, '')
+      .replace(/\/+.*$/, '')
+      .replace(/^@+/, '');
+
+    if (cleanDomain.includes('vercel.app')) {
+      setCfSetupError(
+        lang === 'bn'
+          ? '❌ ভুল ইনপুট: "vercel.app" হলো আপনার ওয়েবসাইটের হোস্টিং লিংক, এটি ক্লাউডফ্লেয়ার ডোমেইন নয়। ক্লাউডফ্লেয়ারে যুক্ত নিজস্ব ডোমেইন (যেমন: yoursite.com) লিখুন।'
+          : '❌ Invalid input: "vercel.app" is your Vercel hosting URL, not a Cloudflare email domain. Please enter your custom domain registered in Cloudflare.'
+      );
+      return;
+    }
+
     setIsSettingUpCf(true);
     setCfSetupResult(null);
     setCfSetupError(null);
@@ -315,7 +746,7 @@ export default function OwntempHome() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           apiToken: cfApiToken.trim(),
-          domain: selectedDomain,
+          domain: cleanDomain,
           vercelUrl: vercelLiveUrl.trim(),
         }),
       });
@@ -324,6 +755,15 @@ export default function OwntempHome() {
       if (data.success) {
         setCfSetupResult(data.message);
         setCfSetupError(null);
+        // Also register in system domains list
+        try {
+          await fetch('/api/domains', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ domain: cleanDomain, businessName: businessProfile.businessName || 'Cloudflare Verified' }),
+          });
+          fetchDomains();
+        } catch (e) {}
         setActionSuccess(lang === 'bn' ? 'ক্লাউডফ্লেয়ার অটোমেটিক সেটআপ সফল হয়েছে!' : 'Cloudflare Auto-Setup Succeeded!');
       } else {
         setCfSetupError(data.message || 'Cloudflare setup failed.');
@@ -626,11 +1066,16 @@ export default function OwntempHome() {
     });
   }, [emails, filterMode, searchQuery]);
 
+  // Latest received OTP email for Floating Quick-OTP Action Banner
+  const latestOtpEmail = useMemo(() => {
+    return emails.find((e) => !!e.otpCode) || null;
+  }, [emails]);
+
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between">
+    <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between pb-16 lg:pb-0">
       {/* Top Header */}
       <header className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
               <Mail className="w-5 h-5 text-white" />
@@ -640,9 +1085,27 @@ export default function OwntempHome() {
                 <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-indigo-300 bg-clip-text text-transparent">
                   {t.appTitle}
                 </span>
-                <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                  v1.5.0
+                <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-mono shadow-sm flex items-center space-x-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span>{APP_VERSION}</span>
                 </span>
+                {blueGreenConfig && (
+                  <button
+                    onClick={() => {
+                      setSettingsTab('deployment');
+                      setShowSettingsModal(true);
+                    }}
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-bold font-mono border transition flex items-center space-x-1 cursor-pointer ${
+                      blueGreenConfig.activeSlot === 'blue'
+                        ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 hover:bg-blue-500/30'
+                        : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                    }`}
+                    title="Blue-Green Deployment Active Slot (Click to manage)"
+                  >
+                    <span>{blueGreenConfig.activeSlot === 'blue' ? '🔵 Blue' : '🟢 Green'}</span>
+                    <span className="text-[9px] text-slate-400">({blueGreenConfig.activeSlot === 'blue' ? blueGreenConfig.blue.trafficWeight : blueGreenConfig.green.trafficWeight}%)</span>
+                  </button>
+                )}
                 {businessProfile?.businessName && businessProfile.businessName !== 'Owntemp Business' && (
                   <span className="hidden md:inline-flex text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
                     🏢 {businessProfile.businessName}
@@ -655,13 +1118,42 @@ export default function OwntempHome() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 sm:space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-2.5">
+            {/* Quick Test Simulator Button */}
+            <button
+              onClick={() => setShowSimModal(true)}
+              className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-gradient-to-r from-indigo-600/30 to-purple-600/30 hover:from-indigo-600/40 hover:to-purple-600/40 text-indigo-200 border border-indigo-500/40 transition shadow-sm"
+              title="Test OTP & Inbound Email Simulator"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
+              <span className="hidden sm:inline">{lang === 'bn' ? 'সিমুলেটর' : 'Simulator'}</span>
+            </button>
+
+            {/* Voice OTP Announcer Toggle */}
+            <button
+              onClick={() => {
+                const nextState = !voiceEnabled;
+                setVoiceEnabled(nextState);
+                if (nextState) {
+                  announceOtp('849201', lang);
+                }
+              }}
+              className={`p-2 rounded-xl border text-xs transition ${
+                voiceEnabled
+                  ? 'bg-purple-600/20 text-purple-300 border-purple-500/40 shadow-sm'
+                  : 'bg-slate-800 text-slate-500 border-slate-700'
+              }`}
+              title={voiceEnabled ? t.voiceAnnouncerOn : t.voiceAnnouncerOff}
+            >
+              {voiceEnabled ? <Mic className="w-4 h-4 text-purple-400" /> : <MicOff className="w-4 h-4" />}
+            </button>
+
             {/* Sound Toggle */}
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
-              className={`p-2 rounded-lg border text-xs transition ${
+              className={`p-2 rounded-xl border text-xs transition ${
                 soundEnabled
-                  ? 'bg-indigo-600/20 text-indigo-300 border-indigo-500/30'
+                  ? 'bg-indigo-600/20 text-indigo-300 border-indigo-500/40 shadow-sm'
                   : 'bg-slate-800 text-slate-500 border-slate-700'
               }`}
               title={soundEnabled ? t.soundOn : t.soundOff}
@@ -669,56 +1161,23 @@ export default function OwntempHome() {
               {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             </button>
 
-            {/* Cloudflare API Button */}
+            {/* Unified Settings Hub Trigger */}
             <button
               onClick={() => {
                 setSettingsTab('api');
                 setShowSettingsModal(true);
               }}
-              className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-amber-500/20 to-indigo-500/20 hover:from-amber-500/30 hover:to-indigo-500/30 text-amber-300 border border-amber-500/40 transition shadow-sm"
-              title="Cloudflare API Setup"
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition shadow-sm text-xs font-semibold"
+              title="Settings & Cloudflare API, Domains, Telegram, Deployment"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>{lang === 'bn' ? 'ক্লাউডফ্লেয়ার API' : 'Cloudflare API'}</span>
-            </button>
-
-            {/* Custom Domain Button */}
-            <button
-              onClick={() => {
-                setSettingsTab('domains');
-                setShowSettingsModal(true);
-              }}
-              className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 transition"
-            >
-              <Globe className="w-3.5 h-3.5 text-indigo-400" />
-              <span className="hidden sm:inline">{lang === 'bn' ? 'ডোমেইন' : 'Domains'}</span>
-            </button>
-
-            {/* Simulator Trigger */}
-            <button
-              onClick={() => setShowSimModal(true)}
-              className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 transition shadow-sm"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-indigo-300" />
-              <span>{lang === 'bn' ? 'টেস্ট সিমুলেটর' : 'Simulator'}</span>
-            </button>
-
-            {/* Settings Trigger */}
-            <button
-              onClick={() => {
-                setSettingsTab('api');
-                setShowSettingsModal(true);
-              }}
-              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition"
-              title="Settings & Cloudflare API"
-            >
-              <Settings className="w-4 h-4" />
+              <Settings className="w-4 h-4 text-slate-400" />
+              <span className="hidden md:inline">{lang === 'bn' ? 'সেটিংস' : 'Settings'}</span>
             </button>
 
             {/* Language Switcher */}
             <button
               onClick={() => setLang(lang === 'bn' ? 'en' : 'bn')}
-              className="px-2.5 py-1 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-indigo-300 transition"
+              className="px-2.5 py-1.5 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-indigo-300 transition"
               title="Toggle Language"
             >
               {lang === 'bn' ? 'English' : 'বাংলা'}
@@ -728,7 +1187,7 @@ export default function OwntempHome() {
       </header>
 
       {/* Main Container */}
-      <div className="max-w-6xl mx-auto px-4 py-8 flex-1 w-full space-y-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-6 flex-1 w-full space-y-6">
         {/* Alerts */}
         {actionSuccess && (
           <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm flex items-center space-x-3 transition">
@@ -743,7 +1202,11 @@ export default function OwntempHome() {
           </div>
         )}
 
-        {/* Hero Section: Active Address & Control Panel */}
+        {/* Master-Detail Dual-Pane Layout (Desktop: 2 columns, Mobile: 1 column) */}
+        <div className="lg:grid lg:grid-cols-12 lg:gap-6 items-start">
+          {/* Left Column: Address, Inboxes & Emails Feed (5 columns on desktop) */}
+          <div className="lg:col-span-5 space-y-5">
+            {/* Hero Section: Active Address & Control Panel */}
         <section className="relative overflow-hidden rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800/80 p-6 md:p-8 shadow-2xl">
           <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -858,7 +1321,25 @@ export default function OwntempHome() {
             </div>
 
             {/* Custom Alias & Domain Bar */}
-            <form onSubmit={handleApplyAddress} className="pt-3 border-t border-slate-800/60 flex flex-col sm:flex-row items-center gap-3">
+            <div className="pt-2 border-t border-slate-800/60 space-y-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-[11px]">
+                <span className="flex items-center space-x-1.5 text-indigo-300 font-semibold">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>{lang === 'bn' ? '৫০,০০০+ মেগা ডোমেইন পুল (ccTLD সহ) • কাস্টম নাম ও কোম্পানি ফিল্টার:' : '50,000+ Ultra-Mega Fleet (ccTLDs Included):'}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDirectoryModal(true);
+                    fetchDirectoryDomains('', directoryCategory, 1, directoryLimit, false);
+                  }}
+                  className="inline-flex items-center justify-center space-x-1.5 text-[11px] font-bold px-3 py-1 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-md shadow-indigo-600/30 transition transform active:scale-95 cursor-pointer"
+                >
+                  <Search className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
+                  <span>{lang === 'bn' ? '🌐 ৫০,০০০+ ডোমেইন ডিরেক্টরি ব্রাউজ করুন' : '🌐 Browse 50,000+ Directory'}</span>
+                </button>
+              </div>
+              <form onSubmit={handleApplyAddress} className="flex flex-col sm:flex-row items-center gap-3">
               <div className="w-full sm:w-auto flex-1 flex items-center bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 focus-within:border-indigo-500 transition">
                 <span className="text-slate-500 font-mono text-sm mr-1">@</span>
                 <input
@@ -906,6 +1387,18 @@ export default function OwntempHome() {
                 </button>
 
                 <button
+                  type="button"
+                  onClick={() => {
+                    setShowDirectoryModal(true);
+                    fetchDirectoryDomains('', directoryCategory, 1, directoryLimit, false);
+                  }}
+                  className="p-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 text-xs transition"
+                  title="Search 50,000+ Domains"
+                >
+                  <Search className="w-4 h-4 text-yellow-300" />
+                </button>
+
+                <button
                   type="submit"
                   className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white border border-slate-700 text-xs font-semibold transition whitespace-nowrap"
                 >
@@ -913,6 +1406,7 @@ export default function OwntempHome() {
                 </button>
               </div>
             </form>
+          </div>
           </div>
         </section>
 
@@ -952,6 +1446,44 @@ export default function OwntempHome() {
               })}
             </div>
           </section>
+        )}
+
+        {/* Floating Quick-OTP Action Banner */}
+        {latestOtpEmail && (
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-indigo-950/70 via-purple-950/50 to-indigo-950/70 border border-indigo-500/40 shadow-lg shadow-indigo-950/40 flex items-center justify-between gap-3 animate-fadeIn">
+            <div className="flex items-center space-x-3 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center shrink-0">
+                <KeyRound className="w-5 h-5 text-yellow-400 animate-pulse" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[11px] font-semibold text-indigo-300 flex items-center space-x-1.5 truncate">
+                  <span>{t.otpDetected}</span>
+                  <span className="text-slate-400 truncate">• {latestOtpEmail.senderName || latestOtpEmail.sender}</span>
+                </div>
+                <div className="font-mono text-xl font-black tracking-widest text-white">
+                  {latestOtpEmail.otpCode}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center space-x-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => announceOtp(latestOtpEmail.otpCode!, lang)}
+                className="p-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/40 text-purple-200 border border-purple-500/30 transition"
+                title={t.listenOtp}
+              >
+                <Volume2 className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCopyOtp(latestOtpEmail.otpCode!)}
+                className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center space-x-1.5 transition shadow-sm"
+              >
+                {copiedOtp === latestOtpEmail.otpCode ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedOtp === latestOtpEmail.otpCode ? t.copied : t.copyOtp}</span>
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Inbound Emails Feed */}
@@ -1094,7 +1626,11 @@ export default function OwntempHome() {
                 <div
                   key={email.id}
                   onClick={() => setSelectedEmail(email)}
-                  className="group relative rounded-xl border border-slate-800 hover:border-indigo-500/50 bg-slate-900/40 hover:bg-slate-900/90 p-4 md:p-5 transition cursor-pointer space-y-3"
+                  className={`group relative rounded-xl border p-4 md:p-4.5 transition cursor-pointer space-y-3 ${
+                    selectedEmail?.id === email.id
+                      ? 'border-indigo-500 bg-slate-900 shadow-md shadow-indigo-500/15 ring-1 ring-indigo-500/40'
+                      : 'border-slate-800/90 hover:border-indigo-500/40 bg-slate-900/40 hover:bg-slate-900/80'
+                  }`}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="flex items-center space-x-3">
@@ -1151,6 +1687,17 @@ export default function OwntempHome() {
                           </>
                         )}
                       </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          announceOtp(email.otpCode!, lang);
+                        }}
+                        className="p-1 rounded-md bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 transition ml-1"
+                        title={t.listenOtp}
+                      >
+                        <Volume2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   )}
 
@@ -1177,11 +1724,208 @@ export default function OwntempHome() {
             </div>
           )}
         </section>
+          </div>
+
+          {/* Right Column: Desktop Email Reading Pane (7 columns on desktop, hidden on mobile) */}
+          <div className="hidden lg:flex lg:col-span-7 flex-col rounded-2xl border border-slate-800/80 bg-slate-900/40 backdrop-blur-md overflow-hidden min-h-[640px] sticky top-20 max-h-[calc(100vh-6rem)] shadow-2xl">
+            {selectedEmail ? (
+              <div className="flex flex-col h-full">
+                {/* Pane Header */}
+                <div className="p-5 border-b border-slate-800 bg-slate-900/60 flex items-start justify-between">
+                  <div className="space-y-1 pr-4">
+                    <h3 className="font-bold text-lg text-slate-100">{selectedEmail.subject}</h3>
+                    <div className="text-xs text-slate-400 flex items-center space-x-2">
+                      <span><b>{t.from}:</b> {selectedEmail.senderName || selectedEmail.sender}</span>
+                      <span className="text-slate-600">•</span>
+                      <span className="font-mono text-slate-500">{selectedEmail.sender}</span>
+                    </div>
+                    <div className="text-[11px] text-slate-500 font-mono">
+                      <b>{t.received}:</b> {new Date(selectedEmail.receivedAt).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadEml(selectedEmail)}
+                      className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+                      title={t.exportEml}
+                    >
+                      <Download className="w-4 h-4 text-indigo-400" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedEmail(null)}
+                      className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition"
+                      title={t.close}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+
+                {/* OTP Banner inside pane */}
+                {selectedEmail.otpCode && (
+                  <div className="bg-indigo-950/60 border-b border-indigo-900/50 p-4 flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <KeyRound className="w-5 h-5 text-yellow-400 animate-pulse" />
+                      <div>
+                        <div className="text-xs font-medium text-indigo-300">{t.otpDetected}</div>
+                        <div className="font-mono text-2xl font-black tracking-widest text-white">
+                          {selectedEmail.otpCode}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => announceOtp(selectedEmail.otpCode!, lang)}
+                        className="px-3 py-2 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 font-semibold text-xs flex items-center space-x-1.5 transition"
+                        title={t.listenOtp}
+                      >
+                        <Volume2 className="w-4 h-4" />
+                        <span>{t.listenOtp}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyOtp(selectedEmail.otpCode!)}
+                        className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center space-x-1.5 transition shadow-sm"
+                      >
+                        {copiedOtp === selectedEmail.otpCode ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        <span>{copiedOtp === selectedEmail.otpCode ? t.copied : t.copyOtp}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Pane Content */}
+                <div className="p-5 overflow-y-auto flex-1 space-y-4">
+                  {selectedEmail.verificationLinks && selectedEmail.verificationLinks.length > 0 && (
+                    <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between gap-3">
+                      <span className="text-xs text-emerald-300 font-medium">
+                        {lang === 'bn' ? 'যাচাইকরণ লিংক সনাক্ত হয়েছে:' : 'Verification link detected:'}
+                      </span>
+                      <a
+                        href={selectedEmail.verificationLinks[0]}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center space-x-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-sm"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>{t.openLink}</span>
+                      </a>
+                    </div>
+                  )}
+
+                  {selectedEmail.htmlBody ? (
+                    <div
+                      className="prose prose-invert max-w-none text-sm bg-slate-950 p-4 rounded-xl border border-slate-800 overflow-x-auto"
+                      dangerouslySetInnerHTML={{ __html: selectedEmail.htmlBody }}
+                    />
+                  ) : (
+                    <pre className="text-xs font-mono text-slate-300 whitespace-pre-wrap bg-slate-950 p-4 rounded-xl border border-slate-800">
+                      {selectedEmail.textBody}
+                    </pre>
+                  )}
+
+                  {/* Attachments */}
+                  {selectedEmail.attachments && selectedEmail.attachments.length > 0 && (
+                    <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                      <div className="text-xs font-bold text-slate-300 flex items-center space-x-1.5">
+                        <Download className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>Attachments ({selectedEmail.attachments.length})</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {selectedEmail.attachments.map((att) => (
+                          <div
+                            key={att.id}
+                            className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs"
+                          >
+                            <div className="truncate mr-2">
+                              <div className="font-semibold text-slate-200 truncate">{att.filename}</div>
+                              <div className="text-[10px] text-slate-500 font-mono">
+                                {(att.sizeBytes / 1024).toFixed(1)} KB • {att.contentType}
+                              </div>
+                            </div>
+                            {att.downloadUrl ? (
+                              <a
+                                href={att.downloadUrl}
+                                download={att.filename}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="p-1.5 rounded bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600 hover:text-white transition"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                              </a>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Pane Footer */}
+                <div className="p-4 border-t border-slate-800 bg-slate-900/60 flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadEml(selectedEmail)}
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 border border-slate-700 flex items-center space-x-1.5 transition"
+                    >
+                      <Download className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>{t.exportEml}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadTxt(selectedEmail)}
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 border border-slate-700 flex items-center space-x-1.5 transition"
+                    >
+                      <Download className="w-3.5 h-3.5 text-slate-400" />
+                      <span>{t.exportTxt}</span>
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedEmail(null)}
+                    className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition"
+                  >
+                    {t.close}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-4">
+                <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                  <Mail className="w-8 h-8 opacity-60" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-bold text-base text-slate-300">
+                    {lang === 'bn' ? 'কোনো ইমেইল নির্বাচিত হয়নি' : 'No Email Selected'}
+                  </h4>
+                  <p className="text-xs text-slate-500 max-w-xs">
+                    {lang === 'bn' 
+                      ? 'বামপাশের তালিকা থেকে যেকোনো মেসেজ নির্বাচন করে পূর্ণাঙ্গ HTML/Text ভিউ, ওটিপি কোড ও এটাচমেন্ট এখানে সরাসরি প্রিভিউ করুন।'
+                      : 'Select an email from the left feed to preview full HTML, OTP codes, and attachments in real-time.'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleSimulateInbound(undefined, Math.floor(100000 + Math.random() * 900000).toString())}
+                  disabled={isSimulating}
+                  className="inline-flex items-center space-x-2 text-xs font-semibold px-4 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 transition cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+                  <span>{lang === 'bn' ? '⚡ টেস্ট ওটিপি পাঠিয়ে প্রিভিউ দেখুন' : '⚡ Send Test OTP to Preview'}</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Email Reader Modal */}
+      {/* Email Reader Modal (Mobile & Tablet: lg:hidden) */}
       {selectedEmail && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div className="lg:hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl">
             {/* Modal Header */}
             <div className="p-5 border-b border-slate-800 flex items-start justify-between">
@@ -1214,13 +1958,24 @@ export default function OwntempHome() {
                     </div>
                   </div>
                 </div>
-                <button
-                  onClick={() => handleCopyOtp(selectedEmail.otpCode!)}
-                  className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center space-x-1.5 transition"
-                >
-                  {copiedOtp === selectedEmail.otpCode ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  <span>{copiedOtp === selectedEmail.otpCode ? t.copied : t.copyOtp}</span>
-                </button>
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => announceOtp(selectedEmail.otpCode!, lang)}
+                    className="px-3 py-2 rounded-lg bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 font-semibold text-xs flex items-center space-x-1.5 transition"
+                    title={t.listenOtp}
+                  >
+                    <Volume2 className="w-4 h-4" />
+                    <span className="hidden sm:inline">{t.listenOtp}</span>
+                  </button>
+                  <button
+                    onClick={() => handleCopyOtp(selectedEmail.otpCode!)}
+                    className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center space-x-1.5 transition"
+                  >
+                    {copiedOtp === selectedEmail.otpCode ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    <span>{copiedOtp === selectedEmail.otpCode ? t.copied : t.copyOtp}</span>
+                  </button>
+                </div>
               </div>
             )}
 
@@ -1382,6 +2137,32 @@ export default function OwntempHome() {
 
               <button
                 type="button"
+                onClick={() => setSettingsTab('telegram')}
+                className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
+                  settingsTab === 'telegram'
+                    ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Send className="w-3.5 h-3.5 text-sky-400" />
+                <span className="truncate">{t.settingsTabTelegram}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSettingsTab('deployment')}
+                className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
+                  settingsTab === 'deployment'
+                    ? 'bg-gradient-to-r from-blue-600 to-emerald-600 text-white shadow-md shadow-blue-600/30'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <ArrowLeftRight className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="truncate">{t.settingsTabDeployment}</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setSettingsTab('general')}
                 className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
                   settingsTab === 'general'
@@ -1397,6 +2178,24 @@ export default function OwntempHome() {
             {/* TAB 1: CLOUDFLARE & API INTEGRATION */}
             {settingsTab === 'api' && (
               <div className="space-y-4">
+                {/* Domain vs Website Clarification Callout */}
+                <div className="p-3.5 rounded-xl bg-indigo-950/40 border border-indigo-500/30 text-xs space-y-1.5">
+                  <div className="font-bold text-indigo-300 flex items-center space-x-1.5">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span>{lang === 'bn' ? '💡 নির্দেশিকা: টার্গেট ডোমেইন বনাম Vercel URL' : '💡 Guide: Target Domain vs Vercel URL'}</span>
+                  </div>
+                  <p className="text-slate-300 text-[11px] leading-relaxed">
+                    {lang === 'bn' 
+                      ? '• টার্গেট ডোমেইন: আপনার Cloudflare অ্যাকাউন্টে যুক্ত থাকা নিজস্ব কাস্টম ডোমেইন (যেমন: yourdomain.com)। এখানে কখনো vercel.app লিখবেন না।' 
+                      : '• Target Domain: Your custom domain registered in Cloudflare (e.g. yourdomain.com). Never enter vercel.app here.'}
+                  </p>
+                  <p className="text-slate-300 text-[11px] leading-relaxed">
+                    {lang === 'bn' 
+                      ? '• Vercel লাইভ URL: এটি আপনার ওয়েবসাইটের ঠিকানা (যেমন: https://owntempmail.vercel.app), যেখান থেকে ইনবক্স ইমেইল রিসিভ করে।' 
+                      : '• Vercel Live URL: Your live website address (e.g. https://owntempmail.vercel.app), where inbound webhooks deliver emails.'}
+                  </p>
+                </div>
+
                 {/* Vercel Website URL Input */}
                 <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1.5">
                   <label className="text-xs font-semibold text-slate-300 block">{t.vercelUrlLabel}</label>
@@ -1439,7 +2238,7 @@ export default function OwntempHome() {
 
                   <div className="space-y-1">
                     <label className="text-xs font-semibold text-slate-300 block">
-                      {lang === 'bn' ? '১. টার্গেট ডোমেইন (Cloudflare-এ থাকা ডোমেইনের নাম):' : '1. Target Domain (as listed in Cloudflare):'}
+                      {lang === 'bn' ? '১. টার্গেট ডোমেইন (Cloudflare-এ থাকা আসল ডোমেইনের নাম):' : '1. Target Domain (as listed in Cloudflare):'}
                     </label>
                     <input
                       type="text"
@@ -1449,6 +2248,16 @@ export default function OwntempHome() {
                       className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-indigo-300 font-bold outline-none focus:border-indigo-500"
                       required
                     />
+                    {selectedDomain.toLowerCase().includes('vercel.app') && (
+                      <div className="text-[11px] text-rose-400 bg-rose-500/10 p-2 rounded-lg border border-rose-500/30 flex items-center space-x-1.5">
+                        <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span>
+                          {lang === 'bn' 
+                            ? 'সাবধান: vercel.app হলো আপনার ওয়েবসাইট লিঙ্ক, এটি ক্লাউডফ্লেয়ার ডোমেইন নয়। ক্লাউডফ্লেয়ারে থাকা আপনার নিজস্ব ডোমেইন নাম লিখুন।' 
+                            : 'Warning: vercel.app is your website URL, not a Cloudflare domain. Please enter your real Cloudflare custom domain.'}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-1">
@@ -1463,6 +2272,48 @@ export default function OwntempHome() {
                       className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 outline-none focus:border-indigo-500"
                       required
                     />
+
+                    {/* Button to Fetch Domains from Cloudflare */}
+                    <div className="pt-1.5 flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={handleFetchCloudflareZones}
+                        disabled={isFetchingCfZones || !cfApiToken.trim()}
+                        className="inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 transition disabled:opacity-50"
+                      >
+                        <Search className="w-3.5 h-3.5" />
+                        <span>
+                          {isFetchingCfZones 
+                            ? (lang === 'bn' ? 'ডোমেইন খোঁজা হচ্ছে...' : 'Fetching domains...') 
+                            : (lang === 'bn' ? '🔍 ক্লাউডফ্লেয়ারে থাকা আমার ডোমেইনগুলো খুঁজুন' : '🔍 Fetch My Domains from Cloudflare')}
+                        </span>
+                      </button>
+                    </div>
+
+                    {cfZonesMsg && (
+                      <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 space-y-1.5 mt-2">
+                        <p className="text-[11px] font-semibold text-slate-300">{cfZonesMsg}</p>
+                        {cfAvailableZones.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {cfAvailableZones.map((z) => (
+                              <button
+                                key={z.id}
+                                type="button"
+                                onClick={() => setSelectedDomain(z.name)}
+                                className={`px-2.5 py-1 rounded-md text-xs font-mono font-bold transition flex items-center space-x-1 ${
+                                  selectedDomain === z.name
+                                    ? 'bg-emerald-600 text-white shadow-sm'
+                                    : 'bg-slate-800 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/20'
+                                }`}
+                              >
+                                <span>@{z.name}</span>
+                                <span className="text-[9px] text-emerald-300 uppercase">({z.status})</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <button
@@ -1481,7 +2332,7 @@ export default function OwntempHome() {
                         <Check className="w-4 h-4" />
                         <span>{lang === 'bn' ? 'সেটআপ সফল হয়েছে!' : 'Setup Successful!'}</span>
                       </div>
-                      <p className="text-slate-300 text-[11px] leading-relaxed">{cfSetupResult}</p>
+                      <p className="text-slate-300 text-[11px] leading-relaxed whitespace-pre-line">{cfSetupResult}</p>
                     </div>
                   )}
 
@@ -1491,7 +2342,7 @@ export default function OwntempHome() {
                         <AlertCircle className="w-4 h-4" />
                         <span>{lang === 'bn' ? 'সেটআপ ব্যর্থ হয়েছে' : 'Setup Failed'}</span>
                       </div>
-                      <p className="text-slate-300 text-[11px] leading-relaxed">{cfSetupError}</p>
+                      <p className="text-slate-300 text-[11px] leading-relaxed whitespace-pre-line">{cfSetupError}</p>
                     </div>
                   )}
                 </form>
@@ -1611,7 +2462,291 @@ export default function OwntempHome() {
               </div>
             )}
 
-            {/* TAB 3: GENERAL & DOWNLOADS */}
+            {/* TAB 3: TELEGRAM REAL-TIME ALERTS */}
+            {settingsTab === 'telegram' && (
+              <div className="space-y-4">
+                <div className="p-3.5 rounded-xl bg-sky-950/40 border border-sky-500/30 text-xs space-y-1.5">
+                  <div className="font-bold text-sky-300 flex items-center space-x-1.5">
+                    <Send className="w-4 h-4 text-sky-400" />
+                    <span>{t.telegramTitle}</span>
+                  </div>
+                  <p className="text-slate-300 text-[11px] leading-relaxed">
+                    {t.telegramDesc}
+                  </p>
+                </div>
+
+                <form onSubmit={handleSaveTelegram} className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3.5">
+                  {/* Enable Switch */}
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <div>
+                      <div className="text-xs font-bold text-slate-200">
+                        {lang === 'bn' ? 'টেলিগ্রাম নোটিফিকেশন সক্রিয় করুন' : 'Enable Telegram Alerts'}
+                      </div>
+                      <div className="text-[10px] text-slate-400">
+                        {lang === 'bn' ? 'প্রতিটি নতুন ইমেইল বা ওটিপি আপনার টেলিগ্রামে পাঠাবে' : 'Stream incoming emails directly to Telegram'}
+                      </div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={telegramConfig.enabled}
+                        onChange={(e) => setTelegramConfig({ ...telegramConfig, enabled: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-500"></div>
+                    </label>
+                  </div>
+
+                  {/* Bot Token Input */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-slate-300 block">{t.telegramBotToken}</label>
+                    <input
+                      type="text"
+                      value={telegramConfig.botToken}
+                      onChange={(e) => setTelegramConfig({ ...telegramConfig, botToken: e.target.value })}
+                      placeholder="যেমন: 7123456789:AAHk... from @BotFather"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 outline-none focus:border-sky-500"
+                    />
+                  </div>
+
+                  {/* Chat ID Input */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-slate-300 block">{t.telegramChatId}</label>
+                    <input
+                      type="text"
+                      value={telegramConfig.chatId}
+                      onChange={(e) => setTelegramConfig({ ...telegramConfig, chatId: e.target.value })}
+                      placeholder="যেমন: 123456789 বা @yourchannel"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 outline-none focus:border-sky-500"
+                    />
+                  </div>
+
+                  {/* OTP Only Checkbox */}
+                  <div className="flex items-center space-x-2 pt-1">
+                    <input
+                      type="checkbox"
+                      id="otpOnlyCheck"
+                      checked={telegramConfig.notifyOnOtpOnly}
+                      onChange={(e) => setTelegramConfig({ ...telegramConfig, notifyOnOtpOnly: e.target.checked })}
+                      className="rounded bg-slate-900 border-slate-800 text-sky-500 focus:ring-0"
+                    />
+                    <label htmlFor="otpOnlyCheck" className="text-xs text-slate-300 cursor-pointer">
+                      {t.telegramOtpOnly}
+                    </label>
+                  </div>
+
+                  {/* Status Report */}
+                  {telegramStatusMsg && (
+                    <div
+                      className={`p-3 rounded-lg text-xs flex items-center space-x-2 ${
+                        telegramStatusMsg.success
+                          ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300'
+                          : 'bg-rose-500/10 border border-rose-500/30 text-rose-300'
+                      }`}
+                    >
+                      {telegramStatusMsg.success ? <Check className="w-4 h-4 text-emerald-400" /> : <AlertCircle className="w-4 h-4 text-rose-400" />}
+                      <span>{telegramStatusMsg.message}</span>
+                    </div>
+                  )}
+
+                  {/* Buttons */}
+                  <div className="flex items-center gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={handleTestTelegram}
+                      disabled={isTestingTelegram || !telegramConfig.botToken || !telegramConfig.chatId}
+                      className="flex-1 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 text-xs font-semibold transition disabled:opacity-50"
+                    >
+                      {isTestingTelegram ? (lang === 'bn' ? 'টেস্ট হচ্ছে...' : 'Testing...') : t.testTelegram}
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSavingTelegram}
+                      className="flex-1 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-md shadow-sky-600/30 transition disabled:opacity-50"
+                    >
+                      {isSavingTelegram ? (lang === 'bn' ? 'সংরক্ষণ হচ্ছে...' : 'Saving...') : t.saveTelegram}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* TAB: BLUE-GREEN ZERO-DOWNTIME DEPLOYMENT */}
+            {settingsTab === 'deployment' && (
+              <div className="space-y-4">
+                {/* Header Callout */}
+                <div className="p-3.5 rounded-xl bg-gradient-to-r from-blue-950/40 via-slate-900 to-emerald-950/40 border border-blue-500/30 text-xs space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="font-bold text-slate-100 flex items-center space-x-1.5">
+                      <ArrowLeftRight className="w-4 h-4 text-emerald-400" />
+                      <span>{t.deploymentTitle}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleProbeHealth}
+                      disabled={isProbingHealth}
+                      className="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-[11px] font-semibold text-slate-200 border border-slate-700 flex items-center space-x-1 transition"
+                    >
+                      <Activity className={`w-3.5 h-3.5 text-emerald-400 ${isProbingHealth ? 'animate-spin' : ''}`} />
+                      <span>{isProbingHealth ? 'চেক হচ্ছে...' : 'লাইভ হেলথ চেক'}</span>
+                    </button>
+                  </div>
+                  <p className="text-slate-300 text-[11px] leading-relaxed">
+                    {t.deploymentDesc}
+                  </p>
+                </div>
+
+                {/* Slots Grid: Blue vs Green */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Blue Slot Card */}
+                  <div
+                    className={`p-4 rounded-xl border space-y-3 transition ${
+                      blueGreenConfig?.activeSlot === 'blue'
+                        ? 'bg-blue-950/20 border-blue-500/50 shadow-lg shadow-blue-500/10'
+                        : 'bg-slate-950 border-slate-800 opacity-80'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></span>
+                        <span className="font-bold text-sm text-blue-300">🔵 Blue Slot</span>
+                      </div>
+                      <span
+                        className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
+                          blueGreenConfig?.activeSlot === 'blue'
+                            ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
+                            : 'bg-slate-800 text-slate-400'
+                        }`}
+                      >
+                        {blueGreenConfig?.blue.trafficWeight || 0}% Traffic
+                      </span>
+                    </div>
+
+                    <div className="text-xs space-y-1 font-mono text-slate-400">
+                      <div><span className="text-slate-500">Version:</span> <b className="text-slate-200">{blueGreenConfig?.blue.version || 'v2.4.0-blue'}</b></div>
+                      <div><span className="text-slate-500">Endpoint:</span> <span className="text-indigo-300 truncate">{blueGreenConfig?.blue.url}</span></div>
+                      <div className="flex items-center space-x-3 pt-1 text-[11px]">
+                        <span>Latency: <b className="text-emerald-400">{blueGreenConfig?.blue.healthMetrics.latencyMs || 12}ms</b></span>
+                        <span>Uptime: <b className="text-emerald-400">{blueGreenConfig?.blue.healthMetrics.uptimePercent || 99.99}%</b></span>
+                      </div>
+                    </div>
+
+                    {blueGreenConfig?.activeSlot !== 'blue' && (
+                      <button
+                        type="button"
+                        onClick={() => handleSwitchDeploymentSlot('blue', 'Manual cutover/rollback to Blue')}
+                        disabled={isSwitchingSlot}
+                        className="w-full py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition disabled:opacity-50"
+                      >
+                        {isSwitchingSlot ? 'সুইচ হচ্ছে...' : '🔵 Blue স্লটে রোলব্যাক করুন'}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Green Slot Card */}
+                  <div
+                    className={`p-4 rounded-xl border space-y-3 transition ${
+                      blueGreenConfig?.activeSlot === 'green'
+                        ? 'bg-emerald-950/20 border-emerald-500/50 shadow-lg shadow-emerald-500/10'
+                        : 'bg-slate-950 border-slate-800 opacity-80'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span className="font-bold text-sm text-emerald-300">🟢 Green Slot</span>
+                      </div>
+                      <span
+                        className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
+                          blueGreenConfig?.activeSlot === 'green'
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                            : 'bg-slate-800 text-slate-400'
+                        }`}
+                      >
+                        {blueGreenConfig?.green.trafficWeight || 0}% Traffic
+                      </span>
+                    </div>
+
+                    <div className="text-xs space-y-1 font-mono text-slate-400">
+                      <div><span className="text-slate-500">Version:</span> <b className="text-slate-200">{blueGreenConfig?.green.version || 'v2.4.0-green'}</b></div>
+                      <div><span className="text-slate-500">Endpoint:</span> <span className="text-emerald-300 truncate">{blueGreenConfig?.green.url}</span></div>
+                      <div className="flex items-center space-x-3 pt-1 text-[11px]">
+                        <span>Latency: <b className="text-emerald-400">{blueGreenConfig?.green.healthMetrics.latencyMs || 14}ms</b></span>
+                        <span>Uptime: <b className="text-emerald-400">{blueGreenConfig?.green.healthMetrics.uptimePercent || 100}%</b></span>
+                      </div>
+                    </div>
+
+                    {blueGreenConfig?.activeSlot !== 'green' && (
+                      <button
+                        type="button"
+                        onClick={() => handleSwitchDeploymentSlot('green', 'Zero-downtime release cutover to Green')}
+                        disabled={isSwitchingSlot}
+                        className="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition disabled:opacity-50"
+                      >
+                        {isSwitchingSlot ? 'সুইচ হচ্ছে...' : '🟢 Green স্লটে ট্রাফিক পরিবর্তন করুন'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Canary Traffic Routing Slider */}
+                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-slate-200">{t.canaryLabel}</span>
+                    <span className="font-mono text-indigo-400 font-bold">
+                      🔵 {100 - canarySlider}% Blue / 🟢 {canarySlider}% Green
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={canarySlider}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      setCanarySlider(val);
+                      handleApplyCanarySplit(val);
+                    }}
+                    className="w-full accent-indigo-500 cursor-pointer"
+                  />
+                  <p className="text-[11px] text-slate-500">
+                    {lang === 'bn' 
+                      ? 'ক্যানারি মোড ব্যবহার করে নতুন রিলিজের কার্যকারিতা যাচাই করতে ট্রাফিকের নির্দিষ্ট শতাংশ (যেমন: ১০% বা ২৫%) স্ট্যান্ডবাই স্লটে পাঠানো যায়।'
+                      : 'Canary split lets you safely route a small portion of live traffic (e.g. 10%) to test staging releases before full cutover.'}
+                  </p>
+                </div>
+
+                {/* Audit Trail Switch History */}
+                <div className="space-y-2">
+                  <span className="text-xs font-bold text-slate-300 block">{lang === 'bn' ? 'ডিপ্লয়মেন্ট সুইচ ইতিহাস (Audit Log):' : 'Cutover Audit Trail:'}</span>
+                  <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
+                    {blueGreenConfig?.switchHistory && blueGreenConfig.switchHistory.length > 0 ? (
+                      blueGreenConfig.switchHistory.map((item) => (
+                        <div
+                          key={item.id}
+                          className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-[11px] flex items-center justify-between font-mono"
+                        >
+                          <div>
+                            <span className="text-slate-300 font-bold">
+                              {item.fromSlot.toUpperCase()} ➔ {item.toSlot.toUpperCase()}
+                            </span>
+                            <span className="text-slate-500 text-[10px] ml-2">({item.reason})</span>
+                          </div>
+                          <span className="text-slate-500 text-[10px]">
+                            {new Date(item.switchedAt).toLocaleTimeString()}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-xs text-slate-500 py-3 text-center">No cutover events yet</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 4: GENERAL & DOWNLOADS */}
             {settingsTab === 'general' && (
               <div className="space-y-4">
                 {/* Version & Update check */}
@@ -1619,7 +2754,7 @@ export default function OwntempHome() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-bold text-slate-200">Owntemp Engine</div>
-                      <div className="text-xs text-indigo-400 font-mono">Current Version: v1.5.0 (Dual Automation Hub)</div>
+                      <div className="text-xs text-indigo-400 font-mono">Current Version: {APP_VERSION} ({APP_EDITION})</div>
                     </div>
                     <button
                       onClick={handleCheckVersion}
@@ -1672,6 +2807,34 @@ export default function OwntempHome() {
                       <span className="text-xs font-semibold text-slate-200">macOS</span>
                       <span className="text-[10px] text-slate-500 font-mono">Intel & M-Chip</span>
                     </a>
+                  </div>
+                </div>
+
+                {/* Browser Cache & CDN Optimization Card */}
+                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-200 flex items-center space-x-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+                      <span>{lang === 'bn' ? 'ব্রাউজার ক্যাশ ও সিডিএন স্ট্যাটাস' : 'Browser Cache & CDN Status'}</span>
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+                      ⚡ Active
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-400 space-y-1">
+                    <p>• <b>Cloudflare & Vercel Edge CDN:</b> {lang === 'bn' ? '২৪ ঘণ্টার গ্লোবাল এজ ক্যাশিং এবং ব্রোটলি কম্প্রেশন সক্রিয়।' : '24h global Edge CDN caching & Brotli compression active.'}</p>
+                    <p>• <b>ব্রাউজার মেমোরি ক্যাশ:</b> {lang === 'bn' ? '৫০,০০০+ ডোমেন এক ক্লিকে 0ms ইনস্ট্যান্ট স্পিডে রেন্ডার হয়।' : '50,000+ domains render with 0ms instant speed from browser cache.'}</p>
+                    <p>• <b>ইনবক্স ও ওটিপি:</b> {lang === 'bn' ? 'সম্পূর্ণ রিয়েল-টাইম ও লাইভ (Strict No-Cache Policy)।' : 'Strict Zero-Cache policy for real-time OTP delivery.'}</p>
+                  </div>
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={handleClearBrowserCache}
+                      className="w-full py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-sky-300 text-xs font-semibold flex items-center justify-center space-x-1.5 transition"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 text-sky-400" />
+                      <span>{lang === 'bn' ? 'ব্রাউজার ক্যাশ ক্লিয়ার করুন' : 'Clear Browser Cache'}</span>
+                    </button>
                   </div>
                 </div>
 
@@ -2250,19 +3413,344 @@ export default function OwntempHome() {
         </div>
       )}
 
+      {/* 50,000+ Mega Domain Directory Modal */}
+      {showDirectoryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl">
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-600/30">
+                  <Globe className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <h3 className="font-extrabold text-base text-slate-100">
+                      {lang === 'bn' ? '৫০,০০০+ সক্রিয় গ্লোবাল ডিসপোজেবল ডোমেন ডিরেক্টরি' : '50,000+ Global Active Disposable Domain Directory'}
+                    </h3>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
+                      {totalDatabaseCount > 3500 ? totalDatabaseCount.toLocaleString() : '50,000+'}+ Domains Live
+                    </span>
+                    <span className="hidden sm:inline-flex items-center space-x-1 text-[10px] px-2 py-0.5 rounded-full font-semibold bg-sky-500/15 text-sky-300 border border-sky-500/30 font-mono">
+                      <Sparkles className="w-3 h-3 text-sky-400" />
+                      <span>CDN & 0ms Cache</span>
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    {lang === 'bn' ? 'ccTLD কান্ট্রি-কোড (.de, .fr, .uk, .jp) বা কোম্পানি অনুযায়ী ফিল্টার ও সার্চ করুন' : 'Filter by country ccTLD (.de, .fr, .uk, .jp) or flagship company network'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={handleClearBrowserCache}
+                  className="text-slate-400 hover:text-indigo-300 p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs transition flex items-center space-x-1"
+                  title="Clear Browser Cache & Refresh"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline text-[11px] font-medium">{lang === 'bn' ? 'ক্যাশ রিফ্রেশ' : 'Clear Cache'}</span>
+                </button>
+                <button
+                  onClick={() => setShowDirectoryModal(false)}
+                  className="text-slate-400 hover:text-slate-200 p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Search Bar & Company Filter Pills */}
+            <div className="p-4 bg-slate-950/80 border-b border-slate-800/80 space-y-3">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <input
+                  type="text"
+                  value={directorySearch}
+                  onChange={(e) => setDirectorySearch(e.target.value)}
+                  placeholder={lang === 'bn' ? 'ডোমেইন নাম সার্চ করুন (যেমন: mailinator, shark, duck, box, xyz, de, uk)...' : 'Search domain (e.g. mailinator, shark, duck, box, xyz, de, uk)...'}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs font-mono text-slate-100 placeholder:text-slate-500 outline-none focus:border-indigo-500 shadow-inner"
+                  autoFocus
+                />
+              </div>
+
+              {/* Company Filter Tabs with Live Real Counts */}
+              <div className="flex flex-wrap gap-1.5 text-xs">
+                {[
+                  { id: 'all', label: 'সকল', count: categoryCounts.all || 51774 },
+                  { id: 'ultrashort', label: '⚡ আল্ট্রা-শর্ট', count: categoryCounts.ultrashort || 11192 },
+                  { id: 'cctld', label: '🌍 ccTLD কান্ট্রি', count: categoryCounts.cctld || 5593 },
+                  { id: 'tenminute', label: '⏱️ ১০-মিনিট ও টেম্প', count: categoryCounts.tenminute || 610 },
+                  { id: 'developer', label: '🛠️ ডেভেলপার', count: categoryCounts.developer || 864 },
+                  { id: 'privacy', label: '🛡️ প্রাইভেসি', count: categoryCounts.privacy || 187 },
+                  { id: 'mailinator', label: '👑 Mailinator', count: categoryCounts.mailinator || 39 },
+                  { id: 'guerrilla', label: '🚀 Guerrilla', count: categoryCounts.guerrilla || 14 },
+                  { id: 'mailtm', label: '✈️ Mail.tm', count: categoryCounts.mailtm || 12 },
+                ].map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => {
+                      setDirectoryCategory(cat.id);
+                      setDirectoryPage(1);
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 ${
+                      directoryCategory === cat.id
+                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                        : 'bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800'
+                    }`}
+                  >
+                    <span>{cat.label}</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-950/60 font-mono font-bold text-slate-300">
+                      {cat.count.toLocaleString()}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Batch Size & Range Toolbar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-slate-900 text-xs text-slate-400">
+                <div>
+                  {lang === 'bn' ? (
+                    <span>
+                      মোট <b className="text-indigo-400 font-mono">{directoryPagination.totalMatches.toLocaleString()}</b>টি ডোমেনের মধ্যে{' '}
+                      <b className="text-slate-200 font-mono">{directoryPagination.startIndex}–{directoryPagination.endIndex}</b> নম্বর প্রদর্শিত হচ্ছে (পৃষ্ঠা <b className="text-emerald-400 font-mono">{directoryPage}</b> / {directoryPagination.totalPages})
+                    </span>
+                  ) : (
+                    <span>
+                      Showing <b className="text-slate-200 font-mono">{directoryPagination.startIndex}–{directoryPagination.endIndex}</b> of <b className="text-indigo-400 font-mono">{directoryPagination.totalMatches.toLocaleString()}</b> domains (Page <b className="text-emerald-400 font-mono">{directoryPage}</b> of {directoryPagination.totalPages})
+                    </span>
+                  )}
+                </div>
+
+                {/* Batch Size Selector */}
+                <div className="flex items-center space-x-1">
+                  <span className="text-[11px] text-slate-500 font-medium">{lang === 'bn' ? 'একবারে প্রদর্শন:' : 'Per page:'}</span>
+                  {[50, 150, 300, 500, 1000].map((lim) => (
+                    <button
+                      key={lim}
+                      type="button"
+                      onClick={() => {
+                        setDirectoryLimit(lim);
+                        setDirectoryPage(1);
+                        fetchDirectoryDomains(directorySearch, directoryCategory, 1, lim, false);
+                      }}
+                      className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold transition ${
+                        directoryLimit === lim
+                          ? 'bg-indigo-600 text-white shadow-sm'
+                          : 'bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800'
+                      }`}
+                    >
+                      {lim}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Domains Grid List */}
+            <div className="p-4 overflow-y-auto flex-1 space-y-4">
+              {isLoadingDirectory ? (
+                <div className="py-16 text-center text-xs text-slate-400 flex items-center justify-center space-x-2">
+                  <RefreshCw className="w-5 h-5 animate-spin text-indigo-400" />
+                  <span>{lang === 'bn' ? 'ডোমেইন লোড হচ্ছে...' : 'Loading domains...'}</span>
+                </div>
+              ) : directoryResults.length === 0 ? (
+                <div className="py-16 text-center text-xs text-slate-500">
+                  {lang === 'bn' ? 'কোনো ডোমেইন পাওয়া যায়নি। অন্য কোনো নাম দিয়ে সার্চ করুন।' : 'No domains found matching your search.'}
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                    {directoryResults.map((item) => (
+                      <div
+                        key={item.domain}
+                        onClick={() => {
+                          setSelectedDomain(item.domain);
+                          if (usernamePrefix) {
+                            const newAddr = `${usernamePrefix}@${item.domain}`;
+                            setActiveEmail(newAddr);
+                            try {
+                              localStorage.setItem('owntemp_active_email', newAddr);
+                            } catch (e) {}
+                            fetchEmails(newAddr);
+                          }
+                          setShowDirectoryModal(false);
+                          setActionSuccess(
+                            lang === 'bn'
+                              ? `ডোমেইন @${item.domain} সফলভাবে সিলেক্ট করা হয়েছে!`
+                              : `Domain @${item.domain} selected successfully!`
+                          );
+                          setTimeout(() => setActionSuccess(null), 3000);
+                        }}
+                        className={`p-3 rounded-xl border transition cursor-pointer flex flex-col justify-between group ${
+                          selectedDomain === item.domain
+                            ? 'bg-indigo-600/20 border-indigo-500 text-indigo-200 shadow-md'
+                            : 'bg-slate-950/70 border-slate-800/80 hover:border-indigo-500/40 hover:bg-slate-900 text-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-xs font-bold text-slate-100 group-hover:text-indigo-300 transition truncate mr-1">
+                            @{item.domain}
+                          </span>
+                          {item.isUltraShort && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30 flex-shrink-0">
+                              {item.length}c
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-medium truncate mt-1">
+                          {item.category}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Continuous "Load More" Button */}
+                  {directoryPagination.hasMore && (
+                    <div className="pt-2 pb-2 text-center">
+                      <button
+                        type="button"
+                        onClick={handleLoadMoreDomains}
+                        disabled={isLoadingMore}
+                        className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition flex items-center justify-center space-x-2 mx-auto disabled:opacity-50"
+                      >
+                        <ArrowDown className={`w-4 h-4 ${isLoadingMore ? 'animate-bounce' : ''}`} />
+                        <span>
+                          {isLoadingMore
+                            ? (lang === 'bn' ? 'লোড হচ্ছে...' : 'Loading more...')
+                            : (lang === 'bn' ? `আরও ${directoryLimit}টি ডোমেন লোড করুন (+Load More)` : `Load More (+${directoryLimit} domains)`)}
+                        </span>
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Modal Footer with Full Pagination Controls */}
+            <div className="p-3.5 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+              {/* Pagination Nav */}
+              <div className="flex items-center space-x-1.5">
+                <button
+                  type="button"
+                  onClick={handleFirstDirectoryPage}
+                  disabled={directoryPage <= 1}
+                  className="px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-40 border border-slate-800 text-slate-300 flex items-center space-x-1 transition"
+                  title="First Page"
+                >
+                  <ChevronsLeft className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{lang === 'bn' ? 'প্রথম' : 'First'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePrevDirectoryPage}
+                  disabled={directoryPage <= 1}
+                  className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-40 border border-slate-800 text-slate-300 flex items-center space-x-1 transition"
+                  title="Previous Page"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>{lang === 'bn' ? 'পূর্ববর্তী' : 'Prev'}</span>
+                </button>
+
+                <span className="px-3 py-1 font-mono text-indigo-300 font-semibold bg-slate-900 rounded-lg border border-slate-800">
+                  {directoryPage} / {directoryPagination.totalPages}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={handleNextDirectoryPage}
+                  disabled={directoryPage >= directoryPagination.totalPages}
+                  className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-40 border border-slate-800 text-slate-300 flex items-center space-x-1 transition"
+                  title="Next Page"
+                >
+                  <span>{lang === 'bn' ? 'পরবর্তী' : 'Next'}</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleLastDirectoryPage}
+                  disabled={directoryPage >= directoryPagination.totalPages}
+                  className="px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-40 border border-slate-800 text-slate-300 flex items-center space-x-1 transition"
+                  title="Last Page"
+                >
+                  <span className="hidden sm:inline">{lang === 'bn' ? 'সর্বশেষ' : 'Last'}</span>
+                  <ChevronsRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => setShowDirectoryModal(false)}
+                className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition"
+              >
+                {t.close}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
       <footer className="border-t border-slate-800/80 bg-slate-950/80 py-6 mt-12 text-center text-xs text-slate-500">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div>
             <b>Owntemp</b> &copy; 2026 — {lang === 'bn' ? 'আজীবন ফ্রি ডিসপোজেবল ইমেইল ইঞ্জিন' : 'Lifetime Free Disposable Email Engine'}
           </div>
           <div className="flex items-center space-x-4">
             <span className="font-mono text-indigo-400">API: /api/inbound/webhook</span>
             <span>•</span>
-            <span className="font-mono text-slate-400">Version 1.2.0</span>
+            <span className="font-mono text-emerald-400 font-bold bg-slate-900 px-2.5 py-0.5 rounded border border-slate-800 flex items-center space-x-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>{APP_VERSION}</span>
+            </span>
           </div>
         </div>
       </footer>
+
+      {/* Mobile Bottom Navigation Bar (Fixed for Android & Mobile Web) */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-lg border-t border-slate-800/80 px-4 py-2 flex items-center justify-around shadow-2xl">
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="flex flex-col items-center justify-center space-y-1 text-slate-300 hover:text-indigo-400 text-[10px] font-semibold transition"
+        >
+          <Mail className="w-5 h-5 text-indigo-400" />
+          <span>{lang === 'bn' ? 'ইনবক্স' : 'Inbox'}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setShowDirectoryModal(true);
+            fetchDirectoryDomains('', directoryCategory, 1, directoryLimit, false);
+          }}
+          className="flex flex-col items-center justify-center space-y-1 text-slate-300 hover:text-indigo-400 text-[10px] font-semibold transition"
+        >
+          <Globe className="w-5 h-5 text-indigo-400" />
+          <span>{lang === 'bn' ? 'ডোমেইন' : 'Domains'}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowSimModal(true)}
+          className="flex flex-col items-center justify-center space-y-1 text-slate-300 hover:text-indigo-400 text-[10px] font-semibold transition"
+        >
+          <Sparkles className="w-5 h-5 text-amber-400" />
+          <span>{lang === 'bn' ? 'সিমুলেটর' : 'Simulator'}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setSettingsTab('api');
+            setShowSettingsModal(true);
+          }}
+          className="flex flex-col items-center justify-center space-y-1 text-slate-300 hover:text-indigo-400 text-[10px] font-semibold transition"
+        >
+          <Settings className="w-5 h-5 text-slate-400" />
+          <span>{lang === 'bn' ? 'সেটিংস' : 'Settings'}</span>
+        </button>
+      </nav>
     </main>
   );
 }

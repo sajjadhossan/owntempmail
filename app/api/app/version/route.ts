@@ -5,15 +5,15 @@ export async function GET() {
     success: true,
     data: {
       appName: 'Owntemp',
-      latestVersion: '1.5.0',
-      edition: 'Dual Cloudflare Automation & Vercel Integration Hub',
+      latestVersion: '2.5.0',
+      edition: 'Clean Modern UI Overhaul Edition',
       minimumSupportedVersion: '1.0.0',
-      apkDownloadUrl: 'https://github.com/owntemp/releases/latest/app-v1.5.0-android.apk',
-      windowsDownloadUrl: 'https://github.com/owntemp/releases/latest/Owntemp-v1.5.0-windows-x64.exe',
-      macDownloadUrl: 'https://github.com/owntemp/releases/latest/Owntemp-v1.5.0-mac-universal.dmg',
+      apkDownloadUrl: 'https://github.com/owntemp/releases/latest/app-v2.5.0-android.apk',
+      windowsDownloadUrl: 'https://github.com/owntemp/releases/latest/Owntemp-v2.5.0-windows-x64.exe',
+      macDownloadUrl: 'https://github.com/owntemp/releases/latest/Owntemp-v2.5.0-mac-universal.dmg',
       releaseNotes: {
-        bn: 'Owntemp v1.5.0 রিলিজ: ক্লাউডফ্লেয়ার ১-ক্লিক অটোমেটিক API টোকেন সেটআপ (/api/cloudflare/setup), কাস্টম Vercel লাইভ ওয়েবসাইট URL ইনপুট সাপোর্ট, এবং উভয় পদ্ধতির জন্য ধাপে ধাপে এ-টু-জেড বিস্তারিত গাইড।',
-        en: 'Owntemp v1.5.0 Release: 1-Click Cloudflare Automated Setup via API Token (/api/cloudflare/setup), Custom Vercel Live Website URL input, and complete step-by-step A-to-Z setup guides for both automated and manual methods.',
+        bn: 'Owntemp v2.5.0: সম্পূর্ণ নতুন পরিচ্ছন্ন ও আধুনিক ইউআই। পিসিতে ডুয়াল-পেন মাস্টার-ডিটেইল ভিউ, মোবাইলে বটম নেভিগেশন বার, হেডারের অপ্রয়োজনীয় বাটন হ্রাস, ফ্লোটিং কুইক-ওটিপি ব্যানার এবং সুবিন্যস্ত সেটিংস হাব।',
+        en: 'Owntemp v2.5.0: Clean Modern UI Overhaul. Master-detail split pane for desktop, mobile bottom navigation bar, uncluttered slim header, floating quick-OTP banner, and streamlined settings hub.',
       },
       platforms: {
         android: {

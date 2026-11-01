@@ -1,14 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllDomains, addCustomDomain, deleteCustomDomain } from '@/lib/storage';
+import { ALL_PUBLIC_DOMAINS } from '@/lib/public-mail-service';
 
 export async function GET() {
-  const domains = getAllDomains();
+  const customAndDefaultDomains = getAllDomains();
+  const merged = [...customAndDefaultDomains];
+
+  for (const item of ALL_PUBLIC_DOMAINS) {
+    if (!merged.some((d) => d.domain.toLowerCase() === item.domain.toLowerCase())) {
+      merged.push({
+        id: `pub-${item.domain}`,
+        domain: item.domain,
+        businessName: item.name,
+        isDefault: true,
+        isCustom: false,
+        status: 'active',
+        createdAt: new Date().toISOString(),
+      });
+    }
+  }
+
   return NextResponse.json({
     success: true,
-    message: 'Domains retrieved successfully',
-    data: domains,
+    message: 'All public and custom domains retrieved successfully',
+    data: merged,
     meta: {
-      total: domains.length,
+      total: merged.length,
+      publicCount: ALL_PUBLIC_DOMAINS.length,
     },
   });
 }

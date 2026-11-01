@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getEmailsForAddress, getInboxMetadata } from '@/lib/storage';
+import { syncPublicInbox } from '@/lib/public-mail-service';
 
 export async function GET(
   req: NextRequest,
@@ -18,6 +19,13 @@ export async function GET(
         },
         { status: 400 }
       );
+    }
+
+    // Sync public gateway if address domain belongs to active public pool
+    try {
+      await syncPublicInbox(address);
+    } catch (e) {
+      // Sync failure should not block returning local emails
     }
 
     const metadata = getInboxMetadata(address);

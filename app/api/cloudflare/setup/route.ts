@@ -26,7 +26,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const cleanDomain = domain.trim().toLowerCase().replace(/^@+/, '');
+    const cleanDomain = domain
+      .trim()
+      .toLowerCase()
+      .replace(/^https?:\/\//, '')
+      .replace(/\/+.*$/, '')
+      .replace(/^@+/, '');
+
+    if (cleanDomain.includes('vercel.app')) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            '❌ ভুল ইনপুট: "' +
+            cleanDomain +
+            '" হলো Vercel-এর দেওয়া ওয়েবসাইট ঠিকানা। এটি ক্লাউডফ্লেয়ার ডোমেইন নয়। ভার্সেল ডোমেইনে ক্লাউডফ্লেয়ার ইমেইল রাউটিং কাজ করে না। ইমেইল পেতে আপনার ক্লাউডফ্লেয়ার অ্যাকাউন্টে যুক্ত থাকা নিজস্ব কাস্টম ডোমেইন (যেমন: yourdomain.com) লিখুন।',
+          errorCode: 'vercel_domain_not_supported',
+        },
+        { status: 400 }
+      );
+    }
+
     const cleanVercelUrl = (vercelUrl || 'https://owntemp.vercel.app').trim().replace(/\/+$/, '');
     const webhookEndpoint = `${cleanVercelUrl}/api/inbound/webhook`;
 
@@ -53,10 +73,28 @@ export async function POST(req: NextRequest) {
     }
 
     if (!zoneData.result || zoneData.result.length === 0) {
+      // Suggest available zones in user's Cloudflare account
+      let suggestionMessage = `ডোমেইন "${cleanDomain}" আপনার Cloudflare অ্যাকাউন্টে খুঁজে পাওয়া যায়নি।`;
+      try {
+        const allZonesRes = await fetch('https://api.cloudflare.com/client/v4/zones?per_page=20', {
+          headers: {
+            Authorization: `Bearer ${apiToken.trim()}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        const allZonesData = await allZonesRes.json();
+        if (allZonesData.success && Array.isArray(allZonesData.result) && allZonesData.result.length > 0) {
+          const names = allZonesData.result.map((z: any) => z.name);
+          suggestionMessage += `\n\n💡 তবে আপনার ক্লাউডফ্লেয়ার অ্যাকাউন্টে এই ডোমেইনগুলো সচল রয়েছে: [${names.join(', ')}]। আপনি কি এর কোনোটিতে সেটআপ করতে চান?`;
+        } else {
+          suggestionMessage += `\n\n⚠️ আপনার ক্লাউডফ্লেয়ার অ্যাকাউন্টে বর্তমানে কোনো ডোমেইন যুক্ত করা নেই (0 domains found)। অনুগ্রহ করে dash.cloudflare.com-এ গিয়ে 'Add a Site'-এ আপনার নিজস্ব ডোমেইন যোগ করুন।`;
+        }
+      } catch (e) {}
+
       return NextResponse.json(
         {
           success: false,
-          message: `Domain "${cleanDomain}" was not found in your Cloudflare account. Please add the domain to Cloudflare first.`,
+          message: suggestionMessage,
           errorCode: 'domain_not_found',
         },
         { status: 404 }
