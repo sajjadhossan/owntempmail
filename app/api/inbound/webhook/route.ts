@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const otpCode = extractOtpCode(textBody, subject);
+    const otpCode = extractOtpCode(`${textBody}\n${htmlBody}`, subject);
     const verificationLinks = extractVerificationLinks(htmlBody || textBody);
 
     // Parse attachments if present
