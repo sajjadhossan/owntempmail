@@ -5,15 +5,15 @@ export async function GET() {
     success: true,
     data: {
       appName: 'Owntemp',
-      latestVersion: '2.5.1',
-      edition: 'Clean Modern UI & Android Stability Edition',
+      latestVersion: '2.5.2',
+      edition: 'Edge CDN Caching, Real-time SSE Stream & Mobile Stability Edition',
       minimumSupportedVersion: '1.0.0',
-      apkDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.5.1/app-v2.5.1-build26-android.apk',
-      windowsDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.5.1/Owntemp-v2.5.1-windows-x64.zip',
-      macDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.5.1/Owntemp-v2.5.1-mac-universal.zip',
+      apkDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.5.2/app-v2.5.2-build27-android.apk',
+      windowsDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.5.2/Owntemp-v2.5.2-windows-x64.zip',
+      macDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.5.2/Owntemp-v2.5.2-mac-universal.zip',
       releaseNotes: {
-        bn: 'Owntemp v2.5.1: অ্যান্ড্রয়েড অ্যাপের ক্র্যাশ সমাধান ও নেটওয়ার্ক স্ট্যাবিলিটি আপডেট। ফেইলসেফ অফলাইন স্ক্রিন, ডাউনলোড পারমিশন এবং রিলিজ বাটন সরাসরি ডাউনলোডযোগ্য।',
-        en: 'Owntemp v2.5.1: Android runtime crash fixes and network stability updates. Failsafe offline screen, attachment permissions, and verified direct release binaries.',
+        bn: 'Owntemp v2.5.2: গ্লোবাল এজ সিডিএন (Cloudflare Edge CDN) ক্যাশিং আর্কিটেকচার, মেমোরি ও সেশন ব্রাউজার ক্যাশ, রিয়েল-টাইম SSE ইভেন্ট স্ট্রিম, ডোমেন ভেরিফিকেশন API এবং ৫০ হাজার ডোমেন ব্রাউজারে মোবাইল স্ক্রিন স্ট্যাবিলিটি।',
+        en: 'Owntemp v2.5.2: Global Edge CDN (Cloudflare Edge CDN) caching architecture, memory & session browser cache, real-time SSE stream, DNS verification API, and mobile WebView domain browser stability overhaul.',
       },
       platforms: {
         android: {
@@ -36,6 +36,12 @@ export async function GET() {
         },
       },
       forceUpdate: false,
+    },
+  }, {
+    status: 200,
+    headers: {
+      'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=600',
+      'CDN-Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
     },
   });
 }

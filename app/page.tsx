@@ -117,15 +117,15 @@ export default function OwntempHome() {
   const [directorySearch, setDirectorySearch] = useState('');
   const [directoryCategory, setDirectoryCategory] = useState('all');
   const [directoryPage, setDirectoryPage] = useState(1);
-  const [directoryLimit, setDirectoryLimit] = useState(150);
+  const [directoryLimit, setDirectoryLimit] = useState(30);
   const [directoryResults, setDirectoryResults] = useState<Array<{ domain: string; category: string; length: number; isUltraShort: boolean }>>([]);
   const [directoryPagination, setDirectoryPagination] = useState({
     page: 1,
-    limit: 150,
+    limit: 30,
     totalPages: 1,
     totalMatches: 51774,
     startIndex: 1,
-    endIndex: 150,
+    endIndex: 30,
     hasMore: true,
   });
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({
@@ -490,15 +490,27 @@ export default function OwntempHome() {
     ) => {
       const cacheKey = `dir_${q}_${cat}_${page}_${limit}`;
 
-      // Check client browser cache for instant 0ms rendering
-      if (!append && domainClientCache.has(cacheKey)) {
-        const cached = domainClientCache.get(cacheKey);
-        setDirectoryResults(cached.results || []);
-        if (cached.pagination) setDirectoryPagination(cached.pagination);
-        if (cached.categoryCounts) setCategoryCounts(cached.categoryCounts);
-        if (cached.pagination?.totalDatabase) setTotalDatabaseCount(cached.pagination.totalDatabase);
-        setIsLoadingDirectory(false);
-        return;
+      // Check client browser memory & session cache for instant 0ms rendering
+      if (!append) {
+        let cached = domainClientCache.get(cacheKey);
+        if (!cached && typeof window !== 'undefined') {
+          try {
+            const stored = sessionStorage.getItem(`owntemp_${cacheKey}`);
+            if (stored) {
+              cached = JSON.parse(stored);
+              domainClientCache.set(cacheKey, cached);
+            }
+          } catch (e) {}
+        }
+
+        if (cached) {
+          setDirectoryResults(cached.results || []);
+          if (cached.pagination) setDirectoryPagination(cached.pagination);
+          if (cached.categoryCounts) setCategoryCounts(cached.categoryCounts);
+          if (cached.pagination?.totalDatabase) setTotalDatabaseCount(cached.pagination.totalDatabase);
+          setIsLoadingDirectory(false);
+          return;
+        }
       }
 
       if (append) {
@@ -517,8 +529,13 @@ export default function OwntempHome() {
             setDirectoryResults((prev) => [...prev, ...(data.data.results || [])]);
           } else {
             setDirectoryResults(data.data.results || []);
-            // Save to browser cache
+            // Save to browser memory & session cache
             domainClientCache.set(cacheKey, data.data);
+            if (typeof window !== 'undefined') {
+              try {
+                sessionStorage.setItem(`owntemp_${cacheKey}`, JSON.stringify(data.data));
+              } catch (e) {}
+            }
           }
           if (data.data.pagination) setDirectoryPagination(data.data.pagination);
           if (data.data.categoryCounts) setCategoryCounts(data.data.categoryCounts);
@@ -537,6 +554,13 @@ export default function OwntempHome() {
   // Clear Browser Cache Handler
   const handleClearBrowserCache = useCallback(() => {
     domainClientCache.clear();
+    if (typeof window !== 'undefined') {
+      try {
+        Object.keys(sessionStorage).forEach((k) => {
+          if (k.startsWith('owntemp_dir_')) sessionStorage.removeItem(k);
+        });
+      } catch (e) {}
+    }
     setActionSuccess(lang === 'bn' ? 'ব্রাউজার ক্যাশ সফলভাবে খালি করা হয়েছে!' : 'Browser cache cleared successfully!');
     setTimeout(() => setActionSuccess(null), 2500);
     fetchDirectoryDomains(directorySearch, directoryCategory, directoryPage, directoryLimit, false);
@@ -669,6 +693,49 @@ export default function OwntempHome() {
     }, 1000);
     return () => clearInterval(timer);
   }, [activeEmail, fetchEmails]);
+
+  // Real-Time 0ms Live Feed (Server-Sent Events) with Native Browser Notifications
+  useEffect(() => {
+    if (!activeEmail || typeof window === 'undefined' || !window.EventSource) return;
+
+    let sse: EventSource | null = null;
+    try {
+      sse = new EventSource(`/api/inbox/${encodeURIComponent(activeEmail)}/stream`);
+      sse.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload.type === 'new_email' && payload.email) {
+            const incoming: EmailRecord = payload.email;
+            setEmails((prev) => {
+              if (prev.some((e) => e.id === incoming.id)) return prev;
+              playChime();
+              if (voiceEnabled && incoming.otpCode) {
+                setTimeout(() => announceOtp(incoming.otpCode!, lang), 300);
+              }
+              // Native notification
+              if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+                try {
+                  new Notification(
+                    incoming.otpCode ? `Owntemp OTP: ${incoming.otpCode}` : `নতুন ইমেইল: ${incoming.senderName || 'Owntemp'}`,
+                    {
+                      body: incoming.subject || 'নতুন ইনকামিং মেসেজ এসেছে',
+                    }
+                  );
+                } catch (e) {}
+              }
+              return [incoming, ...prev];
+            });
+          }
+        } catch (e) {}
+      };
+    } catch (err) {
+      console.warn('[SSE Connection]', err);
+    }
+
+    return () => {
+      if (sse) sse.close();
+    };
+  }, [activeEmail, lang, voiceEnabled, playChime]);
 
   // Fetch available domains from Cloudflare account using API Token
   const handleFetchCloudflareZones = async () => {
@@ -3415,75 +3482,71 @@ export default function OwntempHome() {
 
       {/* 50,000+ Mega Domain Directory Modal */}
       {showDirectoryModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl">
+        <div className="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center items-center sm:p-4 bg-slate-950/95 transition-opacity">
+          <div className="bg-slate-900 border border-slate-800 rounded-t-2xl sm:rounded-2xl w-full max-w-4xl h-[92vh] sm:h-[85vh] overflow-hidden flex flex-col shadow-2xl">
             {/* Modal Header */}
-            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-600/30">
-                  <Globe className="w-5 h-5 text-white" />
+            <div className="p-3.5 sm:p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60 flex-shrink-0">
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-md">
+                  <Globe className="w-4 h-4 text-white" />
                 </div>
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h3 className="font-extrabold text-base text-slate-100">
-                      {lang === 'bn' ? '৫০,০০০+ সক্রিয় গ্লোবাল ডিসপোজেবল ডোমেন ডিরেক্টরি' : '50,000+ Global Active Disposable Domain Directory'}
+                <div className="truncate">
+                  <div className="flex items-center space-x-1.5 flex-wrap">
+                    <h3 className="font-extrabold text-sm sm:text-base text-slate-100 truncate">
+                      {lang === 'bn' ? '৫০,০০০+ ডোমেন ডিরেক্টরি' : '50,000+ Domain Directory'}
                     </h3>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
-                      {totalDatabaseCount > 3500 ? totalDatabaseCount.toLocaleString() : '50,000+'}+ Domains Live
-                    </span>
-                    <span className="hidden sm:inline-flex items-center space-x-1 text-[10px] px-2 py-0.5 rounded-full font-semibold bg-sky-500/15 text-sky-300 border border-sky-500/30 font-mono">
-                      <Sparkles className="w-3 h-3 text-sky-400" />
-                      <span>CDN & 0ms Cache</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
+                      {totalDatabaseCount > 3500 ? totalDatabaseCount.toLocaleString() : '50,000+'}+ Live
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400">
-                    {lang === 'bn' ? 'ccTLD কান্ট্রি-কোড (.de, .fr, .uk, .jp) বা কোম্পানি অনুযায়ী ফিল্টার ও সার্চ করুন' : 'Filter by country ccTLD (.de, .fr, .uk, .jp) or flagship company network'}
+                  <p className="text-[11px] text-slate-400 truncate hidden sm:block">
+                    {lang === 'bn' ? 'ccTLD কান্ট্রি-কোড (.de, .fr, .uk, .jp) বা ক্যাটাগরি অনুযায়ী বেছে নিন' : 'Filter by country ccTLD or flagship category'}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1.5 flex-shrink-0">
                 <button
                   type="button"
                   onClick={handleClearBrowserCache}
-                  className="text-slate-400 hover:text-indigo-300 p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs transition flex items-center space-x-1"
+                  className="text-slate-400 hover:text-indigo-300 p-1.5 sm:p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs transition flex items-center space-x-1 cursor-pointer"
                   title="Clear Browser Cache & Refresh"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline text-[11px] font-medium">{lang === 'bn' ? 'ক্যাশ রিফ্রেশ' : 'Clear Cache'}</span>
+                  <span className="hidden md:inline text-[11px] font-medium">{lang === 'bn' ? 'ক্যাশ রিফ্রেশ' : 'Clear Cache'}</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => setShowDirectoryModal(false)}
-                  className="text-slate-400 hover:text-slate-200 p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition"
+                  className="text-slate-400 hover:text-slate-100 p-1.5 sm:p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition font-bold cursor-pointer"
                 >
                   ✕
                 </button>
               </div>
             </div>
 
-            {/* Search Bar & Company Filter Pills */}
-            <div className="p-4 bg-slate-950/80 border-b border-slate-800/80 space-y-3">
+            {/* Search Bar & Swipeable Category Pills */}
+            <div className="p-3 sm:p-4 bg-slate-950/80 border-b border-slate-800/80 space-y-2.5 flex-shrink-0">
               {/* Search Bar */}
               <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                 <input
                   type="text"
                   value={directorySearch}
                   onChange={(e) => setDirectorySearch(e.target.value)}
-                  placeholder={lang === 'bn' ? 'ডোমেইন নাম সার্চ করুন (যেমন: mailinator, shark, duck, box, xyz, de, uk)...' : 'Search domain (e.g. mailinator, shark, duck, box, xyz, de, uk)...'}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs font-mono text-slate-100 placeholder:text-slate-500 outline-none focus:border-indigo-500 shadow-inner"
-                  autoFocus
+                  placeholder={lang === 'bn' ? 'ডোমেইন সার্চ করুন (যেমন: 00, de, mail, shark, box, xyz)...' : 'Search domain (e.g. 00, de, mail, shark, box, xyz)...'}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 sm:py-2 text-xs font-mono text-slate-100 placeholder:text-slate-500 outline-none focus:border-indigo-500 shadow-inner"
                 />
               </div>
 
-              {/* Company Filter Tabs with Live Real Counts */}
-              <div className="flex flex-wrap gap-1.5 text-xs">
+              {/* Horizontal Scrollable Category Filter Pills (Mobile friendly swipe) */}
+              <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 text-xs no-scrollbar select-none" style={{ WebkitOverflowScrolling: 'touch' }}>
                 {[
-                  { id: 'all', label: 'সকল', count: categoryCounts.all || 51774 },
-                  { id: 'ultrashort', label: '⚡ আল্ট্রা-শর্ট', count: categoryCounts.ultrashort || 11192 },
-                  { id: 'cctld', label: '🌍 ccTLD কান্ট্রি', count: categoryCounts.cctld || 5593 },
-                  { id: 'tenminute', label: '⏱️ ১০-মিনিট ও টেম্প', count: categoryCounts.tenminute || 610 },
-                  { id: 'developer', label: '🛠️ ডেভেলপার', count: categoryCounts.developer || 864 },
-                  { id: 'privacy', label: '🛡️ প্রাইভেসি', count: categoryCounts.privacy || 187 },
+                  { id: 'all', label: lang === 'bn' ? 'সকল' : 'All', count: categoryCounts.all || 51774 },
+                  { id: 'ultrashort', label: lang === 'bn' ? '⚡ আল্ট্রা-শর্ট' : '⚡ Ultra-Short', count: categoryCounts.ultrashort || 11192 },
+                  { id: 'cctld', label: lang === 'bn' ? '🌍 ccTLD কান্ট্রি' : '🌍 ccTLDs', count: categoryCounts.cctld || 5593 },
+                  { id: 'tenminute', label: lang === 'bn' ? '⏱️ ১০-মিনিট' : '⏱️ 10-Min', count: categoryCounts.tenminute || 610 },
+                  { id: 'developer', label: lang === 'bn' ? '🛠️ ডেভেলপার' : '🛠️ Dev', count: categoryCounts.developer || 864 },
+                  { id: 'privacy', label: lang === 'bn' ? '🛡️ প্রাইভেসি' : '🛡️ Privacy', count: categoryCounts.privacy || 187 },
                   { id: 'mailinator', label: '👑 Mailinator', count: categoryCounts.mailinator || 39 },
                   { id: 'guerrilla', label: '🚀 Guerrilla', count: categoryCounts.guerrilla || 14 },
                   { id: 'mailtm', label: '✈️ Mail.tm', count: categoryCounts.mailtm || 12 },
@@ -3495,39 +3558,32 @@ export default function OwntempHome() {
                       setDirectoryCategory(cat.id);
                       setDirectoryPage(1);
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 ${
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition flex items-center space-x-1.5 flex-shrink-0 cursor-pointer ${
                       directoryCategory === cat.id
                         ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                         : 'bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800'
                     }`}
                   >
                     <span>{cat.label}</span>
-                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-950/60 font-mono font-bold text-slate-300">
+                    <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-slate-950/70 font-mono font-bold text-slate-300">
                       {cat.count.toLocaleString()}
                     </span>
                   </button>
                 ))}
               </div>
 
-              {/* Batch Size & Range Toolbar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-slate-900 text-xs text-slate-400">
-                <div>
+              {/* Status and Batch Count */}
+              <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
+                <span className="truncate">
                   {lang === 'bn' ? (
-                    <span>
-                      মোট <b className="text-indigo-400 font-mono">{directoryPagination.totalMatches.toLocaleString()}</b>টি ডোমেনের মধ্যে{' '}
-                      <b className="text-slate-200 font-mono">{directoryPagination.startIndex}–{directoryPagination.endIndex}</b> নম্বর প্রদর্শিত হচ্ছে (পৃষ্ঠা <b className="text-emerald-400 font-mono">{directoryPage}</b> / {directoryPagination.totalPages})
-                    </span>
+                    <span>মোট <b className="text-indigo-400 font-mono">{directoryPagination.totalMatches.toLocaleString()}</b>টি ডোমেইন (পৃষ্ঠা <b className="text-emerald-400 font-mono">{directoryPage}</b>/{directoryPagination.totalPages})</span>
                   ) : (
-                    <span>
-                      Showing <b className="text-slate-200 font-mono">{directoryPagination.startIndex}–{directoryPagination.endIndex}</b> of <b className="text-indigo-400 font-mono">{directoryPagination.totalMatches.toLocaleString()}</b> domains (Page <b className="text-emerald-400 font-mono">{directoryPage}</b> of {directoryPagination.totalPages})
-                    </span>
+                    <span><b className="text-indigo-400 font-mono">{directoryPagination.totalMatches.toLocaleString()}</b> domains (Page <b className="text-emerald-400 font-mono">{directoryPage}</b>/{directoryPagination.totalPages})</span>
                   )}
-                </div>
-
-                {/* Batch Size Selector */}
-                <div className="flex items-center space-x-1">
-                  <span className="text-[11px] text-slate-500 font-medium">{lang === 'bn' ? 'একবারে প্রদর্শন:' : 'Per page:'}</span>
-                  {[50, 150, 300, 500, 1000].map((lim) => (
+                </span>
+                <div className="flex items-center space-x-1 flex-shrink-0">
+                  <span className="text-[10px] text-slate-500">{lang === 'bn' ? 'প্রতি পেজে:' : 'Batch:'}</span>
+                  {[30, 60, 120].map((lim) => (
                     <button
                       key={lim}
                       type="button"
@@ -3536,9 +3592,9 @@ export default function OwntempHome() {
                         setDirectoryPage(1);
                         fetchDirectoryDomains(directorySearch, directoryCategory, 1, lim, false);
                       }}
-                      className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold transition ${
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition cursor-pointer ${
                         directoryLimit === lim
-                          ? 'bg-indigo-600 text-white shadow-sm'
+                          ? 'bg-indigo-600 text-white'
                           : 'bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800'
                       }`}
                     >
@@ -3550,7 +3606,35 @@ export default function OwntempHome() {
             </div>
 
             {/* Domains Grid List */}
-            <div className="p-4 overflow-y-auto flex-1 space-y-4">
+            <div className="p-3 sm:p-4 overflow-y-auto flex-1 space-y-3">
+              {/* Quick Custom Domain Box */}
+              <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center justify-between gap-2">
+                <div className="flex items-center space-x-2 flex-1 min-w-0">
+                  <span className="text-xs text-indigo-400 font-bold flex-shrink-0">@</span>
+                  <input
+                    type="text"
+                    placeholder={lang === 'bn' ? 'নিজস্ব কোনো ডোমেইন টাইপ করুন...' : 'Type any custom domain directly...'}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const val = (e.currentTarget.value || '').trim().replace(/^@/, '');
+                        if (val) {
+                          setSelectedDomain(val);
+                          if (usernamePrefix) {
+                            const newAddr = `${usernamePrefix}@${val}`;
+                            setActiveEmail(newAddr);
+                            try { localStorage.setItem('owntemp_active_email', newAddr); } catch (err) {}
+                            fetchEmails(newAddr);
+                          }
+                          setShowDirectoryModal(false);
+                        }
+                      }
+                    }}
+                    className="bg-transparent border-none outline-none text-xs font-mono text-slate-100 placeholder:text-slate-500 flex-1 min-w-0"
+                  />
+                </div>
+                <span className="text-[10px] text-slate-500 font-mono hidden sm:inline flex-shrink-0">{lang === 'bn' ? 'এন্টার চাপুন' : 'Press Enter'}</span>
+              </div>
+
               {isLoadingDirectory ? (
                 <div className="py-16 text-center text-xs text-slate-400 flex items-center justify-center space-x-2">
                   <RefreshCw className="w-5 h-5 animate-spin text-indigo-400" />
@@ -3584,7 +3668,7 @@ export default function OwntempHome() {
                           );
                           setTimeout(() => setActionSuccess(null), 3000);
                         }}
-                        className={`p-3 rounded-xl border transition cursor-pointer flex flex-col justify-between group ${
+                        className={`p-2.5 sm:p-3 rounded-xl border transition cursor-pointer flex flex-col justify-between group active:scale-[0.99] ${
                           selectedDomain === item.domain
                             ? 'bg-indigo-600/20 border-indigo-500 text-indigo-200 shadow-md'
                             : 'bg-slate-950/70 border-slate-800/80 hover:border-indigo-500/40 hover:bg-slate-900 text-slate-300'
@@ -3614,9 +3698,9 @@ export default function OwntempHome() {
                         type="button"
                         onClick={handleLoadMoreDomains}
                         disabled={isLoadingMore}
-                        className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition flex items-center justify-center space-x-2 mx-auto disabled:opacity-50"
+                        className="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition flex items-center justify-center space-x-1.5 mx-auto disabled:opacity-50 cursor-pointer"
                       >
-                        <ArrowDown className={`w-4 h-4 ${isLoadingMore ? 'animate-bounce' : ''}`} />
+                        <ArrowDown className={`w-3.5 h-3.5 ${isLoadingMore ? 'animate-bounce' : ''}`} />
                         <span>
                           {isLoadingMore
                             ? (lang === 'bn' ? 'লোড হচ্ছে...' : 'Loading more...')
@@ -3629,15 +3713,15 @@ export default function OwntempHome() {
               )}
             </div>
 
-            {/* Modal Footer with Full Pagination Controls */}
-            <div className="p-3.5 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+            {/* Modal Footer with Thumb-Friendly Pagination Controls */}
+            <div className="p-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between gap-2 text-xs text-slate-400 flex-shrink-0">
               {/* Pagination Nav */}
-              <div className="flex items-center space-x-1.5">
+              <div className="flex items-center space-x-1 sm:space-x-1.5">
                 <button
                   type="button"
                   onClick={handleFirstDirectoryPage}
                   disabled={directoryPage <= 1}
-                  className="px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-40 border border-slate-800 text-slate-300 flex items-center space-x-1 transition"
+                  className="px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-40 border border-slate-800 text-slate-300 flex items-center space-x-1 transition cursor-pointer"
                   title="First Page"
                 >
                   <ChevronsLeft className="w-3.5 h-3.5" />
@@ -3647,14 +3731,14 @@ export default function OwntempHome() {
                   type="button"
                   onClick={handlePrevDirectoryPage}
                   disabled={directoryPage <= 1}
-                  className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-40 border border-slate-800 text-slate-300 flex items-center space-x-1 transition"
+                  className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-40 border border-slate-800 text-slate-300 flex items-center space-x-1 transition cursor-pointer"
                   title="Previous Page"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
                   <span>{lang === 'bn' ? 'পূর্ববর্তী' : 'Prev'}</span>
                 </button>
 
-                <span className="px-3 py-1 font-mono text-indigo-300 font-semibold bg-slate-900 rounded-lg border border-slate-800">
+                <span className="px-2.5 py-1 font-mono text-indigo-300 font-semibold bg-slate-900 rounded-lg border border-slate-800 text-[11px]">
                   {directoryPage} / {directoryPagination.totalPages}
                 </span>
 
@@ -3662,7 +3746,7 @@ export default function OwntempHome() {
                   type="button"
                   onClick={handleNextDirectoryPage}
                   disabled={directoryPage >= directoryPagination.totalPages}
-                  className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-40 border border-slate-800 text-slate-300 flex items-center space-x-1 transition"
+                  className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-40 border border-slate-800 text-slate-300 flex items-center space-x-1 transition cursor-pointer"
                   title="Next Page"
                 >
                   <span>{lang === 'bn' ? 'পরবর্তী' : 'Next'}</span>
@@ -3672,7 +3756,7 @@ export default function OwntempHome() {
                   type="button"
                   onClick={handleLastDirectoryPage}
                   disabled={directoryPage >= directoryPagination.totalPages}
-                  className="px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-40 border border-slate-800 text-slate-300 flex items-center space-x-1 transition"
+                  className="px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-40 border border-slate-800 text-slate-300 flex items-center space-x-1 transition cursor-pointer"
                   title="Last Page"
                 >
                   <span className="hidden sm:inline">{lang === 'bn' ? 'সর্বশেষ' : 'Last'}</span>
@@ -3684,7 +3768,7 @@ export default function OwntempHome() {
               <button
                 type="button"
                 onClick={() => setShowDirectoryModal(false)}
-                className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition"
+                className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition cursor-pointer"
               >
                 {t.close}
               </button>

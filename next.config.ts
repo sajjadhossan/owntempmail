@@ -52,6 +52,42 @@ const nextConfig: NextConfig = {
             key: 'Expires',
             value: '0',
           },
+          {
+            key: 'Surrogate-Control',
+            value: 'no-store',
+          },
+          {
+            key: 'CDN-Cache-Control',
+            value: 'no-store',
+          },
+          {
+            key: 'Cloudflare-CDN-Cache-Control',
+            value: 'no-store',
+          },
+        ],
+      },
+      {
+        // Developer API v1: No-store for inboxes
+        source: '/api/v1/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          },
+          {
+            key: 'CDN-Cache-Control',
+            value: 'no-store',
+          },
+        ],
+      },
+      {
+        // Static assets and icons caching
+        source: '/(favicon.ico|manifest.json|.*\\.svg|.*\\.png|.*\\.jpg|.*\\.webp|.*\\.woff2)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=2592000, stale-while-revalidate=86400',
+          },
         ],
       },
     ];

@@ -31,17 +31,30 @@ export async function GET(
     const metadata = getInboxMetadata(address);
     const emails = getEmailsForAddress(address);
 
-    return NextResponse.json({
-      success: true,
-      message: 'Inbox emails retrieved successfully',
-      data: {
-        inbox: metadata,
-        emails,
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Inbox emails retrieved successfully',
+        data: {
+          inbox: metadata,
+          emails,
+        },
+        meta: {
+          total: emails.length,
+        },
       },
-      meta: {
-        total: emails.length,
-      },
-    });
+      {
+        status: 200,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          'Surrogate-Control': 'no-store',
+          'CDN-Cache-Control': 'no-store',
+          'Cloudflare-CDN-Cache-Control': 'no-store',
+        },
+      }
+    );
   } catch (error: any) {
     return NextResponse.json(
       {
@@ -50,7 +63,12 @@ export async function GET(
         errorCode: 'inbox_fetch_error',
         errors: [{ field: 'server', message: error?.message || 'Server error' }],
       },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, max-age=0',
+        },
+      }
     );
   }
 }

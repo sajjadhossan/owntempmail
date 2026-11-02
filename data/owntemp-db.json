@@ -282,6 +282,38 @@
       "createdAt": "2026-11-01T10:12:23.968Z",
       "lastActiveAt": "2026-11-01T10:12:23.968Z",
       "totalEmails": 1
+    },
+    "secure_5501@owntemp.live": {
+      "address": "secure_5501@owntemp.live",
+      "isLocked": false,
+      "failedAttempts": 0,
+      "createdAt": "2026-11-02T04:51:52.416Z",
+      "lastActiveAt": "2026-11-02T04:51:52.416Z",
+      "totalEmails": 0
+    },
+    "cloud_4618@owntemp.live": {
+      "address": "cloud_4618@owntemp.live",
+      "isLocked": false,
+      "failedAttempts": 0,
+      "createdAt": "2026-11-02T04:52:44.015Z",
+      "lastActiveAt": "2026-11-02T04:52:44.015Z",
+      "totalEmails": 0
+    },
+    "dev_rg68ad@owntemp.live": {
+      "address": "dev_rg68ad@owntemp.live",
+      "isLocked": false,
+      "failedAttempts": 0,
+      "createdAt": "2026-11-02T05:06:32.726Z",
+      "lastActiveAt": "2026-11-02T05:06:32.726Z",
+      "totalEmails": 0
+    },
+    "test@example.com": {
+      "address": "test@example.com",
+      "isLocked": false,
+      "failedAttempts": 0,
+      "createdAt": "2026-11-02T05:18:18.622Z",
+      "lastActiveAt": "2026-11-02T05:18:18.622Z",
+      "totalEmails": 0
     }
   },
   "emails": [

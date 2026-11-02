@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { saveInboundEmail } from '@/lib/storage';
 import { extractOtpCode, extractVerificationLinks } from '@/lib/otp-extractor';
+import { eventHub } from '@/lib/event-hub';
 
 export async function POST(req: NextRequest) {
   try {
@@ -52,6 +53,13 @@ export async function POST(req: NextRequest) {
       attachments,
       sizeBytes: Buffer.byteLength(textBody + (htmlBody || '')),
     });
+
+    // Real-time instant broadcast to all active SSE listeners (0ms latency)
+    try {
+      eventHub.broadcastNewEmail(saved);
+    } catch (e) {
+      console.warn('[EventHub Broadcast Warning]', e);
+    }
 
     return NextResponse.json(
       {

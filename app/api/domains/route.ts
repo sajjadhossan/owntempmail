@@ -20,15 +20,24 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json({
-    success: true,
-    message: 'All public and custom domains retrieved successfully',
-    data: merged,
-    meta: {
-      total: merged.length,
-      publicCount: ALL_PUBLIC_DOMAINS.length,
+  return NextResponse.json(
+    {
+      success: true,
+      message: 'All public and custom domains retrieved successfully',
+      data: merged,
+      meta: {
+        total: merged.length,
+        publicCount: ALL_PUBLIC_DOMAINS.length,
+      },
     },
-  });
+    {
+      status: 200,
+      headers: {
+        'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=600',
+        'CDN-Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+      },
+    }
+  );
 }
 
 export async function POST(req: NextRequest) {
