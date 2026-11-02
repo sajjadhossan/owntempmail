@@ -57,7 +57,7 @@ jobs:
 
   # 2. Android APK Build (Native Gradle Release Build)
   build-android-apk:
-    if: inputs.build_target == 'all' || inputs.build_target == 'android_apk' || startsWith(github.ref, 'refs/tags/v')
+    if: inputs.build_target == 'all' || inputs.build_target == 'android_apk' || github.event_name == 'push' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code

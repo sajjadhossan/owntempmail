@@ -94,17 +94,10 @@
       }
     }
 
-    // Try auto-redirect to savedUrl after 800ms
-    setTimeout(() => {
-      tryRedirect(savedUrl);
-    }, 800);
-
-    // If still here after 3s (e.g. offline or unreachable network), reveal server input card
-    setTimeout(() => {
-      document.getElementById('loader').style.display = 'none';
-      document.getElementById('config-card').style.display = 'block';
-      document.getElementById('status-text').innerText = 'Unable to reach online server. Tap retry or verify URL:';
-    }, 3000);
+    // Auto-reveal controls immediately with clear status without looping
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('config-card').style.display = 'block';
+    document.getElementById('status-text').innerText = 'অফলাইন মোড অথবা সার্ভার সংযোগ প্রয়োজন';
   </script>
 </body>
 </html>

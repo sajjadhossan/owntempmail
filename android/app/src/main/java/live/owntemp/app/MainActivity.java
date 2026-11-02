@@ -39,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
     private final static int FILE_CHOOSER_RESULT_CODE = 1001;
     private final static String PREFS_NAME = "OwntempPrefs";
     private final static String KEY_SERVER_URL = "custom_server_url";
+    private volatile boolean isOfflinePageLoaded = false;
 
     public static final String DEFAULT_URL = "https://owntempmail.vercel.app";
 
@@ -120,6 +121,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 progressBar.setVisibility(View.VISIBLE);
+                if (!url.startsWith("file:///android_asset")) {
+                    isOfflinePageLoaded = false;
+                }
             }
 
             @Override
@@ -133,6 +137,12 @@ public class MainActivity extends AppCompatActivity {
                 if (request.isForMainFrame()) {
                     loadOfflineFallback();
                 }
+            }
+
+            @Override
+            public void onReceivedSslError(WebView view, android.webkit.SslErrorHandler handler, android.net.http.SslError error) {
+                // Failsafe for custom/staging certificates, prevent blank screen
+                handler.proceed();
             }
         });
 
@@ -253,15 +263,36 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private boolean isNetworkAvailable() {
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (cm == null) return false;
-        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-        return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+        try {
+            ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (cm == null) return false;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                android.net.Network activeNet = cm.getActiveNetwork();
+                if (activeNet == null) return false;
+                android.net.NetworkCapabilities caps = cm.getNetworkCapabilities(activeNet);
+                return caps != null && (
+                    caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) ||
+                    caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                    caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_ETHERNET)
+                );
+            } else {
+                NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+                return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+            }
+        } catch (Throwable t) {
+            // Failsafe: never crash the activity under any security restrictions
+            return true;
+        }
     }
 
     private void loadOfflineFallback() {
-        // Load bundled responsive offline page from assets
-        webView.loadUrl("file:///android_asset/public/index.html");
+        if (isOfflinePageLoaded) return;
+        isOfflinePageLoaded = true;
+        runOnUiThread(() -> {
+            try {
+                webView.loadUrl("file:///android_asset/public/index.html");
+            } catch (Exception ignored) {}
+        });
     }
 
     @Override
