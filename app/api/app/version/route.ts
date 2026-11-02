@@ -5,15 +5,15 @@ export async function GET() {
     success: true,
     data: {
       appName: 'Owntemp',
-      latestVersion: '2.5.2',
-      edition: 'Edge CDN Caching, Real-time SSE Stream & Mobile Stability Edition',
+      latestVersion: '2.5.3',
+      edition: 'Silky Smooth UI, Haptics & Pinned Domains Edition',
       minimumSupportedVersion: '1.0.0',
-      apkDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.5.2/app-v2.5.2-build27-android.apk',
-      windowsDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.5.2/Owntemp-v2.5.2-windows-x64.zip',
-      macDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.5.2/Owntemp-v2.5.2-mac-universal.zip',
+      apkDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.5.3/app-v2.5.3-build28-android.apk',
+      windowsDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.5.3/Owntemp-v2.5.3-windows-x64.zip',
+      macDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.5.3/Owntemp-v2.5.3-mac-universal.zip',
       releaseNotes: {
-        bn: 'Owntemp v2.5.2: গ্লোবাল এজ সিডিএন (Cloudflare Edge CDN) ক্যাশিং আর্কিটেকচার, মেমোরি ও সেশন ব্রাউজার ক্যাশ, রিয়েল-টাইম SSE ইভেন্ট স্ট্রিম, ডোমেন ভেরিফিকেশন API এবং ৫০ হাজার ডোমেন ব্রাউজারে মোবাইল স্ক্রিন স্ট্যাবিলিটি।',
-        en: 'Owntemp v2.5.2: Global Edge CDN (Cloudflare Edge CDN) caching architecture, memory & session browser cache, real-time SSE stream, DNS verification API, and mobile WebView domain browser stability overhaul.',
+        bn: 'Owntemp v2.5.3: ট্যাকটাইল হ্যাপটিক ভাইব্রেশন ফিডব্যাক, ৫০ হাজার ডোমেন ব্রাউজারে স্টার/পিনড ফেভারিট সিস্টেম, ১২০ হার্জ আল্ট্রা-স্মুথ স্ক্রলিং এবং অ্যামোলেড পিওর ব্ল্যাক অপটিমাইজেশন।',
+        en: 'Owntemp v2.5.3: Tactile haptic vibration feedback, Star/Pinned favorite domain subsystem across 50,000+ pool, 120Hz ultra-smooth touch scrolling, and AMOLED optimizations.',
       },
       platforms: {
         android: {

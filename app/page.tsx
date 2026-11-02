@@ -29,6 +29,7 @@ import {
   Search,
   Filter,
   Bookmark,
+  Star,
   Layers,
   Settings,
   Smartphone,
@@ -100,6 +101,42 @@ export default function OwntempHome() {
   // Sound & Voice settings
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+
+  // Haptic feedback trigger for tactile mobile responses
+  const triggerHaptic = useCallback((ms = 40) => {
+    if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate(ms);
+      } catch (e) {}
+    }
+  }, []);
+
+  // Pinned / Favorite Domains state
+  const [pinnedDomains, setPinnedDomains] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('owntemp_pinned_domains');
+        return saved ? JSON.parse(saved) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  });
+
+  const togglePinDomain = useCallback((dom: string) => {
+    triggerHaptic(35);
+    setPinnedDomains((prev) => {
+      const exists = prev.includes(dom);
+      const updated = exists ? prev.filter((d) => d !== dom) : [dom, ...prev];
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('owntemp_pinned_domains', JSON.stringify(updated));
+        } catch (e) {}
+      }
+      return updated;
+    });
+  }, [triggerHaptic]);
 
   // Auto-refresh timer
   const [countdown, setCountdown] = useState(10);
@@ -191,6 +228,7 @@ export default function OwntempHome() {
 
   // Play audio chime when new email arrives
   const playChime = useCallback(() => {
+    triggerHaptic(60);
     if (!soundEnabled || typeof window === 'undefined') return;
     try {
       const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -912,6 +950,7 @@ export default function OwntempHome() {
 
   // Copy email
   const handleCopyEmail = () => {
+    triggerHaptic(40);
     navigator.clipboard.writeText(activeEmail);
     setCopiedText(true);
     setTimeout(() => setCopiedText(false), 2000);
@@ -919,6 +958,7 @@ export default function OwntempHome() {
 
   // Copy OTP code
   const handleCopyOtp = (code: string) => {
+    triggerHaptic(40);
     navigator.clipboard.writeText(code);
     setCopiedOtp(code);
     setTimeout(() => setCopiedOtp(null), 2000);
@@ -1436,11 +1476,22 @@ export default function OwntempHome() {
                     onChange={(e) => setSelectedDomain(e.target.value)}
                     className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 outline-none focus:border-indigo-500 font-mono w-full sm:w-auto"
                   >
-                    {domains.map((dom) => (
-                      <option key={dom.id} value={dom.domain}>
-                        @{dom.domain} {dom.businessName ? `(${dom.businessName})` : dom.isCustom ? '(Custom)' : ''}
-                      </option>
-                    ))}
+                    {pinnedDomains.length > 0 && (
+                      <optgroup label={lang === 'bn' ? '⭐ পিন করা ফেভারিট' : '⭐ Pinned Favorites'}>
+                        {pinnedDomains.map((pDom) => (
+                          <option key={`pin-${pDom}`} value={pDom}>
+                            ⭐ @{pDom}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    <optgroup label={lang === 'bn' ? '🌐 সমস্ত ডোমেন' : '🌐 All Domains'}>
+                      {domains.map((dom) => (
+                        <option key={dom.id} value={dom.domain}>
+                          @{dom.domain} {dom.businessName ? `(${dom.businessName})` : dom.isCustom ? '(Custom)' : ''}
+                        </option>
+                      ))}
+                    </optgroup>
                   </select>
                 )}
 
@@ -3607,6 +3658,66 @@ export default function OwntempHome() {
 
             {/* Domains Grid List */}
             <div className="p-3 sm:p-4 overflow-y-auto flex-1 space-y-3">
+              {/* Pinned / Favorite Domains Row */}
+              {pinnedDomains.length > 0 && (
+                <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-amber-300 mb-1.5">
+                    <span className="flex items-center space-x-1">
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      <span>{lang === 'bn' ? 'আপনার পিন করা ডোমেনসমূহ' : 'Pinned Favorites'} ({pinnedDomains.length})</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic(30);
+                        setPinnedDomains([]);
+                        try { localStorage.removeItem('owntemp_pinned_domains'); } catch (e) {}
+                      }}
+                      className="text-[10px] text-amber-400/80 hover:text-amber-300 underline"
+                    >
+                      {lang === 'bn' ? 'সব মুছুন' : 'Clear all'}
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {pinnedDomains.map((pDom) => (
+                      <button
+                        key={pDom}
+                        type="button"
+                        onClick={() => {
+                          triggerHaptic(30);
+                          setSelectedDomain(pDom);
+                          if (usernamePrefix) {
+                            const newAddr = `${usernamePrefix}@${pDom}`;
+                            setActiveEmail(newAddr);
+                            try { localStorage.setItem('owntemp_active_email', newAddr); } catch (e) {}
+                            fetchEmails(newAddr);
+                          }
+                          setShowDirectoryModal(false);
+                          setActionSuccess(
+                            lang === 'bn'
+                              ? `ডোমেইন @${pDom} সফলভাবে সিলেক্ট করা হয়েছে!`
+                              : `Domain @${pDom} selected successfully!`
+                          );
+                          setTimeout(() => setActionSuccess(null), 2500);
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-mono flex items-center space-x-1.5 transition active:scale-95"
+                      >
+                        <span>@{pDom}</span>
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            togglePinDomain(pDom);
+                          }}
+                          className="text-amber-400 hover:text-red-400 font-bold ml-1"
+                        >
+                          ×
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Quick Custom Domain Box */}
               <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center justify-between gap-2">
                 <div className="flex items-center space-x-2 flex-1 min-w-0">
@@ -3651,6 +3762,7 @@ export default function OwntempHome() {
                       <div
                         key={item.domain}
                         onClick={() => {
+                          triggerHaptic(30);
                           setSelectedDomain(item.domain);
                           if (usernamePrefix) {
                             const newAddr = `${usernamePrefix}@${item.domain}`;
@@ -3678,11 +3790,30 @@ export default function OwntempHome() {
                           <span className="font-mono text-xs font-bold text-slate-100 group-hover:text-indigo-300 transition truncate mr-1">
                             @{item.domain}
                           </span>
-                          {item.isUltraShort && (
-                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30 flex-shrink-0">
-                              {item.length}c
-                            </span>
-                          )}
+                          <div className="flex items-center space-x-1 flex-shrink-0">
+                            {item.isUltraShort && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30 flex-shrink-0">
+                                {item.length}c
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                togglePinDomain(item.domain);
+                              }}
+                              className="p-1 rounded-md hover:bg-slate-800 text-slate-500 hover:text-amber-400 transition"
+                              title={pinnedDomains.includes(item.domain) ? 'Unpin domain' : 'Pin domain'}
+                            >
+                              <Star
+                                className={`w-3.5 h-3.5 transition ${
+                                  pinnedDomains.includes(item.domain)
+                                    ? 'fill-amber-400 text-amber-400 scale-110'
+                                    : 'text-slate-500 hover:text-amber-400'
+                                }`}
+                              />
+                            </button>
+                          </div>
                         </div>
                         <div className="text-[10px] text-slate-500 font-medium truncate mt-1">
                           {item.category}
