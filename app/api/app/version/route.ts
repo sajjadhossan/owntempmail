@@ -5,15 +5,15 @@ export async function GET() {
     success: true,
     data: {
       appName: 'Owntemp',
-      latestVersion: '2.5.0',
-      edition: 'Clean Modern UI Overhaul Edition',
+      latestVersion: '2.5.1',
+      edition: 'Clean Modern UI & Android Stability Edition',
       minimumSupportedVersion: '1.0.0',
-      apkDownloadUrl: 'https://github.com/owntemp/releases/latest/app-v2.5.0-android.apk',
-      windowsDownloadUrl: 'https://github.com/owntemp/releases/latest/Owntemp-v2.5.0-windows-x64.exe',
-      macDownloadUrl: 'https://github.com/owntemp/releases/latest/Owntemp-v2.5.0-mac-universal.dmg',
+      apkDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.5.1/app-v2.5.1-build26-android.apk',
+      windowsDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.5.1/Owntemp-v2.5.1-windows-x64.zip',
+      macDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.5.1/Owntemp-v2.5.1-mac-universal.zip',
       releaseNotes: {
-        bn: 'Owntemp v2.5.0: সম্পূর্ণ নতুন পরিচ্ছন্ন ও আধুনিক ইউআই। পিসিতে ডুয়াল-পেন মাস্টার-ডিটেইল ভিউ, মোবাইলে বটম নেভিগেশন বার, হেডারের অপ্রয়োজনীয় বাটন হ্রাস, ফ্লোটিং কুইক-ওটিপি ব্যানার এবং সুবিন্যস্ত সেটিংস হাব।',
-        en: 'Owntemp v2.5.0: Clean Modern UI Overhaul. Master-detail split pane for desktop, mobile bottom navigation bar, uncluttered slim header, floating quick-OTP banner, and streamlined settings hub.',
+        bn: 'Owntemp v2.5.1: অ্যান্ড্রয়েড অ্যাপের ক্র্যাশ সমাধান ও নেটওয়ার্ক স্ট্যাবিলিটি আপডেট। ফেইলসেফ অফলাইন স্ক্রিন, ডাউনলোড পারমিশন এবং রিলিজ বাটন সরাসরি ডাউনলোডযোগ্য।',
+        en: 'Owntemp v2.5.1: Android runtime crash fixes and network stability updates. Failsafe offline screen, attachment permissions, and verified direct release binaries.',
       },
       platforms: {
         android: {

@@ -1,6 +1,6 @@
 {
   "name": "owntemp",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "private": true,
   "main": "desktop/main.js",
   "scripts": {
