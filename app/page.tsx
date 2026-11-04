@@ -60,6 +60,10 @@ import { translations, Language } from '@/lib/translations';
 import { generateQrSvgUri } from '@/lib/qr';
 import { APP_VERSION, APP_EDITION } from '@/lib/constants';
 import EmailRenderer from '@/components/EmailRenderer';
+import QrModal from '@/components/modals/QrModal';
+import LockModal from '@/components/modals/LockModal';
+import UnlockModal from '@/components/modals/UnlockModal';
+import SimModal from '@/components/modals/SimModal';
 
 // In-Memory Browser Cache for instant 0ms domain navigation
 const domainClientCache = new Map<string, any>();
@@ -2265,40 +2269,15 @@ export default function OwntempHome() {
       )}
 
       {/* QR Code Modal */}
-      {showQrModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-4 shadow-2xl text-center">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="font-bold text-base text-slate-100">{t.qrModalTitle}</h3>
-              <button onClick={() => setShowQrModal(false)} className="text-slate-400 hover:text-white">✕</button>
-            </div>
-
-            <p className="text-xs text-slate-400">{t.qrScanDesc}</p>
-
-            <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 flex justify-center">
-              <img
-                src={generateQrSvgUri(`mailto:${activeEmail}`)}
-                alt="Email QR Code"
-                className="w-48 h-48 rounded-lg"
-              />
-            </div>
-
-            <div className="font-mono text-xs text-indigo-300 bg-slate-950 px-3 py-2 rounded-lg truncate border border-slate-800">
-              {activeEmail}
-            </div>
-
-            <button
-              onClick={() => {
-                handleCopyEmail();
-                setShowQrModal(false);
-              }}
-              className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md transition"
-            >
-              {t.copy}
-            </button>
-          </div>
-        </div>
-      )}
+      <QrModal
+        isOpen={showQrModal}
+        onClose={() => setShowQrModal(false)}
+        activeEmail={activeEmail}
+        onCopy={handleCopyEmail}
+        title={t.qrModalTitle}
+        scanDesc={t.qrScanDesc}
+        copyText={t.copy}
+      />
 
       {/* Master App Settings, Cloudflare API & Integrations Modal */}
       {showSettingsModal && (
@@ -3082,97 +3061,31 @@ export default function OwntempHome() {
       )}
 
       {/* Lifetime Lock Modal */}
-      {showLockModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-indigo-500/30 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <div className="w-12 h-12 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mx-auto">
-              <Lock className="w-6 h-6" />
-            </div>
-            <div className="text-center space-y-1">
-              <h3 className="font-bold text-lg text-slate-100">{t.lockModalTitle}</h3>
-              <p className="text-xs text-slate-400">{t.lockModalDesc}</p>
-            </div>
-
-            <form onSubmit={handleLockLifetime} className="space-y-4 pt-2">
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-                  {t.enterPin}
-                </label>
-                <input
-                  type="password"
-                  maxLength={8}
-                  value={lockPin}
-                  onChange={(e) => setLockPin(e.target.value)}
-                  placeholder="e.g. 7492"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-center text-lg font-mono tracking-widest text-slate-100 outline-none focus:border-indigo-500"
-                  required
-                />
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowLockModal(false)}
-                  className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition"
-                >
-                  {t.cancel}
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30 transition"
-                >
-                  {t.confirmLock}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <LockModal
+        isOpen={showLockModal}
+        onClose={() => setShowLockModal(false)}
+        lockPin={lockPin}
+        setLockPin={setLockPin}
+        onSubmit={handleLockLifetime}
+        title={t.lockModalTitle}
+        description={t.lockModalDesc}
+        enterPinText={t.enterPin}
+        cancelText={t.cancel}
+        confirmText={t.confirmLock}
+      />
 
       {/* Unlock Modal */}
-      {showUnlockModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-amber-500/30 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <div className="w-12 h-12 rounded-xl bg-amber-600/20 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
-              <Unlock className="w-6 h-6" />
-            </div>
-            <div className="text-center space-y-1">
-              <h3 className="font-bold text-lg text-slate-100">{t.unlock}</h3>
-              <p className="text-xs text-slate-400">{t.enterUnlockPin}</p>
-            </div>
-
-            <form onSubmit={handleUnlock} className="space-y-4 pt-2">
-              <div>
-                <input
-                  type="password"
-                  maxLength={8}
-                  value={unlockPin}
-                  onChange={(e) => setUnlockPin(e.target.value)}
-                  placeholder="PIN"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-center text-lg font-mono tracking-widest text-slate-100 outline-none focus:border-amber-500"
-                  required
-                />
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowUnlockModal(false)}
-                  className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition"
-                >
-                  {t.cancel}
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold transition"
-                >
-                  {t.confirmUnlock}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <UnlockModal
+        isOpen={showUnlockModal}
+        onClose={() => setShowUnlockModal(false)}
+        unlockPin={unlockPin}
+        setUnlockPin={setUnlockPin}
+        onSubmit={handleUnlock}
+        title={t.unlock}
+        description={t.enterUnlockPin}
+        cancelText={t.cancel}
+        confirmText={t.confirmUnlock}
+      />
 
       {/* Custom Domain & Business Workspace Modal (v1.5.0 Dual Integration Hub) */}
       {showDomainModal && (
@@ -3527,97 +3440,27 @@ export default function OwntempHome() {
       )}
 
       {/* Simulator Modal */}
-      {showSimModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-indigo-500/30 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center space-x-2">
-                <Sparkles className="w-5 h-5 text-indigo-400" />
-                <h3 className="font-bold text-base text-slate-100">{t.quickSimulateTitle}</h3>
-              </div>
-              <button onClick={() => setShowSimModal(false)} className="text-slate-400 hover:text-white">✕</button>
-            </div>
-
-            {/* Target Active Inbox Badge */}
-            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
-              <div>
-                <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold">
-                  {lang === 'bn' ? 'প্রাপক ইনবক্স (Recipient)' : 'Target Inbox'}
-                </span>
-                <span className="font-mono text-xs font-semibold text-indigo-300">{activeEmail}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleSimulateInbound(undefined, Math.floor(100000 + Math.random() * 900000).toString())}
-                disabled={isSimulating}
-                className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm transition flex items-center space-x-1"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
-                <span>{lang === 'bn' ? '১-ক্লিকে কোড পাঠান' : 'Instant 1-Click'}</span>
-              </button>
-            </div>
-
-            <div className="border-t border-slate-800/80 pt-2">
-              <span className="text-[11px] font-semibold text-slate-400 block mb-2">
-                {lang === 'bn' ? 'অথবা কাস্টম তথ্য লিখুন:' : 'Or enter custom details:'}
-              </span>
-            </div>
-
-            <form onSubmit={(e) => handleSimulateInbound(e)} className="space-y-3">
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">{t.simSender}</label>
-                <input
-                  type="text"
-                  value={simSender}
-                  onChange={(e) => setSimSender(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-200 outline-none focus:border-indigo-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">{t.simSubject}</label>
-                <input
-                  type="text"
-                  value={simSubject}
-                  onChange={(e) => setSimSubject(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">{t.simOtp}</label>
-                <input
-                  type="text"
-                  value={simOtp}
-                  onChange={(e) => setSimOtp(e.target.value)}
-                  placeholder="যেমন: 849201 (ফাঁকা রাখলে স্বয়ংক্রিয় জেনারেট হবে)"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-200 outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowSimModal(false)}
-                  className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition"
-                >
-                  {t.cancel}
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSimulating}
-                  className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30 transition flex items-center justify-center space-x-1.5"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>{isSimulating ? t.sending : t.sendTestBtn}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <SimModal
+        isOpen={showSimModal}
+        onClose={() => setShowSimModal(false)}
+        activeEmail={activeEmail}
+        simSender={simSender}
+        setSimSender={setSimSender}
+        simSubject={simSubject}
+        setSimSubject={setSimSubject}
+        simOtp={simOtp}
+        setSimOtp={setSimOtp}
+        isSimulating={isSimulating}
+        onSubmit={handleSimulateInbound}
+        title={t.quickSimulateTitle}
+        senderLabel={t.simSender}
+        subjectLabel={t.simSubject}
+        otpLabel={t.simOtp}
+        cancelText={t.cancel}
+        sendBtnText={t.sendTestBtn}
+        sendingText={t.sending}
+        lang={lang}
+      />
 
       {/* 50,000+ Mega Domain Directory Modal */}
       {showDirectoryModal && (
