@@ -32,3 +32,26 @@ next-env.d.ts
 
 # Data persistence (optional ignore if keeping fresh)
 # data/owntemp-db.json
+
+# Sajjad Guard auto-protection
+key.properties
+
+# Sajjad Guard auto-protection
+*.jks
+
+# Sajjad Guard auto-protection
+*.keystore
+
+# Sajjad Guard auto-protection
+google-services.json
+
+# Sajjad Guard auto-protection
+.backups/
+
+# Sajjad Guard auto-protection
+.backups/**
+
+.antigravity/
+.project-memory.json
+.project-rules.json
+scratch/
