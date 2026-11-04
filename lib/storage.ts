@@ -23,7 +23,14 @@ interface DatabaseSchema {
   version: string;
 }
 
-const DB_DIR = path.join(process.cwd(), 'data');
+const isServerless = Boolean(
+  process.env.VERCEL ||
+  process.env.AWS_LAMBDA_FUNCTION_NAME ||
+  process.env.LAMBDA_TASK_ROOT ||
+  (process.env.NODE_ENV === 'production' && !fs.existsSync(path.join(process.cwd(), 'data')))
+);
+
+const DB_DIR = isServerless ? path.join('/tmp', 'data') : path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DB_DIR, 'owntemp-db.json');
 
 const DEFAULT_DOMAINS: DomainItem[] = [
@@ -47,7 +54,7 @@ function ensureDbLoaded(): DatabaseSchema {
       memoryDb = JSON.parse(raw);
     }
   } catch (err) {
-    console.warn('[Storage] Error reading DB_FILE, fallback to memory:', err);
+    console.warn('[Storage] Notice: Using in-memory fallback for DB_FILE:', err);
   }
 
   if (!memoryDb) {
@@ -55,7 +62,7 @@ function ensureDbLoaded(): DatabaseSchema {
       inboxes: {},
       emails: [],
       domains: DEFAULT_DOMAINS,
-      version: '1.6.0',
+      version: '2.5.3',
     };
     persistDb();
   }
@@ -71,7 +78,7 @@ function persistDb() {
     }
     fs.writeFileSync(DB_FILE, JSON.stringify(memoryDb, null, 2), 'utf-8');
   } catch (err) {
-    console.error('[Storage] Error persisting database:', err);
+    console.warn('[Storage] Notice: Ephemeral storage persist notice (in-memory active):', err);
   }
 }
 

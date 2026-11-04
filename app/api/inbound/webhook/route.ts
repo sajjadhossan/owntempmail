@@ -5,6 +5,27 @@ import { eventHub } from '@/lib/event-hub';
 
 export async function POST(req: NextRequest) {
   try {
+    // Optional Cloudflare Worker / Webhook authentication if WEBHOOK_SECRET is configured
+    const configuredSecret = process.env.WEBHOOK_SECRET;
+    if (configuredSecret && configuredSecret.trim().length > 0) {
+      const incomingSecret =
+        req.headers.get('x-webhook-secret') ||
+        req.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ||
+        new URL(req.url).searchParams.get('secret');
+
+      if (!incomingSecret || incomingSecret !== configuredSecret) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'Unauthorized: Invalid or missing webhook authentication secret token',
+            errorCode: 'auth_invalid_credentials',
+            errors: [{ field: 'authorization', message: 'Webhook secret verification failed' }],
+          },
+          { status: 401 }
+        );
+      }
+    }
+
     const body = await req.json();
 
     // Support both Cloudflare Worker format and standard webhook format

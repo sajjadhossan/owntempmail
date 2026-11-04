@@ -59,6 +59,7 @@ import {
 import { translations, Language } from '@/lib/translations';
 import { generateQrSvgUri } from '@/lib/qr';
 import { APP_VERSION, APP_EDITION } from '@/lib/constants';
+import EmailRenderer from '@/components/EmailRenderer';
 
 // In-Memory Browser Cache for instant 0ms domain navigation
 const domainClientCache = new Map<string, any>();
@@ -72,6 +73,7 @@ export default function OwntempHome() {
   const [domains, setDomains] = useState<DomainItem[]>([]);
   const [selectedDomain, setSelectedDomain] = useState('owntemp.live');
   const [activeEmail, setActiveEmail] = useState('demo-user@owntemp.live');
+  const [recentInboxes, setRecentInboxes] = useState<string[]>([]);
   const [isDirectDomainMode, setIsDirectDomainMode] = useState(false);
   const [directDomainInput, setDirectDomainInput] = useState('');
 
@@ -696,6 +698,13 @@ export default function OwntempHome() {
     let savedEmail = '';
     try {
       savedEmail = localStorage.getItem('owntemp_active_email') || '';
+      const savedRecents = localStorage.getItem('owntemp_recent_inboxes');
+      if (savedRecents) {
+        const parsed = JSON.parse(savedRecents);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setRecentInboxes(parsed);
+        }
+      }
     } catch (e) {}
 
     let initialEmail = '';
@@ -715,6 +724,12 @@ export default function OwntempHome() {
     setUsernamePrefix(parts[0]);
     if (parts[1]) setSelectedDomain(parts[1]);
     setActiveEmail(initialEmail);
+    setRecentInboxes((prev) => {
+      const filtered = prev.filter((item) => item.toLowerCase() !== initialEmail.toLowerCase());
+      const updated = [initialEmail, ...filtered].slice(0, 6);
+      try { localStorage.setItem('owntemp_recent_inboxes', JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
     fetchEmails(initialEmail);
   }, []); // Run strictly once on mount
 
@@ -912,9 +927,48 @@ export default function OwntempHome() {
     try {
       localStorage.setItem('owntemp_active_email', newAddress);
     } catch (e) {}
+    addRecentInbox(newAddress);
     fetchEmails(newAddress);
     setActionSuccess(lang === 'bn' ? 'সক্রিয় ইনবক্স পরিবর্তন করা হয়েছে!' : 'Active inbox updated successfully!');
     setTimeout(() => setActionSuccess(null), 3000);
+  };
+
+  const addRecentInbox = useCallback((addr: string) => {
+    if (!addr) return;
+    setRecentInboxes((prev) => {
+      const filtered = prev.filter((item) => item.toLowerCase() !== addr.toLowerCase());
+      const updated = [addr, ...filtered].slice(0, 6);
+      try {
+        localStorage.setItem('owntemp_recent_inboxes', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  }, []);
+
+  const handleSwitchInbox = (address: string) => {
+    triggerHaptic(35);
+    const parts = address.split('@');
+    if (parts.length === 2) {
+      setUsernamePrefix(parts[0]);
+      setSelectedDomain(parts[1]);
+    }
+    setActiveEmail(address);
+    try {
+      localStorage.setItem('owntemp_active_email', address);
+    } catch (e) {}
+    addRecentInbox(address);
+    fetchEmails(address);
+  };
+
+  const handleRemoveRecentInbox = (address: string) => {
+    triggerHaptic(20);
+    setRecentInboxes((prev) => {
+      const updated = prev.filter((item) => item.toLowerCase() !== address.toLowerCase());
+      try {
+        localStorage.setItem('owntemp_recent_inboxes', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
   };
 
   // Switch directly to a locked inbox
@@ -928,6 +982,7 @@ export default function OwntempHome() {
     try {
       localStorage.setItem('owntemp_active_email', address);
     } catch (e) {}
+    addRecentInbox(address);
     fetchEmails(address);
     setActionSuccess(lang === 'bn' ? `লক করা ইনবক্স (${address}) সক্রিয় করা হয়েছে!` : `Switched to locked inbox: ${address}`);
     setTimeout(() => setActionSuccess(null), 3000);
@@ -945,6 +1000,7 @@ export default function OwntempHome() {
     try {
       localStorage.setItem('owntemp_active_email', newAddr);
     } catch (e) {}
+    addRecentInbox(newAddr);
     fetchEmails(newAddr);
   };
 
@@ -1426,6 +1482,48 @@ export default function OwntempHome() {
                 </button>
               </div>
             </div>
+
+            {/* Multi-Inbox Active Workspace Tabs */}
+            {recentInboxes.length > 0 && (
+              <div className="flex items-center space-x-2 overflow-x-auto pb-1 pt-1 text-xs">
+                <span className="text-[11px] font-semibold text-slate-400 whitespace-nowrap flex items-center space-x-1">
+                  <Layers className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>{lang === 'bn' ? 'সম্প্রতি ইনবক্সসমূহ:' : 'Recent Tabs:'}</span>
+                </span>
+                <div className="flex items-center space-x-2 flex-nowrap">
+                  {recentInboxes.map((item) => {
+                    const isActive = item.toLowerCase() === activeEmail.toLowerCase();
+                    return (
+                      <div
+                        key={item}
+                        className={`group flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border transition font-mono text-[11px] cursor-pointer whitespace-nowrap select-none ${
+                          isActive
+                            ? 'bg-indigo-600/25 border-indigo-500/60 text-indigo-200 font-semibold shadow-sm shadow-indigo-500/20'
+                            : 'bg-slate-900/90 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                        }`}
+                        onClick={() => handleSwitchInbox(item)}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-indigo-400 animate-pulse' : 'bg-slate-600'}`} />
+                        <span className="max-w-[130px] sm:max-w-[190px] truncate">{item}</span>
+                        {recentInboxes.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveRecentInbox(item);
+                            }}
+                            className="opacity-40 group-hover:opacity-100 hover:text-rose-400 ml-1 transition"
+                            title="Close Tab"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Custom Alias & Domain Bar */}
             <div className="pt-2 border-t border-slate-800/60 space-y-2">
@@ -1934,16 +2032,11 @@ export default function OwntempHome() {
                     </div>
                   )}
 
-                  {selectedEmail.htmlBody ? (
-                    <div
-                      className="prose prose-invert max-w-none text-sm bg-slate-950 p-4 rounded-xl border border-slate-800 overflow-x-auto"
-                      dangerouslySetInnerHTML={{ __html: selectedEmail.htmlBody }}
-                    />
-                  ) : (
-                    <pre className="text-xs font-mono text-slate-300 whitespace-pre-wrap bg-slate-950 p-4 rounded-xl border border-slate-800">
-                      {selectedEmail.textBody}
-                    </pre>
-                  )}
+                  {/* Email Body - Sandboxed & XSS Protected */}
+                  <EmailRenderer
+                    htmlBody={selectedEmail.htmlBody}
+                    textBody={selectedEmail.textBody}
+                  />
 
                   {/* Attachments */}
                   {selectedEmail.attachments && selectedEmail.attachments.length > 0 && (
@@ -2099,16 +2192,11 @@ export default function OwntempHome() {
 
             {/* Modal Body */}
             <div className="p-5 overflow-y-auto flex-1 space-y-4">
-              {selectedEmail.htmlBody ? (
-                <div
-                  className="prose prose-invert max-w-none text-sm bg-slate-950 p-4 rounded-xl border border-slate-800"
-                  dangerouslySetInnerHTML={{ __html: selectedEmail.htmlBody }}
-                />
-              ) : (
-                <pre className="text-xs font-mono text-slate-300 whitespace-pre-wrap bg-slate-950 p-4 rounded-xl border border-slate-800">
-                  {selectedEmail.textBody}
-                </pre>
-              )}
+              {/* Email Body - Sandboxed & XSS Protected */}
+              <EmailRenderer
+                htmlBody={selectedEmail.htmlBody}
+                textBody={selectedEmail.textBody}
+              />
               {/* Attachments if present */}
               {selectedEmail.attachments && selectedEmail.attachments.length > 0 && (
                 <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
