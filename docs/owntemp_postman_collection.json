@@ -1,0 +1,198 @@
+{
+  "info": {
+    "_postman_id": "owntemp-postman-v2-5-3",
+    "name": "Owntemp Disposable Email API v2.5.3",
+    "description": "Postman Collection for Owntemp disposable temp mail platform, automated OTP extractor, and webhook suite.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "testAddress",
+      "value": "tester_qa@owntemp.live",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Developer API v1",
+      "item": [
+        {
+          "name": "1. Get API Overview & Domains",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inbox",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inbox"]
+            }
+          }
+        },
+        {
+          "name": "2. Create or Provision Temp Inbox",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prefix\": \"qa_bot\",\n  \"domain\": \"owntemp.live\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inbox",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inbox"]
+            }
+          }
+        },
+        {
+          "name": "3. Get Inbox Messages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inbox/{{testAddress}}/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inbox", "{{testAddress}}", "messages"]
+            }
+          }
+        },
+        {
+          "name": "4. Poll Instant OTP Code (CI/CD Automated Testing)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/inbox/{{testAddress}}/otp?timeout=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "inbox", "{{testAddress}}", "otp"],
+              "query": [
+                { "key": "timeout", "value": "10", "description": "Polling timeout in seconds (0-15s)" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Webhooks & Inbound Parsing",
+      "item": [
+        {
+          "name": "Simulate Inbound Email with OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"to\": \"{{testAddress}}\",\n  \"from\": \"service@security.google.com\",\n  \"senderName\": \"Google Verification\",\n  \"subject\": \"Your security verification code is 849201\",\n  \"text\": \"Hello, your one-time verification passcode is 849201. Click here: https://example.com/verify?token=xyz\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/inbound/webhook",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "inbound", "webhook"]
+            }
+          }
+        },
+        {
+          "name": "Run Live Webhook Pipeline Diagnostic",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/cloudflare/test",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cloudflare", "test"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Outbound & Lifetime Protection",
+      "item": [
+        {
+          "name": "Send Disposable Outbound Reply",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"from\": \"{{testAddress}}\",\n  \"to\": \"recipient@example.com\",\n  \"subject\": \"Re: Verification Request\",\n  \"textBody\": \"Hello, this is a reply sent from Owntemp disposable email!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/inbox/send",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "inbox", "send"]
+            }
+          }
+        },
+        {
+          "name": "Lock Inbox Permanently",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address\": \"{{testAddress}}\",\n  \"pin\": \"7890\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/inbox/lock",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "inbox", "lock"]
+            }
+          }
+        },
+        {
+          "name": "Unlock Inbox with PIN",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address\": \"{{testAddress}}\",\n  \"pin\": \"7890\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/inbox/unlock",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "inbox", "unlock"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Documentation & Version",
+      "item": [
+        {
+          "name": "Get OpenAPI 3.0 Specification",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/docs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "docs"]
+            }
+          }
+        },
+        {
+          "name": "Get Application Version Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/app/version",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "app", "version"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+
