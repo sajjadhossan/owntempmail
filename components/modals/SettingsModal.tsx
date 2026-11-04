@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Settings,
   Sparkles,
@@ -148,6 +148,29 @@ export default function SettingsModal({
   handleExportEmails,
   emailsCount,
 }: SettingsModalProps) {
+  const [isTestingWebhook, setIsTestingWebhook] = useState(false);
+  const [webhookDiagnostic, setWebhookDiagnostic] = useState<any | null>(null);
+  const [diagnosticError, setDiagnosticError] = useState<string | null>(null);
+
+  const handleRunWebhookDiagnostic = async () => {
+    setIsTestingWebhook(true);
+    setWebhookDiagnostic(null);
+    setDiagnosticError(null);
+    try {
+      const res = await fetch('/api/cloudflare/test', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setWebhookDiagnostic(data.data);
+      } else {
+        setDiagnosticError(data.message || 'Diagnostic failed');
+      }
+    } catch (err: any) {
+      setDiagnosticError(err?.message || 'Network error executing diagnostic probe');
+    } finally {
+      setIsTestingWebhook(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -278,6 +301,71 @@ export default function SettingsModal({
               <p className="text-[10px] text-slate-500 font-mono">
                 {t.generatedWebhookLabel} <span className="text-slate-400">{vercelLiveUrl.replace(/\/+$/, '')}/api/inbound/webhook</span>
               </p>
+            </div>
+
+            {/* Live Webhook Health & Diagnostic Tool */}
+            <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-300 flex items-center space-x-1.5">
+                  <Activity className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>{lang === 'bn' ? 'ওয়েবহুক পাইপলাইন ও ওটিপি ডায়াগনস্টিক' : 'Live Webhook & OTP Diagnostic'}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={handleRunWebhookDiagnostic}
+                  disabled={isTestingWebhook}
+                  className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold transition flex items-center space-x-1.5 shadow-sm"
+                >
+                  <Activity className={`w-3.5 h-3.5 ${isTestingWebhook ? 'animate-spin' : ''}`} />
+                  <span>
+                    {isTestingWebhook
+                      ? (lang === 'bn' ? 'পরীক্ষা চলছে...' : 'Probing...')
+                      : (lang === 'bn' ? '⚡ ডায়াগনস্টিক টেস্ট চালান' : '⚡ Run Diagnostic Probe')}
+                  </span>
+                </button>
+              </div>
+
+              {webhookDiagnostic && (
+                <div className="p-3 rounded-lg bg-slate-900 border border-emerald-500/30 text-xs space-y-2 animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                    <span className="text-emerald-400 font-bold flex items-center space-x-1.5">
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      <span>{lang === 'bn' ? 'ইনবাউন্ড পাইপলাইন ১০০% কার্যকর!' : 'Inbound Pipeline 100% Operational'}</span>
+                    </span>
+                    <span className="font-mono text-[10px] text-slate-400">
+                      Latency: <b className="text-emerald-300">{webhookDiagnostic.latencyMs}ms</b>
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div className="p-2 rounded bg-slate-950/70 border border-slate-800">
+                      <div className="text-slate-400">OTP Extractor</div>
+                      <div className="font-mono font-bold text-white flex items-center space-x-1 mt-0.5">
+                        <span className="text-emerald-400">✓</span>
+                        <span>Code: {webhookDiagnostic.otpEngine?.parsedCode}</span>
+                      </div>
+                    </div>
+                    <div className="p-2 rounded bg-slate-950/70 border border-slate-800">
+                      <div className="text-slate-400">Link Detector</div>
+                      <div className="font-mono font-bold text-white flex items-center space-x-1 mt-0.5">
+                        <span className="text-emerald-400">✓</span>
+                        <span>{webhookDiagnostic.linkExtractor?.verified ? 'Verified Active' : 'Active'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-[10px] text-slate-400 font-mono truncate">
+                    Storage: <span className="text-indigo-300">{webhookDiagnostic.storage?.backend}</span>
+                  </div>
+                </div>
+              )}
+
+              {diagnosticError && (
+                <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center space-x-2">
+                  <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+                  <span>{diagnosticError}</span>
+                </div>
+              )}
             </div>
 
             {/* Auto Setup Cloudflare Form */}
