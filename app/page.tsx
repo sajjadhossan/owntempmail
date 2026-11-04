@@ -50,6 +50,8 @@ import {
   Moon,
   Zap,
   Reply,
+  Keyboard,
+  FileSpreadsheet,
 } from 'lucide-react';
 import {
   EmailRecord,
@@ -73,6 +75,7 @@ import SettingsModal from '@/components/modals/SettingsModal';
 import DomainFleetModal from '@/components/modals/DomainFleetModal';
 import DirectoryModal from '@/components/modals/DirectoryModal';
 import ReplyModal from '@/components/modals/ReplyModal';
+import KeyboardShortcutsModal from '@/components/modals/KeyboardShortcutsModal';
 
 // In-Memory Browser Cache for instant 0ms domain navigation
 const domainClientCache = new Map<string, any>();
@@ -167,6 +170,7 @@ export default function OwntempHome() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showDirectoryModal, setShowDirectoryModal] = useState(false);
   const [showReplyModal, setShowReplyModal] = useState(false);
+  const [showKeyboardModal, setShowKeyboardModal] = useState(false);
 
   // 50,000+ Mega Domain Directory State
   const [directorySearch, setDirectorySearch] = useState('');
@@ -1250,6 +1254,107 @@ export default function OwntempHome() {
     setTimeout(() => setActionSuccess(null), 3000);
   };
 
+  // Export all inbox emails as CSV
+  const handleExportCsv = () => {
+    if (emails.length === 0) return;
+    const headers = ['ID', 'Date', 'Sender', 'Sender Name', 'Subject', 'OTP Code', 'Size (Bytes)'];
+    const rows = emails.map((e) => [
+      `"${e.id}"`,
+      `"${new Date(e.receivedAt).toISOString()}"`,
+      `"${(e.sender || '').replace(/"/g, '""')}"`,
+      `"${(e.senderName || '').replace(/"/g, '""')}"`,
+      `"${(e.subject || '').replace(/"/g, '""')}"`,
+      `"${(e.otpCode || '').replace(/"/g, '""')}"`,
+      e.sizeBytes || 0,
+    ]);
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `owntemp_backup_${activeEmail.replace(/[@.]/g, '_')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setActionSuccess(lang === 'bn' ? 'সকল ইমেইল CSV ফরম্যাটে এক্সপোর্ট হয়েছে!' : 'All emails exported to CSV successfully!');
+    setTimeout(() => setActionSuccess(null), 3000);
+  };
+
+// Global Keyboard Shortcuts (HUD & Hotkeys)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      const isInput =
+        activeEl &&
+        (activeEl.tagName === 'INPUT' ||
+          activeEl.tagName === 'TEXTAREA' ||
+          (activeEl as HTMLElement).isContentEditable);
+
+      if (e.key === 'Escape') {
+        setShowKeyboardModal(false);
+        setShowLockModal(false);
+        setShowUnlockModal(false);
+        setShowDomainModal(false);
+        setShowSimModal(false);
+        setShowQrModal(false);
+        setShowSettingsModal(false);
+        setShowDirectoryModal(false);
+        setShowReplyModal(false);
+        setSelectedEmail(null);
+        return;
+      }
+
+      if (isInput) return;
+
+      if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+        e.preventDefault();
+        setShowKeyboardModal((prev) => !prev);
+      } else if (e.key === 'c' || e.key === 'C') {
+        e.preventDefault();
+        handleCopyEmail();
+      } else if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        fetchEmails(activeEmail);
+      } else if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        handleGenerateRandom();
+      } else if (e.key === 'l' || e.key === 'L') {
+        e.preventDefault();
+        if (inboxMeta?.isLocked) {
+          setShowUnlockModal(true);
+        } else {
+          setShowLockModal(true);
+        }
+      } else if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        setShowSimModal(true);
+      } else if (e.key === 'd' || e.key === 'D') {
+        e.preventDefault();
+        setShowDirectoryModal(true);
+        fetchDirectoryDomains('', directoryCategory, 1, directoryLimit, false);
+      } else if (e.key === 'e' || e.key === 'E') {
+        e.preventDefault();
+        handleExportEmails();
+      } else if (e.key === 'v' || e.key === 'V') {
+        e.preventDefault();
+        handleExportCsv();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    activeEmail,
+    inboxMeta,
+    directoryCategory,
+    directoryLimit,
+    handleCopyEmail,
+    fetchEmails,
+    handleGenerateRandom,
+    fetchDirectoryDomains,
+    handleExportEmails,
+    handleExportCsv,
+  ]);
+
   // Filtered emails
   const filteredEmails = useMemo(() => {
     return emails.filter((item) => {
@@ -1372,6 +1477,16 @@ export default function OwntempHome() {
             >
               <Settings className="w-4 h-4 text-slate-400" />
               <span className="hidden md:inline">{lang === 'bn' ? 'সেটিংস' : 'Settings'}</span>
+            </button>
+
+            {/* Keyboard Shortcuts HUD */}
+            <button
+              type="button"
+              onClick={() => setShowKeyboardModal(true)}
+              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-white transition shadow-sm text-xs font-semibold"
+              title={lang === 'bn' ? 'কিবোর্ড শর্টকাট (?)' : 'Keyboard Shortcuts (?)'}
+            >
+              <Keyboard className="w-4 h-4 text-slate-400" />
             </button>
 
             {/* Language Switcher */}
@@ -1779,6 +1894,29 @@ export default function OwntempHome() {
               <span className="text-xs text-slate-500 hidden sm:inline">
                 {t.autoRefreshIn} <b className="text-indigo-400 font-mono">{countdown}</b>{t.seconds}
               </span>
+
+              {emails.length > 0 && (
+                <div className="flex items-center space-x-1.5">
+                  <button
+                    type="button"
+                    onClick={handleExportEmails}
+                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs flex items-center space-x-1 transition shadow-sm"
+                    title={lang === 'bn' ? 'JSON ব্যাকআপ ডাউনলোড' : 'Export JSON'}
+                  >
+                    <Download className="w-3.5 h-3.5 text-indigo-400" />
+                    <span className="hidden sm:inline font-mono">JSON</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleExportCsv}
+                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs flex items-center space-x-1 transition shadow-sm"
+                    title={lang === 'bn' ? 'CSV স্প্রেডশিট ডাউনলোড' : 'Export CSV'}
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="hidden sm:inline font-mono">CSV</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -2549,6 +2687,13 @@ export default function OwntempHome() {
           lang={lang}
         />
       )}
+
+      {/* Keyboard Shortcuts Cheatsheet Modal */}
+      <KeyboardShortcutsModal
+        isOpen={showKeyboardModal}
+        onClose={() => setShowKeyboardModal(false)}
+        lang={lang}
+      />
 
       {/* Floating Instant OTP Notification Card */}
       {latestOtpEmail && latestOtpEmail.otpCode && latestOtpEmail.otpCode !== dismissedOtp && (
