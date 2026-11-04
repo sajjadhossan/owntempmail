@@ -5,6 +5,16 @@ All notable changes to **Owntemp** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.3] - 2026-11-04
+### Added
+- **Sandboxed Email Viewer (`components/EmailRenderer.tsx`)**: Replaced raw `dangerouslySetInnerHTML` with an isolated, script-disabled iframe view to eliminate Stored XSS threats completely, with tabs for HTML, plain text, and source.
+- **Multi-Inbox Active Workspace Tabs**: Support for running up to 6 disposable inboxes simultaneously with instant 1-click switching and per-tab closing.
+- **Tri-Theme Architecture (Dark / Light / AMOLED)**: Instant interactive theme switcher with full AMOLED true-black and light mode overrides.
+- **Floating Instant OTP Notification Banner (`components/FloatingOtpBanner.tsx`)**: High-priority sliding action banner with 1-click OTP copying, voice recitation, and direct account verification link trigger.
+- **Modular Component Extractions**: Broke down monolithic `app/page.tsx` into standalone modular components (`QrModal`, `LockModal`, `UnlockModal`, `SimModal`, `SettingsModal`, `DomainFleetModal`, `DirectoryModal`).
+- **Serverless Vercel Ephemeral Storage Hardening**: Dynamic `/tmp/data` path fallback in `lib/storage.ts` preventing filesystem `EROFS` crashes.
+- **Inbound Webhook Secret Verification**: Secure token authentication preventing unauthorized webhook spam.
+
 ## [2.5.0] - 2026-11-01
 ### Added
 - **Clean Modern UI Overhaul**: Full design cleanup addressing cognitive overload and visual clutter across PC, Web, and Mobile platforms.
