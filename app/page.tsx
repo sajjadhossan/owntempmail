@@ -64,6 +64,9 @@ import QrModal from '@/components/modals/QrModal';
 import LockModal from '@/components/modals/LockModal';
 import UnlockModal from '@/components/modals/UnlockModal';
 import SimModal from '@/components/modals/SimModal';
+import SettingsModal from '@/components/modals/SettingsModal';
+import DomainFleetModal from '@/components/modals/DomainFleetModal';
+import DirectoryModal from '@/components/modals/DirectoryModal';
 
 // In-Memory Browser Cache for instant 0ms domain navigation
 const domainClientCache = new Map<string, any>();
@@ -2279,786 +2282,67 @@ export default function OwntempHome() {
         copyText={t.copy}
       />
 
-      {/* Master App Settings, Cloudflare API & Integrations Modal */}
-      {showSettingsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-indigo-500/30 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-5 shadow-2xl">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center space-x-2">
-                <Settings className="w-5 h-5 text-indigo-400" />
-                <h3 className="font-bold text-base text-slate-100">{t.settingsTitle}</h3>
-              </div>
-              <button onClick={() => setShowSettingsModal(false)} className="text-slate-400 hover:text-white">✕</button>
-            </div>
-
-            {/* Master Navigation Tabs */}
-            <div className="flex rounded-xl bg-slate-950 p-1 border border-slate-800 gap-1">
-              <button
-                type="button"
-                onClick={() => setSettingsTab('api')}
-                className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
-                  settingsTab === 'api'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span className="truncate">{t.settingsTabApi}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSettingsTab('domains')}
-                className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
-                  settingsTab === 'domains'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Globe className="w-3.5 h-3.5 text-indigo-400" />
-                <span className="truncate">{t.settingsTabDomains}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSettingsTab('telegram')}
-                className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
-                  settingsTab === 'telegram'
-                    ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Send className="w-3.5 h-3.5 text-sky-400" />
-                <span className="truncate">{t.settingsTabTelegram}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSettingsTab('deployment')}
-                className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
-                  settingsTab === 'deployment'
-                    ? 'bg-gradient-to-r from-blue-600 to-emerald-600 text-white shadow-md shadow-blue-600/30'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <ArrowLeftRight className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="truncate">{t.settingsTabDeployment}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSettingsTab('general')}
-                className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
-                  settingsTab === 'general'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Settings className="w-3.5 h-3.5 text-slate-400" />
-                <span className="truncate">{t.settingsTabGeneral}</span>
-              </button>
-            </div>
-
-            {/* TAB 1: CLOUDFLARE & API INTEGRATION */}
-            {settingsTab === 'api' && (
-              <div className="space-y-4">
-                {/* Domain vs Website Clarification Callout */}
-                <div className="p-3.5 rounded-xl bg-indigo-950/40 border border-indigo-500/30 text-xs space-y-1.5">
-                  <div className="font-bold text-indigo-300 flex items-center space-x-1.5">
-                    <Sparkles className="w-4 h-4 text-amber-400" />
-                    <span>{lang === 'bn' ? '💡 নির্দেশিকা: টার্গেট ডোমেইন বনাম Vercel URL' : '💡 Guide: Target Domain vs Vercel URL'}</span>
-                  </div>
-                  <p className="text-slate-300 text-[11px] leading-relaxed">
-                    {lang === 'bn' 
-                      ? '• টার্গেট ডোমেইন: আপনার Cloudflare অ্যাকাউন্টে যুক্ত থাকা নিজস্ব কাস্টম ডোমেইন (যেমন: yourdomain.com)। এখানে কখনো vercel.app লিখবেন না।' 
-                      : '• Target Domain: Your custom domain registered in Cloudflare (e.g. yourdomain.com). Never enter vercel.app here.'}
-                  </p>
-                  <p className="text-slate-300 text-[11px] leading-relaxed">
-                    {lang === 'bn' 
-                      ? '• Vercel লাইভ URL: এটি আপনার ওয়েবসাইটের ঠিকানা (যেমন: https://owntempmail.vercel.app), যেখান থেকে ইনবক্স ইমেইল রিসিভ করে।' 
-                      : '• Vercel Live URL: Your live website address (e.g. https://owntempmail.vercel.app), where inbound webhooks deliver emails.'}
-                  </p>
-                </div>
-
-                {/* Vercel Website URL Input */}
-                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300 block">{t.vercelUrlLabel}</label>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="url"
-                      value={vercelLiveUrl}
-                      onChange={(e) => setVercelLiveUrl(e.target.value)}
-                      placeholder={t.vercelUrlPlaceholder}
-                      className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-indigo-200 font-mono outline-none focus:border-indigo-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(`${vercelLiveUrl.replace(/\/+$/, '')}/api/inbound/webhook`);
-                        setActionSuccess(lang === 'bn' ? 'ওয়েবহুক URL কপি হয়েছে!' : 'Webhook URL copied!');
-                        setTimeout(() => setActionSuccess(null), 2000);
-                      }}
-                      className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700 transition"
-                    >
-                      {t.copy} Webhook
-                    </button>
-                  </div>
-                  <p className="text-[10px] text-slate-500 font-mono">
-                    {t.generatedWebhookLabel} <span className="text-slate-400">{vercelLiveUrl.replace(/\/+$/, '')}/api/inbound/webhook</span>
-                  </p>
-                </div>
-
-                {/* Auto Setup Cloudflare Form */}
-                <form onSubmit={handleAutoSetupCloudflare} className="bg-slate-950 p-4 rounded-xl border border-indigo-500/30 space-y-3.5">
-                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-                    <span className="text-xs font-bold text-slate-200 flex items-center space-x-1.5">
-                      <Sparkles className="w-4 h-4 text-amber-400" />
-                      <span>{lang === 'bn' ? 'অটোমেটিক ক্লাউডফ্লেয়ার API সেটআপ' : '1-Click Cloudflare Automated Setup'}</span>
-                    </span>
-                    <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                      {lang === 'bn' ? '১০০% ফ্রি' : '100% Free'}
-                    </span>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-300 block">
-                      {lang === 'bn' ? '১. টার্গেট ডোমেইন (Cloudflare-এ থাকা আসল ডোমেইনের নাম):' : '1. Target Domain (as listed in Cloudflare):'}
-                    </label>
-                    <input
-                      type="text"
-                      value={selectedDomain}
-                      onChange={(e) => setSelectedDomain(e.target.value.trim().toLowerCase())}
-                      placeholder="যেমন: yourdomain.com"
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-indigo-300 font-bold outline-none focus:border-indigo-500"
-                      required
-                    />
-                    {selectedDomain.toLowerCase().includes('vercel.app') && (
-                      <div className="text-[11px] text-rose-400 bg-rose-500/10 p-2 rounded-lg border border-rose-500/30 flex items-center space-x-1.5">
-                        <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                        <span>
-                          {lang === 'bn' 
-                            ? 'সাবধান: vercel.app হলো আপনার ওয়েবসাইট লিঙ্ক, এটি ক্লাউডফ্লেয়ার ডোমেইন নয়। ক্লাউডফ্লেয়ারে থাকা আপনার নিজস্ব ডোমেইন নাম লিখুন।' 
-                            : 'Warning: vercel.app is your website URL, not a Cloudflare domain. Please enter your real Cloudflare custom domain.'}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-300 block">
-                      {lang === 'bn' ? '২. ক্লাউডফ্লেয়ার API টোকেন (API Token):' : '2. Cloudflare API Token:'}
-                    </label>
-                    <input
-                      type="password"
-                      value={cfApiToken}
-                      onChange={(e) => setCfApiToken(e.target.value)}
-                      placeholder={t.cfTokenPlaceholder}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 outline-none focus:border-indigo-500"
-                      required
-                    />
-
-                    {/* Button to Fetch Domains from Cloudflare */}
-                    <div className="pt-1.5 flex items-center justify-between">
-                      <button
-                        type="button"
-                        onClick={handleFetchCloudflareZones}
-                        disabled={isFetchingCfZones || !cfApiToken.trim()}
-                        className="inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 transition disabled:opacity-50"
-                      >
-                        <Search className="w-3.5 h-3.5" />
-                        <span>
-                          {isFetchingCfZones 
-                            ? (lang === 'bn' ? 'ডোমেইন খোঁজা হচ্ছে...' : 'Fetching domains...') 
-                            : (lang === 'bn' ? '🔍 ক্লাউডফ্লেয়ারে থাকা আমার ডোমেইনগুলো খুঁজুন' : '🔍 Fetch My Domains from Cloudflare')}
-                        </span>
-                      </button>
-                    </div>
-
-                    {cfZonesMsg && (
-                      <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 space-y-1.5 mt-2">
-                        <p className="text-[11px] font-semibold text-slate-300">{cfZonesMsg}</p>
-                        {cfAvailableZones.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 pt-1">
-                            {cfAvailableZones.map((z) => (
-                              <button
-                                key={z.id}
-                                type="button"
-                                onClick={() => setSelectedDomain(z.name)}
-                                className={`px-2.5 py-1 rounded-md text-xs font-mono font-bold transition flex items-center space-x-1 ${
-                                  selectedDomain === z.name
-                                    ? 'bg-emerald-600 text-white shadow-sm'
-                                    : 'bg-slate-800 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/20'
-                                }`}
-                              >
-                                <span>@{z.name}</span>
-                                <span className="text-[9px] text-emerald-300 uppercase">({z.status})</span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isSettingUpCf}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition flex items-center justify-center space-x-2"
-                  >
-                    <Sparkles className="w-4 h-4 text-yellow-300" />
-                    <span>{isSettingUpCf ? t.settingUp : (lang === 'bn' ? '⚡ এখনই অটোমেটিক ক্লাউডফ্লেয়ার সেটআপ করুন' : '⚡ Auto-Configure Cloudflare Now')}</span>
-                  </button>
-
-                  {/* Status Reports */}
-                  {cfSetupResult && (
-                    <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs space-y-1">
-                      <div className="font-bold flex items-center space-x-1.5 text-emerald-400">
-                        <Check className="w-4 h-4" />
-                        <span>{lang === 'bn' ? 'সেটআপ সফল হয়েছে!' : 'Setup Successful!'}</span>
-                      </div>
-                      <p className="text-slate-300 text-[11px] leading-relaxed whitespace-pre-line">{cfSetupResult}</p>
-                    </div>
-                  )}
-
-                  {cfSetupError && (
-                    <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs space-y-1">
-                      <div className="font-bold flex items-center space-x-1.5 text-rose-400">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>{lang === 'bn' ? 'সেটআপ ব্যর্থ হয়েছে' : 'Setup Failed'}</span>
-                      </div>
-                      <p className="text-slate-300 text-[11px] leading-relaxed whitespace-pre-line">{cfSetupError}</p>
-                    </div>
-                  )}
-                </form>
-
-                {/* Token Guide */}
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs">
-                  <div className="font-bold text-amber-300 flex items-center space-x-1.5">
-                    <KeyRound className="w-3.5 h-3.5" />
-                    <span>{t.tokenStepTitle}</span>
-                  </div>
-                  <p className="text-slate-400">{t.tokenStep1}</p>
-                  <p className="text-slate-400">{t.tokenStep2}</p>
-                  <p className="text-slate-400">{t.tokenStep3}</p>
-                  <p className="text-slate-400">{t.tokenStep4}</p>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 2: DOMAINS & BUSINESS PROFILE */}
-            {settingsTab === 'domains' && (
-              <div className="space-y-4">
-                {/* Business Workspace Profile Form */}
-                <form onSubmit={handleSaveBusinessProfile} className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-                  <div className="font-bold text-xs text-slate-200 flex items-center space-x-1.5">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    <span>{t.businessSetupTitle}</span>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-300 block">{t.businessNameLabel}</label>
-                    <input
-                      type="text"
-                      value={businessNameInput}
-                      onChange={(e) => setBusinessNameInput(e.target.value)}
-                      placeholder="যেমন: My Brand Workspace"
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-300 block">{t.businessTaglineLabel}</label>
-                    <input
-                      type="text"
-                      value={businessTaglineInput}
-                      onChange={(e) => setBusinessTaglineInput(e.target.value)}
-                      placeholder="যেমন: Disposable Temp Mail"
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition"
-                  >
-                    {t.saveBusiness}
-                  </button>
-                </form>
-
-                {/* Add Custom Domain Form */}
-                <form onSubmit={handleAddDomain} className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-                  <span className="text-xs font-bold text-slate-200 block">{t.customDomainTitle}</span>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newDomainInput}
-                      onChange={(e) => setNewDomainInput(e.target.value)}
-                      placeholder={t.domainPlaceholder}
-                      className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 outline-none focus:border-indigo-500"
-                    />
-                    <button
-                      type="submit"
-                      className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition"
-                    >
-                      {t.addDomainBtn}
-                    </button>
-                  </div>
-                </form>
-
-                {/* Active Domains List */}
-                <div className="space-y-2">
-                  <span className="text-xs font-bold text-slate-300 block">সক্রিয় ডোমেইনসমূহ (Active Domains):</span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {domains.map((dom) => (
-                      <div
-                        key={dom.id}
-                        onClick={() => setSelectedDomain(dom.domain)}
-                        className={`p-3 rounded-xl border flex items-center justify-between text-xs cursor-pointer transition ${
-                          selectedDomain === dom.domain
-                            ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300'
-                            : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
-                        }`}
-                      >
-                        <div className="truncate mr-2">
-                          <div className="font-mono font-semibold text-slate-200 truncate">@{dom.domain}</div>
-                          <div className="text-[10px] text-slate-500 truncate">
-                            {dom.businessName || (dom.isCustom ? 'Custom Business' : 'Default System')}
-                          </div>
-                        </div>
-                        {dom.isCustom && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteDomain(dom.id);
-                            }}
-                            className="text-slate-500 hover:text-rose-400 p-1 rounded transition"
-                            title="Delete domain"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 3: TELEGRAM REAL-TIME ALERTS */}
-            {settingsTab === 'telegram' && (
-              <div className="space-y-4">
-                <div className="p-3.5 rounded-xl bg-sky-950/40 border border-sky-500/30 text-xs space-y-1.5">
-                  <div className="font-bold text-sky-300 flex items-center space-x-1.5">
-                    <Send className="w-4 h-4 text-sky-400" />
-                    <span>{t.telegramTitle}</span>
-                  </div>
-                  <p className="text-slate-300 text-[11px] leading-relaxed">
-                    {t.telegramDesc}
-                  </p>
-                </div>
-
-                <form onSubmit={handleSaveTelegram} className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3.5">
-                  {/* Enable Switch */}
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                    <div>
-                      <div className="text-xs font-bold text-slate-200">
-                        {lang === 'bn' ? 'টেলিগ্রাম নোটিফিকেশন সক্রিয় করুন' : 'Enable Telegram Alerts'}
-                      </div>
-                      <div className="text-[10px] text-slate-400">
-                        {lang === 'bn' ? 'প্রতিটি নতুন ইমেইল বা ওটিপি আপনার টেলিগ্রামে পাঠাবে' : 'Stream incoming emails directly to Telegram'}
-                      </div>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={telegramConfig.enabled}
-                        onChange={(e) => setTelegramConfig({ ...telegramConfig, enabled: e.target.checked })}
-                        className="sr-only peer"
-                      />
-                      <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-500"></div>
-                    </label>
-                  </div>
-
-                  {/* Bot Token Input */}
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-300 block">{t.telegramBotToken}</label>
-                    <input
-                      type="text"
-                      value={telegramConfig.botToken}
-                      onChange={(e) => setTelegramConfig({ ...telegramConfig, botToken: e.target.value })}
-                      placeholder="যেমন: 7123456789:AAHk... from @BotFather"
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 outline-none focus:border-sky-500"
-                    />
-                  </div>
-
-                  {/* Chat ID Input */}
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-300 block">{t.telegramChatId}</label>
-                    <input
-                      type="text"
-                      value={telegramConfig.chatId}
-                      onChange={(e) => setTelegramConfig({ ...telegramConfig, chatId: e.target.value })}
-                      placeholder="যেমন: 123456789 বা @yourchannel"
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 outline-none focus:border-sky-500"
-                    />
-                  </div>
-
-                  {/* OTP Only Checkbox */}
-                  <div className="flex items-center space-x-2 pt-1">
-                    <input
-                      type="checkbox"
-                      id="otpOnlyCheck"
-                      checked={telegramConfig.notifyOnOtpOnly}
-                      onChange={(e) => setTelegramConfig({ ...telegramConfig, notifyOnOtpOnly: e.target.checked })}
-                      className="rounded bg-slate-900 border-slate-800 text-sky-500 focus:ring-0"
-                    />
-                    <label htmlFor="otpOnlyCheck" className="text-xs text-slate-300 cursor-pointer">
-                      {t.telegramOtpOnly}
-                    </label>
-                  </div>
-
-                  {/* Status Report */}
-                  {telegramStatusMsg && (
-                    <div
-                      className={`p-3 rounded-lg text-xs flex items-center space-x-2 ${
-                        telegramStatusMsg.success
-                          ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300'
-                          : 'bg-rose-500/10 border border-rose-500/30 text-rose-300'
-                      }`}
-                    >
-                      {telegramStatusMsg.success ? <Check className="w-4 h-4 text-emerald-400" /> : <AlertCircle className="w-4 h-4 text-rose-400" />}
-                      <span>{telegramStatusMsg.message}</span>
-                    </div>
-                  )}
-
-                  {/* Buttons */}
-                  <div className="flex items-center gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={handleTestTelegram}
-                      disabled={isTestingTelegram || !telegramConfig.botToken || !telegramConfig.chatId}
-                      className="flex-1 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 text-xs font-semibold transition disabled:opacity-50"
-                    >
-                      {isTestingTelegram ? (lang === 'bn' ? 'টেস্ট হচ্ছে...' : 'Testing...') : t.testTelegram}
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isSavingTelegram}
-                      className="flex-1 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-md shadow-sky-600/30 transition disabled:opacity-50"
-                    >
-                      {isSavingTelegram ? (lang === 'bn' ? 'সংরক্ষণ হচ্ছে...' : 'Saving...') : t.saveTelegram}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {/* TAB: BLUE-GREEN ZERO-DOWNTIME DEPLOYMENT */}
-            {settingsTab === 'deployment' && (
-              <div className="space-y-4">
-                {/* Header Callout */}
-                <div className="p-3.5 rounded-xl bg-gradient-to-r from-blue-950/40 via-slate-900 to-emerald-950/40 border border-blue-500/30 text-xs space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <div className="font-bold text-slate-100 flex items-center space-x-1.5">
-                      <ArrowLeftRight className="w-4 h-4 text-emerald-400" />
-                      <span>{t.deploymentTitle}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleProbeHealth}
-                      disabled={isProbingHealth}
-                      className="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-[11px] font-semibold text-slate-200 border border-slate-700 flex items-center space-x-1 transition"
-                    >
-                      <Activity className={`w-3.5 h-3.5 text-emerald-400 ${isProbingHealth ? 'animate-spin' : ''}`} />
-                      <span>{isProbingHealth ? 'চেক হচ্ছে...' : 'লাইভ হেলথ চেক'}</span>
-                    </button>
-                  </div>
-                  <p className="text-slate-300 text-[11px] leading-relaxed">
-                    {t.deploymentDesc}
-                  </p>
-                </div>
-
-                {/* Slots Grid: Blue vs Green */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Blue Slot Card */}
-                  <div
-                    className={`p-4 rounded-xl border space-y-3 transition ${
-                      blueGreenConfig?.activeSlot === 'blue'
-                        ? 'bg-blue-950/20 border-blue-500/50 shadow-lg shadow-blue-500/10'
-                        : 'bg-slate-950 border-slate-800 opacity-80'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <span className="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></span>
-                        <span className="font-bold text-sm text-blue-300">🔵 Blue Slot</span>
-                      </div>
-                      <span
-                        className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
-                          blueGreenConfig?.activeSlot === 'blue'
-                            ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
-                            : 'bg-slate-800 text-slate-400'
-                        }`}
-                      >
-                        {blueGreenConfig?.blue.trafficWeight || 0}% Traffic
-                      </span>
-                    </div>
-
-                    <div className="text-xs space-y-1 font-mono text-slate-400">
-                      <div><span className="text-slate-500">Version:</span> <b className="text-slate-200">{blueGreenConfig?.blue.version || 'v2.4.0-blue'}</b></div>
-                      <div><span className="text-slate-500">Endpoint:</span> <span className="text-indigo-300 truncate">{blueGreenConfig?.blue.url}</span></div>
-                      <div className="flex items-center space-x-3 pt-1 text-[11px]">
-                        <span>Latency: <b className="text-emerald-400">{blueGreenConfig?.blue.healthMetrics.latencyMs || 12}ms</b></span>
-                        <span>Uptime: <b className="text-emerald-400">{blueGreenConfig?.blue.healthMetrics.uptimePercent || 99.99}%</b></span>
-                      </div>
-                    </div>
-
-                    {blueGreenConfig?.activeSlot !== 'blue' && (
-                      <button
-                        type="button"
-                        onClick={() => handleSwitchDeploymentSlot('blue', 'Manual cutover/rollback to Blue')}
-                        disabled={isSwitchingSlot}
-                        className="w-full py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition disabled:opacity-50"
-                      >
-                        {isSwitchingSlot ? 'সুইচ হচ্ছে...' : '🔵 Blue স্লটে রোলব্যাক করুন'}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Green Slot Card */}
-                  <div
-                    className={`p-4 rounded-xl border space-y-3 transition ${
-                      blueGreenConfig?.activeSlot === 'green'
-                        ? 'bg-emerald-950/20 border-emerald-500/50 shadow-lg shadow-emerald-500/10'
-                        : 'bg-slate-950 border-slate-800 opacity-80'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span className="font-bold text-sm text-emerald-300">🟢 Green Slot</span>
-                      </div>
-                      <span
-                        className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
-                          blueGreenConfig?.activeSlot === 'green'
-                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                            : 'bg-slate-800 text-slate-400'
-                        }`}
-                      >
-                        {blueGreenConfig?.green.trafficWeight || 0}% Traffic
-                      </span>
-                    </div>
-
-                    <div className="text-xs space-y-1 font-mono text-slate-400">
-                      <div><span className="text-slate-500">Version:</span> <b className="text-slate-200">{blueGreenConfig?.green.version || 'v2.4.0-green'}</b></div>
-                      <div><span className="text-slate-500">Endpoint:</span> <span className="text-emerald-300 truncate">{blueGreenConfig?.green.url}</span></div>
-                      <div className="flex items-center space-x-3 pt-1 text-[11px]">
-                        <span>Latency: <b className="text-emerald-400">{blueGreenConfig?.green.healthMetrics.latencyMs || 14}ms</b></span>
-                        <span>Uptime: <b className="text-emerald-400">{blueGreenConfig?.green.healthMetrics.uptimePercent || 100}%</b></span>
-                      </div>
-                    </div>
-
-                    {blueGreenConfig?.activeSlot !== 'green' && (
-                      <button
-                        type="button"
-                        onClick={() => handleSwitchDeploymentSlot('green', 'Zero-downtime release cutover to Green')}
-                        disabled={isSwitchingSlot}
-                        className="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition disabled:opacity-50"
-                      >
-                        {isSwitchingSlot ? 'সুইচ হচ্ছে...' : '🟢 Green স্লটে ট্রাফিক পরিবর্তন করুন'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Canary Traffic Routing Slider */}
-                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-200">{t.canaryLabel}</span>
-                    <span className="font-mono text-indigo-400 font-bold">
-                      🔵 {100 - canarySlider}% Blue / 🟢 {canarySlider}% Green
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="5"
-                    value={canarySlider}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value, 10);
-                      setCanarySlider(val);
-                      handleApplyCanarySplit(val);
-                    }}
-                    className="w-full accent-indigo-500 cursor-pointer"
-                  />
-                  <p className="text-[11px] text-slate-500">
-                    {lang === 'bn' 
-                      ? 'ক্যানারি মোড ব্যবহার করে নতুন রিলিজের কার্যকারিতা যাচাই করতে ট্রাফিকের নির্দিষ্ট শতাংশ (যেমন: ১০% বা ২৫%) স্ট্যান্ডবাই স্লটে পাঠানো যায়।'
-                      : 'Canary split lets you safely route a small portion of live traffic (e.g. 10%) to test staging releases before full cutover.'}
-                  </p>
-                </div>
-
-                {/* Audit Trail Switch History */}
-                <div className="space-y-2">
-                  <span className="text-xs font-bold text-slate-300 block">{lang === 'bn' ? 'ডিপ্লয়মেন্ট সুইচ ইতিহাস (Audit Log):' : 'Cutover Audit Trail:'}</span>
-                  <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
-                    {blueGreenConfig?.switchHistory && blueGreenConfig.switchHistory.length > 0 ? (
-                      blueGreenConfig.switchHistory.map((item) => (
-                        <div
-                          key={item.id}
-                          className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-[11px] flex items-center justify-between font-mono"
-                        >
-                          <div>
-                            <span className="text-slate-300 font-bold">
-                              {item.fromSlot.toUpperCase()} ➔ {item.toSlot.toUpperCase()}
-                            </span>
-                            <span className="text-slate-500 text-[10px] ml-2">({item.reason})</span>
-                          </div>
-                          <span className="text-slate-500 text-[10px]">
-                            {new Date(item.switchedAt).toLocaleTimeString()}
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-xs text-slate-500 py-3 text-center">No cutover events yet</div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 4: GENERAL & DOWNLOADS */}
-            {settingsTab === 'general' && (
-              <div className="space-y-4">
-                {/* Version & Update check */}
-                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm font-bold text-slate-200">Owntemp Engine</div>
-                      <div className="text-xs text-indigo-400 font-mono">Current Version: {APP_VERSION} ({APP_EDITION})</div>
-                    </div>
-                    <button
-                      onClick={handleCheckVersion}
-                      disabled={isCheckingUpdate}
-                      className="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold transition"
-                    >
-                      {isCheckingUpdate ? t.checkingUpdate : t.checkUpdate}
-                    </button>
-                  </div>
-                  {updateStatus && (
-                    <div className="text-xs text-emerald-400 font-medium pt-1 border-t border-slate-900">
-                      {updateStatus}
-                    </div>
-                  )}
-                </div>
-
-                {/* Multi-Platform Download Links */}
-                <div className="space-y-2">
-                  <div className="text-xs font-bold text-slate-300">{t.platformsTitle}</div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <a
-                      href="https://github.com/sajjadhossan/owntempmail/releases/latest"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-emerald-500/50 flex flex-col items-center text-center space-y-1.5 group transition"
-                    >
-                      <Smartphone className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition" />
-                      <span className="text-xs font-semibold text-slate-200">Android APK</span>
-                      <span className="text-[10px] text-slate-500 font-mono">v1.5.0</span>
-                    </a>
-
-                    <a
-                      href="https://github.com/sajjadhossan/owntempmail/releases/latest"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-blue-500/50 flex flex-col items-center text-center space-y-1.5 group transition"
-                    >
-                      <Laptop className="w-5 h-5 text-blue-400 group-hover:scale-110 transition" />
-                      <span className="text-xs font-semibold text-slate-200">Windows PC</span>
-                      <span className="text-[10px] text-slate-500 font-mono">x64 .exe</span>
-                    </a>
-
-                    <a
-                      href="https://github.com/sajjadhossan/owntempmail/releases/latest"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-purple-500/50 flex flex-col items-center text-center space-y-1.5 group transition"
-                    >
-                      <Apple className="w-5 h-5 text-purple-400 group-hover:scale-110 transition" />
-                      <span className="text-xs font-semibold text-slate-200">macOS</span>
-                      <span className="text-[10px] text-slate-500 font-mono">Intel & M-Chip</span>
-                    </a>
-                  </div>
-                </div>
-
-                {/* Browser Cache & CDN Optimization Card */}
-                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-200 flex items-center space-x-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-sky-400" />
-                      <span>{lang === 'bn' ? 'ব্রাউজার ক্যাশ ও সিডিএন স্ট্যাটাস' : 'Browser Cache & CDN Status'}</span>
-                    </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
-                      ⚡ Active
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-slate-400 space-y-1">
-                    <p>• <b>Cloudflare & Vercel Edge CDN:</b> {lang === 'bn' ? '২৪ ঘণ্টার গ্লোবাল এজ ক্যাশিং এবং ব্রোটলি কম্প্রেশন সক্রিয়।' : '24h global Edge CDN caching & Brotli compression active.'}</p>
-                    <p>• <b>ব্রাউজার মেমোরি ক্যাশ:</b> {lang === 'bn' ? '৫০,০০০+ ডোমেন এক ক্লিকে 0ms ইনস্ট্যান্ট স্পিডে রেন্ডার হয়।' : '50,000+ domains render with 0ms instant speed from browser cache.'}</p>
-                    <p>• <b>ইনবক্স ও ওটিপি:</b> {lang === 'bn' ? 'সম্পূর্ণ রিয়েল-টাইম ও লাইভ (Strict No-Cache Policy)।' : 'Strict Zero-Cache policy for real-time OTP delivery.'}</p>
-                  </div>
-                  <div className="pt-1">
-                    <button
-                      type="button"
-                      onClick={handleClearBrowserCache}
-                      className="w-full py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-sky-300 text-xs font-semibold flex items-center justify-center space-x-1.5 transition"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5 text-sky-400" />
-                      <span>{lang === 'bn' ? 'ব্রাউজার ক্যাশ ক্লিয়ার করুন' : 'Clear Browser Cache'}</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Actions: Sound & Export */}
-                <div className="flex gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setSoundEnabled(!soundEnabled)}
-                    className="flex-1 py-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-xs text-slate-300 font-medium flex items-center justify-center space-x-2 transition"
-                  >
-                    {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
-                    <span>{soundEnabled ? t.soundOn : t.soundOff}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleExportEmails}
-                    disabled={emails.length === 0}
-                    className="flex-1 py-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-xs text-slate-300 font-medium flex items-center justify-center space-x-2 transition disabled:opacity-50"
-                  >
-                    <Download className="w-4 h-4 text-indigo-400" />
-                    <span>{lang === 'bn' ? 'সব ইমেইল ব্যাকআপ (JSON)' : 'Export All (JSON)'}</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Modal Footer */}
-            <div className="flex justify-end pt-2 border-t border-slate-800">
-              <button
-                onClick={() => setShowSettingsModal(false)}
-                className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition"
-              >
-                {t.close}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Master App Settings Modal */}
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        settingsTab={settingsTab}
+        setSettingsTab={setSettingsTab}
+        lang={lang}
+        t={t}
+        vercelLiveUrl={vercelLiveUrl}
+        setVercelLiveUrl={setVercelLiveUrl}
+        selectedDomain={selectedDomain}
+        setSelectedDomain={setSelectedDomain}
+        cfApiToken={cfApiToken}
+        setCfApiToken={setCfApiToken}
+        handleFetchCloudflareZones={handleFetchCloudflareZones}
+        isFetchingCfZones={isFetchingCfZones}
+        cfZonesMsg={cfZonesMsg}
+        cfAvailableZones={cfAvailableZones}
+        handleAutoSetupCloudflare={handleAutoSetupCloudflare}
+        isSettingUpCf={isSettingUpCf}
+        cfSetupResult={cfSetupResult}
+        cfSetupError={cfSetupError}
+        onCopyWebhook={() => {
+          navigator.clipboard.writeText(`${vercelLiveUrl.replace(/\/+$/, '')}/api/inbound/webhook`);
+          setActionSuccess(lang === 'bn' ? 'ওয়েবহুক URL কপি হয়েছে!' : 'Webhook URL copied!');
+          setTimeout(() => setActionSuccess(null), 2000);
+        }}
+        businessNameInput={businessNameInput}
+        setBusinessNameInput={setBusinessNameInput}
+        businessTaglineInput={businessTaglineInput}
+        setBusinessTaglineInput={setBusinessTaglineInput}
+        handleSaveBusinessProfile={handleSaveBusinessProfile}
+        newDomainInput={newDomainInput}
+        setNewDomainInput={setNewDomainInput}
+        handleAddDomain={handleAddDomain}
+        domains={domains}
+        handleDeleteDomain={handleDeleteDomain}
+        telegramConfig={telegramConfig}
+        setTelegramConfig={setTelegramConfig}
+        handleSaveTelegram={handleSaveTelegram}
+        isSavingTelegram={isSavingTelegram}
+        handleTestTelegram={handleTestTelegram}
+        isTestingTelegram={isTestingTelegram}
+        telegramStatusMsg={telegramStatusMsg}
+        blueGreenConfig={blueGreenConfig}
+        handleProbeHealth={handleProbeHealth}
+        isProbingHealth={isProbingHealth}
+        handleSwitchDeploymentSlot={handleSwitchDeploymentSlot}
+        isSwitchingSlot={isSwitchingSlot}
+        canarySlider={canarySlider}
+        setCanarySlider={setCanarySlider}
+        handleApplyCanarySplit={handleApplyCanarySplit}
+        handleCheckVersion={handleCheckVersion}
+        isCheckingUpdate={isCheckingUpdate}
+        updateStatus={updateStatus}
+        handleClearBrowserCache={handleClearBrowserCache}
+        soundEnabled={soundEnabled}
+        setSoundEnabled={setSoundEnabled}
+        handleExportEmails={handleExportEmails}
+        emailsCount={emails.length}
+      />
 
       {/* Lifetime Lock Modal */}
       <LockModal
@@ -3087,357 +2371,39 @@ export default function OwntempHome() {
         confirmText={t.confirmUnlock}
       />
 
-      {/* Custom Domain & Business Workspace Modal (v1.5.0 Dual Integration Hub) */}
-      {showDomainModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-6 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center space-x-2">
-                <Globe className="w-5 h-5 text-indigo-400" />
-                <h3 className="font-bold text-base text-slate-100">{t.businessSetupTitle}</h3>
-              </div>
-              <button onClick={() => setShowDomainModal(false)} className="text-slate-400 hover:text-white">✕</button>
-            </div>
-
-            {/* Business Profile Card */}
-            <form onSubmit={handleSaveBusinessProfile} className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-              <div className="text-xs font-bold text-indigo-300">🏢 {t.businessSetupTitle}</div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-semibold text-slate-400 block mb-1">{t.businessNameLabel}</label>
-                  <input
-                    type="text"
-                    value={businessNameInput}
-                    onChange={(e) => setBusinessNameInput(e.target.value)}
-                    placeholder={t.businessNamePlaceholder}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 outline-none focus:border-indigo-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-semibold text-slate-400 block mb-1">{t.businessTaglineLabel}</label>
-                  <input
-                    type="text"
-                    value={businessTaglineInput}
-                    onChange={(e) => setBusinessTaglineInput(e.target.value)}
-                    placeholder="e.g. Official Secure Mail Service"
-                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 outline-none focus:border-indigo-500"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm transition"
-                >
-                  {t.saveBusiness}
-                </button>
-              </div>
-            </form>
-
-            {/* Add New Business Domain */}
-            <form onSubmit={handleAddDomain} className="space-y-3">
-              <div className="text-xs font-bold text-slate-300">➕ {t.addNewBusinessDomain}</div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newDomainInput}
-                  onChange={(e) => setNewDomainInput(e.target.value)}
-                  placeholder={t.directDomainPlaceholder}
-                  className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500 font-mono"
-                  required
-                />
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition"
-                >
-                  {t.addDomainBtn}
-                </button>
-              </div>
-            </form>
-
-            {/* Connected Business Domains List */}
-            <div className="space-y-2">
-              <div className="text-xs font-semibold text-slate-400">
-                {lang === 'bn' ? 'যুক্ত থাকা বিজনেস ডোমেইনসমূহ (ক্লিক করে নির্বাচন করুন):' : 'Registered Business Domains (click to select):'}
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {domains.map((dom) => (
-                  <div
-                    key={dom.id}
-                    onClick={() => {
-                      setSelectedDomain(dom.domain);
-                      setActionSuccess(lang === 'bn' ? `ডোমেইন @${dom.domain} নির্বাচিত হয়েছে!` : `Selected domain @${dom.domain}`);
-                      setTimeout(() => setActionSuccess(null), 2000);
-                    }}
-                    className={`flex items-center justify-between p-2.5 rounded-xl border text-xs cursor-pointer transition ${
-                      selectedDomain === dom.domain
-                        ? 'bg-indigo-600/20 border-indigo-500/50 text-indigo-200 shadow-sm'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
-                    }`}
-                  >
-                    <div className="truncate mr-2">
-                      <div className="font-mono font-semibold text-slate-200 truncate">@{dom.domain}</div>
-                      <div className="text-[10px] text-slate-500 truncate">
-                        {dom.businessName || (dom.isCustom ? 'Custom Business' : 'Default System')}
-                      </div>
-                    </div>
-                    {dom.isCustom && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteDomain(dom.id);
-                        }}
-                        className="text-slate-500 hover:text-rose-400 p-1 rounded transition"
-                        title="Delete domain"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* DUAL INTEGRATION HUB: Cloudflare & Vercel */}
-            <div className="border-t border-slate-800 pt-4 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <span className="text-sm font-bold text-slate-100 flex items-center space-x-2">
-                  <Sparkles className="w-4 h-4 text-amber-400" />
-                  <span>{t.integrationHubTitle}</span>
-                </span>
-                <span className="text-xs font-mono text-indigo-400">Target: @{selectedDomain}</span>
-              </div>
-
-              {/* Vercel Website URL Input (Used by Both Methods) */}
-              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
-                <label className="text-[11px] font-semibold text-slate-300 block">{t.vercelUrlLabel}</label>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="url"
-                    value={vercelLiveUrl}
-                    onChange={(e) => setVercelLiveUrl(e.target.value)}
-                    placeholder={t.vercelUrlPlaceholder}
-                    className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-indigo-200 font-mono outline-none focus:border-indigo-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText(`${vercelLiveUrl.replace(/\/+$/, '')}/api/inbound/webhook`);
-                      setActionSuccess(lang === 'bn' ? 'ওয়েবহুক URL কপি হয়েছে!' : 'Webhook URL copied!');
-                      setTimeout(() => setActionSuccess(null), 2000);
-                    }}
-                    className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700 transition"
-                  >
-                    {t.copy} Webhook
-                  </button>
-                </div>
-                <p className="text-[10px] text-slate-500 font-mono">
-                  {t.generatedWebhookLabel} <span className="text-slate-400">{vercelLiveUrl.replace(/\/+$/, '')}/api/inbound/webhook</span>
-                </p>
-              </div>
-
-              {/* Method Tabs */}
-              <div className="flex rounded-xl bg-slate-950 p-1 border border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setIntegrationTab('auto')}
-                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
-                    integrationTab === 'auto'
-                      ? 'bg-indigo-600 text-white shadow-md'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <span>{t.tabAuto}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIntegrationTab('manual')}
-                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
-                    integrationTab === 'manual'
-                      ? 'bg-indigo-600 text-white shadow-md'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <span>{t.tabManual}</span>
-                </button>
-              </div>
-
-              {/* METHOD 1: 1-Click Auto Setup via API Token */}
-              {integrationTab === 'auto' && (
-                <div className="space-y-4">
-                  <form onSubmit={handleAutoSetupCloudflare} className="bg-slate-950 p-4 rounded-xl border border-indigo-500/30 space-y-3">
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-semibold text-slate-300 block">
-                        {lang === 'bn' ? 'টার্গেট ডোমেইন (ক্লাউডফ্লেয়ারে থাকা আপনার ডোমেইনের নাম)' : 'Target Domain (as listed in Cloudflare)'}
-                      </label>
-                      <input
-                        type="text"
-                        value={selectedDomain}
-                        onChange={(e) => setSelectedDomain(e.target.value.trim().toLowerCase())}
-                        placeholder="যেমন: yourdomain.com"
-                        className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-indigo-300 font-bold outline-none focus:border-indigo-500"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-semibold text-slate-300 block">{t.cfTokenLabel}</label>
-                      <input
-                        type="password"
-                        value={cfApiToken}
-                        onChange={(e) => setCfApiToken(e.target.value)}
-                        placeholder={t.cfTokenPlaceholder}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 outline-none focus:border-indigo-500"
-                        required
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={isSettingUpCf}
-                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition flex items-center justify-center space-x-2"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      <span>{isSettingUpCf ? t.settingUp : t.btnAutoSetup}</span>
-                    </button>
-
-                    {cfSetupResult && (
-                      <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs space-y-1">
-                        <div className="font-bold flex items-center space-x-1.5 text-emerald-400">
-                          <Check className="w-4 h-4" />
-                          <span>{lang === 'bn' ? 'সেটআপ সফল হয়েছে!' : 'Setup Successful!'}</span>
-                        </div>
-                        <p className="text-slate-300 text-[11px] leading-relaxed">{cfSetupResult}</p>
-                      </div>
-                    )}
-
-                    {cfSetupError && (
-                      <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs space-y-1">
-                        <div className="font-bold flex items-center space-x-1.5 text-rose-400">
-                          <AlertCircle className="w-4 h-4" />
-                          <span>{lang === 'bn' ? 'সেটআপ ব্যর্থ হয়েছে' : 'Setup Failed'}</span>
-                        </div>
-                        <p className="text-slate-300 text-[11px] leading-relaxed">{cfSetupError}</p>
-                      </div>
-                    )}
-                  </form>
-
-                  {/* A-to-Z Step by Step Token Guide */}
-                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs">
-                    <div className="font-bold text-amber-300 flex items-center space-x-1.5">
-                      <KeyRound className="w-3.5 h-3.5" />
-                      <span>{t.tokenStepTitle}</span>
-                    </div>
-                    <p className="text-slate-400">{t.tokenStep1}</p>
-                    <p className="text-slate-400">{t.tokenStep2}</p>
-                    <p className="text-slate-400">{t.tokenStep3}</p>
-                    <p className="text-slate-400">{t.tokenStep4}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* METHOD 2: Manual 3-Minute Setup */}
-              {integrationTab === 'manual' && (
-                <div className="space-y-4">
-                  {/* Step by Step Manual Guide */}
-                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs">
-                    <div className="font-bold text-indigo-300 flex items-center space-x-1.5">
-                      <Globe className="w-3.5 h-3.5" />
-                      <span>{t.manualStepTitle}</span>
-                    </div>
-                    <p className="text-slate-400">{t.manualStep1}</p>
-                    <p className="text-slate-400">{t.manualStep2}</p>
-                    <p className="text-slate-400">{t.manualStep3}</p>
-                    <p className="text-slate-400">{t.manualStep4}</p>
-                  </div>
-
-                  {/* DNS Records Table */}
-                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2.5 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-300">
-                        {t.dnsRecordsFor} <span className="font-mono text-indigo-300">@{selectedDomain}</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const dnsText = `MX @ route1.mx.cloudflare.net (Priority 1)\nMX @ route2.mx.cloudflare.net (Priority 2)\nMX @ route3.mx.cloudflare.net (Priority 3)\nTXT @ v=spf1 include:_spf.mx.cloudflare.net ~all`;
-                          navigator.clipboard.writeText(dnsText);
-                          setActionSuccess(lang === 'bn' ? 'DNS কনফিগ কপি হয়েছে!' : 'DNS Config copied!');
-                          setTimeout(() => setActionSuccess(null), 2500);
-                        }}
-                        className="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-indigo-300 text-[11px] font-medium border border-slate-700 transition"
-                      >
-                        {t.copyDnsConfig}
-                      </button>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left font-mono text-[11px] border-collapse">
-                        <thead>
-                          <tr className="border-b border-slate-800 text-slate-500">
-                            <th className="pb-1.5">Type</th>
-                            <th className="pb-1.5">Name</th>
-                            <th className="pb-1.5">Value / Server</th>
-                            <th className="pb-1.5">Priority</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-900 text-slate-300">
-                          <tr>
-                            <td className="py-1 text-emerald-400 font-bold">MX</td>
-                            <td className="py-1">@</td>
-                            <td className="py-1 text-indigo-200">route1.mx.cloudflare.net</td>
-                            <td className="py-1">1</td>
-                          </tr>
-                          <tr>
-                            <td className="py-1 text-emerald-400 font-bold">MX</td>
-                            <td className="py-1">@</td>
-                            <td className="py-1 text-indigo-200">route2.mx.cloudflare.net</td>
-                            <td className="py-1">2</td>
-                          </tr>
-                          <tr>
-                            <td className="py-1 text-emerald-400 font-bold">MX</td>
-                            <td className="py-1">@</td>
-                            <td className="py-1 text-indigo-200">route3.mx.cloudflare.net</td>
-                            <td className="py-1">3</td>
-                          </tr>
-                          <tr>
-                            <td className="py-1 text-amber-400 font-bold">TXT</td>
-                            <td className="py-1">@</td>
-                            <td className="py-1 text-slate-400">v=spf1 include:_spf.mx.cloudflare.net ~all</td>
-                            <td className="py-1">-</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  {/* Copy Worker Script Button */}
-                  <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
-                    <div>
-                      <div className="text-xs font-semibold text-slate-200">Cloudflare Email Worker Script</div>
-                      <div className="text-[10px] text-slate-500 font-mono">cloudflare-worker/email-worker.js</div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const workerCode = `import PostalMime from 'postal-mime';\nexport default {\n  async email(message, env, ctx) {\n    const rawEmail = await new Response(message.raw).arrayBuffer();\n    const parsed = await new PostalMime().parse(rawEmail);\n    await fetch('${vercelLiveUrl.replace(/\/+$/, '')}/api/inbound/webhook', {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({\n        to: message.to,\n        from: message.from,\n        senderName: parsed.from?.name || message.from,\n        subject: parsed.subject || '(No Subject)',\n        text: parsed.text || '',\n        html: parsed.html || parsed.text || '',\n      })\n    });\n  }\n};`;
-                        navigator.clipboard.writeText(workerCode);
-                        setActionSuccess(lang === 'bn' ? 'Worker স্ক্রিপ্ট কপি হয়েছে!' : 'Worker script copied!');
-                        setTimeout(() => setActionSuccess(null), 2500);
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm transition"
-                    >
-                      {t.copyWorkerCode}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Custom Domain & Business Workspace Modal */}
+      <DomainFleetModal
+        isOpen={showDomainModal}
+        onClose={() => setShowDomainModal(false)}
+        lang={lang}
+        t={t}
+        businessNameInput={businessNameInput}
+        setBusinessNameInput={setBusinessNameInput}
+        businessTaglineInput={businessTaglineInput}
+        setBusinessTaglineInput={setBusinessTaglineInput}
+        handleSaveBusinessProfile={handleSaveBusinessProfile}
+        newDomainInput={newDomainInput}
+        setNewDomainInput={setNewDomainInput}
+        handleAddDomain={handleAddDomain}
+        domains={domains}
+        selectedDomain={selectedDomain}
+        setSelectedDomain={setSelectedDomain}
+        handleDeleteDomain={handleDeleteDomain}
+        vercelLiveUrl={vercelLiveUrl}
+        setVercelLiveUrl={setVercelLiveUrl}
+        integrationTab={integrationTab}
+        setIntegrationTab={setIntegrationTab}
+        cfApiToken={cfApiToken}
+        setCfApiToken={setCfApiToken}
+        handleAutoSetupCloudflare={handleAutoSetupCloudflare}
+        isSettingUpCf={isSettingUpCf}
+        cfSetupResult={cfSetupResult}
+        cfSetupError={cfSetupError}
+        onActionSuccess={(msg) => {
+          setActionSuccess(msg);
+          setTimeout(() => setActionSuccess(null), 2500);
+        }}
+      />
 
       {/* Simulator Modal */}
       <SimModal
@@ -3463,381 +2429,55 @@ export default function OwntempHome() {
       />
 
       {/* 50,000+ Mega Domain Directory Modal */}
-      {showDirectoryModal && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center items-center sm:p-4 bg-slate-950/95 transition-opacity">
-          <div className="bg-slate-900 border border-slate-800 rounded-t-2xl sm:rounded-2xl w-full max-w-4xl h-[92vh] sm:h-[85vh] overflow-hidden flex flex-col shadow-2xl">
-            {/* Modal Header */}
-            <div className="p-3.5 sm:p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60 flex-shrink-0">
-              <div className="flex items-center space-x-2.5 min-w-0">
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-md">
-                  <Globe className="w-4 h-4 text-white" />
-                </div>
-                <div className="truncate">
-                  <div className="flex items-center space-x-1.5 flex-wrap">
-                    <h3 className="font-extrabold text-sm sm:text-base text-slate-100 truncate">
-                      {lang === 'bn' ? '৫০,০০০+ ডোমেন ডিরেক্টরি' : '50,000+ Domain Directory'}
-                    </h3>
-                    <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
-                      {totalDatabaseCount > 3500 ? totalDatabaseCount.toLocaleString() : '50,000+'}+ Live
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 truncate hidden sm:block">
-                    {lang === 'bn' ? 'ccTLD কান্ট্রি-কোড (.de, .fr, .uk, .jp) বা ক্যাটাগরি অনুযায়ী বেছে নিন' : 'Filter by country ccTLD or flagship category'}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-1.5 flex-shrink-0">
-                <button
-                  type="button"
-                  onClick={handleClearBrowserCache}
-                  className="text-slate-400 hover:text-indigo-300 p-1.5 sm:p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs transition flex items-center space-x-1 cursor-pointer"
-                  title="Clear Browser Cache & Refresh"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline text-[11px] font-medium">{lang === 'bn' ? 'ক্যাশ রিফ্রেশ' : 'Clear Cache'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowDirectoryModal(false)}
-                  className="text-slate-400 hover:text-slate-100 p-1.5 sm:p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition font-bold cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-
-            {/* Search Bar & Swipeable Category Pills */}
-            <div className="p-3 sm:p-4 bg-slate-950/80 border-b border-slate-800/80 space-y-2.5 flex-shrink-0">
-              {/* Search Bar */}
-              <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  value={directorySearch}
-                  onChange={(e) => setDirectorySearch(e.target.value)}
-                  placeholder={lang === 'bn' ? 'ডোমেইন সার্চ করুন (যেমন: 00, de, mail, shark, box, xyz)...' : 'Search domain (e.g. 00, de, mail, shark, box, xyz)...'}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 sm:py-2 text-xs font-mono text-slate-100 placeholder:text-slate-500 outline-none focus:border-indigo-500 shadow-inner"
-                />
-              </div>
-
-              {/* Horizontal Scrollable Category Filter Pills (Mobile friendly swipe) */}
-              <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 text-xs no-scrollbar select-none" style={{ WebkitOverflowScrolling: 'touch' }}>
-                {[
-                  { id: 'all', label: lang === 'bn' ? 'সকল' : 'All', count: categoryCounts.all || 51774 },
-                  { id: 'ultrashort', label: lang === 'bn' ? '⚡ আল্ট্রা-শর্ট' : '⚡ Ultra-Short', count: categoryCounts.ultrashort || 11192 },
-                  { id: 'cctld', label: lang === 'bn' ? '🌍 ccTLD কান্ট্রি' : '🌍 ccTLDs', count: categoryCounts.cctld || 5593 },
-                  { id: 'tenminute', label: lang === 'bn' ? '⏱️ ১০-মিনিট' : '⏱️ 10-Min', count: categoryCounts.tenminute || 610 },
-                  { id: 'developer', label: lang === 'bn' ? '🛠️ ডেভেলপার' : '🛠️ Dev', count: categoryCounts.developer || 864 },
-                  { id: 'privacy', label: lang === 'bn' ? '🛡️ প্রাইভেসি' : '🛡️ Privacy', count: categoryCounts.privacy || 187 },
-                  { id: 'mailinator', label: '👑 Mailinator', count: categoryCounts.mailinator || 39 },
-                  { id: 'guerrilla', label: '🚀 Guerrilla', count: categoryCounts.guerrilla || 14 },
-                  { id: 'mailtm', label: '✈️ Mail.tm', count: categoryCounts.mailtm || 12 },
-                ].map((cat) => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => {
-                      setDirectoryCategory(cat.id);
-                      setDirectoryPage(1);
-                    }}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition flex items-center space-x-1.5 flex-shrink-0 cursor-pointer ${
-                      directoryCategory === cat.id
-                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                        : 'bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800'
-                    }`}
-                  >
-                    <span>{cat.label}</span>
-                    <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-slate-950/70 font-mono font-bold text-slate-300">
-                      {cat.count.toLocaleString()}
-                    </span>
-                  </button>
-                ))}
-              </div>
-
-              {/* Status and Batch Count */}
-              <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
-                <span className="truncate">
-                  {lang === 'bn' ? (
-                    <span>মোট <b className="text-indigo-400 font-mono">{directoryPagination.totalMatches.toLocaleString()}</b>টি ডোমেইন (পৃষ্ঠা <b className="text-emerald-400 font-mono">{directoryPage}</b>/{directoryPagination.totalPages})</span>
-                  ) : (
-                    <span><b className="text-indigo-400 font-mono">{directoryPagination.totalMatches.toLocaleString()}</b> domains (Page <b className="text-emerald-400 font-mono">{directoryPage}</b>/{directoryPagination.totalPages})</span>
-                  )}
-                </span>
-                <div className="flex items-center space-x-1 flex-shrink-0">
-                  <span className="text-[10px] text-slate-500">{lang === 'bn' ? 'প্রতি পেজে:' : 'Batch:'}</span>
-                  {[30, 60, 120].map((lim) => (
-                    <button
-                      key={lim}
-                      type="button"
-                      onClick={() => {
-                        setDirectoryLimit(lim);
-                        setDirectoryPage(1);
-                        fetchDirectoryDomains(directorySearch, directoryCategory, 1, lim, false);
-                      }}
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold transition cursor-pointer ${
-                        directoryLimit === lim
-                          ? 'bg-indigo-600 text-white'
-                          : 'bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800'
-                      }`}
-                    >
-                      {lim}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Domains Grid List */}
-            <div className="p-3 sm:p-4 overflow-y-auto flex-1 space-y-3">
-              {/* Pinned / Favorite Domains Row */}
-              {pinnedDomains.length > 0 && (
-                <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
-                  <div className="flex items-center justify-between text-[11px] font-bold text-amber-300 mb-1.5">
-                    <span className="flex items-center space-x-1">
-                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                      <span>{lang === 'bn' ? 'আপনার পিন করা ডোমেনসমূহ' : 'Pinned Favorites'} ({pinnedDomains.length})</span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        triggerHaptic(30);
-                        setPinnedDomains([]);
-                        try { localStorage.removeItem('owntemp_pinned_domains'); } catch (e) {}
-                      }}
-                      className="text-[10px] text-amber-400/80 hover:text-amber-300 underline"
-                    >
-                      {lang === 'bn' ? 'সব মুছুন' : 'Clear all'}
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {pinnedDomains.map((pDom) => (
-                      <button
-                        key={pDom}
-                        type="button"
-                        onClick={() => {
-                          triggerHaptic(30);
-                          setSelectedDomain(pDom);
-                          if (usernamePrefix) {
-                            const newAddr = `${usernamePrefix}@${pDom}`;
-                            setActiveEmail(newAddr);
-                            try { localStorage.setItem('owntemp_active_email', newAddr); } catch (e) {}
-                            fetchEmails(newAddr);
-                          }
-                          setShowDirectoryModal(false);
-                          setActionSuccess(
-                            lang === 'bn'
-                              ? `ডোমেইন @${pDom} সফলভাবে সিলেক্ট করা হয়েছে!`
-                              : `Domain @${pDom} selected successfully!`
-                          );
-                          setTimeout(() => setActionSuccess(null), 2500);
-                        }}
-                        className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-mono flex items-center space-x-1.5 transition active:scale-95"
-                      >
-                        <span>@{pDom}</span>
-                        <span
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            togglePinDomain(pDom);
-                          }}
-                          className="text-amber-400 hover:text-red-400 font-bold ml-1"
-                        >
-                          ×
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Quick Custom Domain Box */}
-              <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center justify-between gap-2">
-                <div className="flex items-center space-x-2 flex-1 min-w-0">
-                  <span className="text-xs text-indigo-400 font-bold flex-shrink-0">@</span>
-                  <input
-                    type="text"
-                    placeholder={lang === 'bn' ? 'নিজস্ব কোনো ডোমেইন টাইপ করুন...' : 'Type any custom domain directly...'}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        const val = (e.currentTarget.value || '').trim().replace(/^@/, '');
-                        if (val) {
-                          setSelectedDomain(val);
-                          if (usernamePrefix) {
-                            const newAddr = `${usernamePrefix}@${val}`;
-                            setActiveEmail(newAddr);
-                            try { localStorage.setItem('owntemp_active_email', newAddr); } catch (err) {}
-                            fetchEmails(newAddr);
-                          }
-                          setShowDirectoryModal(false);
-                        }
-                      }
-                    }}
-                    className="bg-transparent border-none outline-none text-xs font-mono text-slate-100 placeholder:text-slate-500 flex-1 min-w-0"
-                  />
-                </div>
-                <span className="text-[10px] text-slate-500 font-mono hidden sm:inline flex-shrink-0">{lang === 'bn' ? 'এন্টার চাপুন' : 'Press Enter'}</span>
-              </div>
-
-              {isLoadingDirectory ? (
-                <div className="py-16 text-center text-xs text-slate-400 flex items-center justify-center space-x-2">
-                  <RefreshCw className="w-5 h-5 animate-spin text-indigo-400" />
-                  <span>{lang === 'bn' ? 'ডোমেইন লোড হচ্ছে...' : 'Loading domains...'}</span>
-                </div>
-              ) : directoryResults.length === 0 ? (
-                <div className="py-16 text-center text-xs text-slate-500">
-                  {lang === 'bn' ? 'কোনো ডোমেইন পাওয়া যায়নি। অন্য কোনো নাম দিয়ে সার্চ করুন।' : 'No domains found matching your search.'}
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                    {directoryResults.map((item) => (
-                      <div
-                        key={item.domain}
-                        onClick={() => {
-                          triggerHaptic(30);
-                          setSelectedDomain(item.domain);
-                          if (usernamePrefix) {
-                            const newAddr = `${usernamePrefix}@${item.domain}`;
-                            setActiveEmail(newAddr);
-                            try {
-                              localStorage.setItem('owntemp_active_email', newAddr);
-                            } catch (e) {}
-                            fetchEmails(newAddr);
-                          }
-                          setShowDirectoryModal(false);
-                          setActionSuccess(
-                            lang === 'bn'
-                              ? `ডোমেইন @${item.domain} সফলভাবে সিলেক্ট করা হয়েছে!`
-                              : `Domain @${item.domain} selected successfully!`
-                          );
-                          setTimeout(() => setActionSuccess(null), 3000);
-                        }}
-                        className={`p-2.5 sm:p-3 rounded-xl border transition cursor-pointer flex flex-col justify-between group active:scale-[0.99] ${
-                          selectedDomain === item.domain
-                            ? 'bg-indigo-600/20 border-indigo-500 text-indigo-200 shadow-md'
-                            : 'bg-slate-950/70 border-slate-800/80 hover:border-indigo-500/40 hover:bg-slate-900 text-slate-300'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono text-xs font-bold text-slate-100 group-hover:text-indigo-300 transition truncate mr-1">
-                            @{item.domain}
-                          </span>
-                          <div className="flex items-center space-x-1 flex-shrink-0">
-                            {item.isUltraShort && (
-                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30 flex-shrink-0">
-                                {item.length}c
-                              </span>
-                            )}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                togglePinDomain(item.domain);
-                              }}
-                              className="p-1 rounded-md hover:bg-slate-800 text-slate-500 hover:text-amber-400 transition"
-                              title={pinnedDomains.includes(item.domain) ? 'Unpin domain' : 'Pin domain'}
-                            >
-                              <Star
-                                className={`w-3.5 h-3.5 transition ${
-                                  pinnedDomains.includes(item.domain)
-                                    ? 'fill-amber-400 text-amber-400 scale-110'
-                                    : 'text-slate-500 hover:text-amber-400'
-                                }`}
-                              />
-                            </button>
-                          </div>
-                        </div>
-                        <div className="text-[10px] text-slate-500 font-medium truncate mt-1">
-                          {item.category}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Continuous "Load More" Button */}
-                  {directoryPagination.hasMore && (
-                    <div className="pt-2 pb-2 text-center">
-                      <button
-                        type="button"
-                        onClick={handleLoadMoreDomains}
-                        disabled={isLoadingMore}
-                        className="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition flex items-center justify-center space-x-1.5 mx-auto disabled:opacity-50 cursor-pointer"
-                      >
-                        <ArrowDown className={`w-3.5 h-3.5 ${isLoadingMore ? 'animate-bounce' : ''}`} />
-                        <span>
-                          {isLoadingMore
-                            ? (lang === 'bn' ? 'লোড হচ্ছে...' : 'Loading more...')
-                            : (lang === 'bn' ? `আরও ${directoryLimit}টি ডোমেন লোড করুন (+Load More)` : `Load More (+${directoryLimit} domains)`)}
-                        </span>
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* Modal Footer with Thumb-Friendly Pagination Controls */}
-            <div className="p-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between gap-2 text-xs text-slate-400 flex-shrink-0">
-              {/* Pagination Nav */}
-              <div className="flex items-center space-x-1 sm:space-x-1.5">
-                <button
-                  type="button"
-                  onClick={handleFirstDirectoryPage}
-                  disabled={directoryPage <= 1}
-                  className="px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-40 border border-slate-800 text-slate-300 flex items-center space-x-1 transition cursor-pointer"
-                  title="First Page"
-                >
-                  <ChevronsLeft className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{lang === 'bn' ? 'প্রথম' : 'First'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handlePrevDirectoryPage}
-                  disabled={directoryPage <= 1}
-                  className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-40 border border-slate-800 text-slate-300 flex items-center space-x-1 transition cursor-pointer"
-                  title="Previous Page"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                  <span>{lang === 'bn' ? 'পূর্ববর্তী' : 'Prev'}</span>
-                </button>
-
-                <span className="px-2.5 py-1 font-mono text-indigo-300 font-semibold bg-slate-900 rounded-lg border border-slate-800 text-[11px]">
-                  {directoryPage} / {directoryPagination.totalPages}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={handleNextDirectoryPage}
-                  disabled={directoryPage >= directoryPagination.totalPages}
-                  className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-40 border border-slate-800 text-slate-300 flex items-center space-x-1 transition cursor-pointer"
-                  title="Next Page"
-                >
-                  <span>{lang === 'bn' ? 'পরবর্তী' : 'Next'}</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleLastDirectoryPage}
-                  disabled={directoryPage >= directoryPagination.totalPages}
-                  className="px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-40 border border-slate-800 text-slate-300 flex items-center space-x-1 transition cursor-pointer"
-                  title="Last Page"
-                >
-                  <span className="hidden sm:inline">{lang === 'bn' ? 'সর্বশেষ' : 'Last'}</span>
-                  <ChevronsRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {/* Close Button */}
-              <button
-                type="button"
-                onClick={() => setShowDirectoryModal(false)}
-                className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition cursor-pointer"
-              >
-                {t.close}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DirectoryModal
+        isOpen={showDirectoryModal}
+        onClose={() => setShowDirectoryModal(false)}
+        lang={lang}
+        t={t}
+        totalDatabaseCount={totalDatabaseCount}
+        handleClearBrowserCache={handleClearBrowserCache}
+        directorySearch={directorySearch}
+        setDirectorySearch={setDirectorySearch}
+        categoryCounts={categoryCounts}
+        directoryCategory={directoryCategory}
+        setDirectoryCategory={setDirectoryCategory}
+        setDirectoryPage={setDirectoryPage}
+        directoryPagination={directoryPagination}
+        directoryPage={directoryPage}
+        directoryLimit={directoryLimit}
+        setDirectoryLimit={setDirectoryLimit}
+        fetchDirectoryDomains={fetchDirectoryDomains}
+        pinnedDomains={pinnedDomains}
+        setPinnedDomains={setPinnedDomains}
+        togglePinDomain={togglePinDomain}
+        triggerHaptic={triggerHaptic}
+        usernamePrefix={usernamePrefix}
+        setSelectedDomain={setSelectedDomain}
+        onSelectDomain={(domain) => {
+          setSelectedDomain(domain);
+          if (usernamePrefix) {
+            const newAddr = `${usernamePrefix}@${domain}`;
+            setActiveEmail(newAddr);
+            try { localStorage.setItem('owntemp_active_email', newAddr); } catch (e) {}
+            addRecentInbox(newAddr);
+            fetchEmails(newAddr);
+          }
+          setActionSuccess(
+            lang === 'bn'
+              ? `ডোমেইন @${domain} সফলভাবে সিলেক্ট করা হয়েছে!`
+              : `Domain @${domain} selected successfully!`
+          );
+          setTimeout(() => setActionSuccess(null), 2500);
+        }}
+        isLoadingDirectory={isLoadingDirectory}
+        directoryResults={directoryResults}
+        handleLoadMoreDomains={handleLoadMoreDomains}
+        isLoadingMore={isLoadingMore}
+        handleFirstDirectoryPage={handleFirstDirectoryPage}
+        handlePrevDirectoryPage={handlePrevDirectoryPage}
+        handleNextDirectoryPage={handleNextDirectoryPage}
+        handleLastDirectoryPage={handleLastDirectoryPage}
+      />
 
       {/* Footer */}
       <footer className="border-t border-slate-800/80 bg-slate-950/80 py-6 mt-12 text-center text-xs text-slate-500">
