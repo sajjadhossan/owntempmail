@@ -52,6 +52,7 @@ import {
   Reply,
   Keyboard,
   FileSpreadsheet,
+  Flame,
 } from 'lucide-react';
 import {
   EmailRecord,
@@ -79,6 +80,8 @@ import ReplyModal from '@/components/modals/ReplyModal';
 import KeyboardShortcutsModal from '@/components/modals/KeyboardShortcutsModal';
 import InboxTtlBar from '@/components/InboxTtlBar';
 import AttachmentLightboxModal from '@/components/modals/AttachmentLightboxModal';
+import PasswordGeneratorBar from '@/components/PasswordGeneratorBar';
+import BurnerResetModal from '@/components/modals/BurnerResetModal';
 
 // In-Memory Browser Cache for instant 0ms domain navigation
 const domainClientCache = new Map<string, any>();
@@ -175,6 +178,7 @@ export default function OwntempHome() {
   const [showReplyModal, setShowReplyModal] = useState(false);
   const [showKeyboardModal, setShowKeyboardModal] = useState(false);
   const [previewAttachment, setPreviewAttachment] = useState<EmailAttachment | null>(null);
+  const [showBurnerModal, setShowBurnerModal] = useState(false);
 
   // 50,000+ Mega Domain Directory State
   const [directorySearch, setDirectorySearch] = useState('');
@@ -1065,6 +1069,18 @@ export default function OwntempHome() {
     setTimeout(() => setCopiedOtp(null), 2000);
   };
 
+  // 1-Click Burn & Wipe Session
+  const handleBurnSession = () => {
+    try {
+      localStorage.removeItem('owntemp_recent_inboxes');
+      localStorage.removeItem('owntemp_active_email');
+      setRecentInboxes([]);
+    } catch (e) {}
+    handleGenerateRandom();
+    setActionSuccess(lang === 'bn' ? '🔥 সেশন সম্পূর্ণ ওয়াইপ হয়েছে! নতুন পরিচয় প্রস্তুত।' : '🔥 Session burned! Fresh identity generated.');
+    setTimeout(() => setActionSuccess(null), 3500);
+  };
+
   // Handle Lock Lifetime
   const handleLockLifetime = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1565,6 +1581,16 @@ export default function OwntempHome() {
                 >
                   <QrCode className="w-4 h-4" />
                 </button>
+
+                {/* Burn Session Trigger */}
+                <button
+                  type="button"
+                  onClick={() => setShowBurnerModal(true)}
+                  className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 transition"
+                  title={lang === 'bn' ? 'সেশন বার্ন ও ওয়াইপ (Burn Session)' : 'Burn Session & Wipe Traces'}
+                >
+                  <Flame className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
@@ -1792,6 +1818,16 @@ export default function OwntempHome() {
               setShowLockModal(true);
             }
           }}
+          lang={lang}
+        />
+
+        {/* Sign-Up Assistant: 1-Click Strong Password Generator */}
+        <PasswordGeneratorBar
+          onCopySuccess={(msg) => {
+            setActionSuccess(msg);
+            setTimeout(() => setActionSuccess(null), 3000);
+          }}
+          triggerHaptic={triggerHaptic}
           lang={lang}
         />
 
@@ -2716,6 +2752,14 @@ export default function OwntempHome() {
       <AttachmentLightboxModal
         attachment={previewAttachment}
         onClose={() => setPreviewAttachment(null)}
+        lang={lang}
+      />
+
+      {/* Burner Reset Confirmation Modal */}
+      <BurnerResetModal
+        isOpen={showBurnerModal}
+        onClose={() => setShowBurnerModal(false)}
+        onConfirmBurn={handleBurnSession}
         lang={lang}
       />
 

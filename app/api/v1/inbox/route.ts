@@ -1,10 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getInboxMetadata, getAllDomains, getLockedInboxes } from '@/lib/storage';
 import { APP_VERSION } from '@/lib/constants';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+  const clientIp = getClientIp(req);
+  const rate = checkRateLimit(`v1_get_${clientIp}`, 120, 60);
+
+  if (!rate.allowed) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: `Rate limit exceeded. Please wait ${rate.resetInSec} seconds before retrying.`,
+        errorCode: 'rate_limit_exceeded',
+        errors: [{ field: 'rate_limit', message: 'Too many requests' }],
+      },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(rate.resetInSec),
+          'X-RateLimit-Limit': '120',
+          'X-RateLimit-Remaining': '0',
+        },
+      }
+    );
+  }
+
   try {
     const domains = getAllDomains().filter((d) => d.status === 'active');
     const lockedInboxes = getLockedInboxes();
@@ -43,6 +66,28 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const clientIp = getClientIp(req);
+  const rate = checkRateLimit(`v1_create_${clientIp}`, 60, 60);
+
+  if (!rate.allowed) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: `Rate limit exceeded. Please wait ${rate.resetInSec} seconds before retrying.`,
+        errorCode: 'rate_limit_exceeded',
+        errors: [{ field: 'rate_limit', message: 'Too many requests' }],
+      },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(rate.resetInSec),
+          'X-RateLimit-Limit': '60',
+          'X-RateLimit-Remaining': '0',
+        },
+      }
+    );
+  }
+
   try {
     const body = await req.json().catch(() => ({}));
     const domains = getAllDomains().filter((d) => d.status === 'active');
@@ -69,7 +114,13 @@ export async function POST(req: NextRequest) {
         },
         errors: [],
       },
-      { status: 201 }
+      {
+        status: 201,
+        headers: {
+          'X-RateLimit-Limit': '60',
+          'X-RateLimit-Remaining': String(rate.remaining),
+        },
+      }
     );
   } catch (err: any) {
     return NextResponse.json(
