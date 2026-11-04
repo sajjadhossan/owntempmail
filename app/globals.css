@@ -59,3 +59,55 @@ body {
 .glow-box {
   animation: pulseGlow 3s infinite ease-in-out;
 }
+
+/* Light Theme Overrides */
+html.theme-light {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
+html.theme-light body {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+html.theme-light .bg-slate-950 {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .bg-slate-900 {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+html.theme-light .border-slate-800 {
+  border-color: #e2e8f0 !important;
+}
+
+html.theme-light .text-slate-100,
+html.theme-light .text-slate-200,
+html.theme-light .text-slate-300 {
+  color: #0f172a !important;
+}
+
+html.theme-light .text-slate-400,
+html.theme-light .text-slate-500 {
+  color: #64748b !important;
+}
+
+/* AMOLED Pitch Black Overrides */
+html.theme-amoled {
+  --background: #000000;
+  --foreground: #ffffff;
+}
+
+html.theme-amoled body,
+html.theme-amoled .bg-slate-950,
+html.theme-amoled .bg-slate-900 {
+  background-color: #000000 !important;
+}
+
+html.theme-amoled .border-slate-800 {
+  border-color: #1e293b !important;
+}

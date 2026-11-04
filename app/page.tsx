@@ -46,6 +46,9 @@ import {
   ArrowLeftRight,
   Activity,
   Cpu,
+  Sun,
+  Moon,
+  Zap,
 } from 'lucide-react';
 import {
   EmailRecord,
@@ -60,6 +63,7 @@ import { translations, Language } from '@/lib/translations';
 import { generateQrSvgUri } from '@/lib/qr';
 import { APP_VERSION, APP_EDITION } from '@/lib/constants';
 import EmailRenderer from '@/components/EmailRenderer';
+import FloatingOtpBanner from '@/components/FloatingOtpBanner';
 import QrModal from '@/components/modals/QrModal';
 import LockModal from '@/components/modals/LockModal';
 import UnlockModal from '@/components/modals/UnlockModal';
@@ -73,6 +77,8 @@ const domainClientCache = new Map<string, any>();
 
 export default function OwntempHome() {
   const [lang, setLang] = useState<Language>('bn');
+  const [currentTheme, setCurrentTheme] = useState<'dark' | 'light' | 'amoled'>('dark');
+  const [dismissedOtp, setDismissedOtp] = useState<string | null>(null);
   const t = translations[lang];
 
   // Address & Domain state
@@ -702,6 +708,14 @@ export default function OwntempHome() {
     fetchTelegramConfig();
     fetchBlueGreenConfig();
 
+    try {
+      const savedTheme = (localStorage.getItem('owntemp_theme') as any) || 'dark';
+      if (['dark', 'light', 'amoled'].includes(savedTheme)) {
+        setCurrentTheme(savedTheme);
+        document.documentElement.className = `theme-${savedTheme}`;
+      }
+    } catch (e) {}
+
     let savedEmail = '';
     try {
       savedEmail = localStorage.getItem('owntemp_active_email') || '';
@@ -1009,6 +1023,19 @@ export default function OwntempHome() {
     } catch (e) {}
     addRecentInbox(newAddr);
     fetchEmails(newAddr);
+  };
+
+  // Theme switcher (Dark / Light / AMOLED)
+  const handleToggleTheme = () => {
+    triggerHaptic(30);
+    const themes: Array<'dark' | 'light' | 'amoled'> = ['dark', 'light', 'amoled'];
+    const nextIdx = (themes.indexOf(currentTheme) + 1) % themes.length;
+    const nextTheme = themes[nextIdx];
+    setCurrentTheme(nextTheme);
+    try {
+      localStorage.setItem('owntemp_theme', nextTheme);
+      document.documentElement.className = `theme-${nextTheme}`;
+    } catch (e) {}
   };
 
   // Copy email
@@ -2478,6 +2505,23 @@ export default function OwntempHome() {
         handleNextDirectoryPage={handleNextDirectoryPage}
         handleLastDirectoryPage={handleLastDirectoryPage}
       />
+
+      {/* Floating Instant OTP Notification Card */}
+      {latestOtpEmail && latestOtpEmail.otpCode && latestOtpEmail.otpCode !== dismissedOtp && (
+        <FloatingOtpBanner
+          otpCode={latestOtpEmail.otpCode}
+          senderName={latestOtpEmail.senderName || latestOtpEmail.sender}
+          verificationLink={
+            latestOtpEmail.verificationLinks && latestOtpEmail.verificationLinks.length > 0
+              ? latestOtpEmail.verificationLinks[0]
+              : undefined
+          }
+          onCopy={handleCopyOtp}
+          onAnnounce={(code) => announceOtp(code, lang)}
+          onDismiss={() => setDismissedOtp(latestOtpEmail.otpCode || null)}
+          lang={lang}
+        />
+      )}
 
       {/* Footer */}
       <footer className="border-t border-slate-800/80 bg-slate-950/80 py-6 mt-12 text-center text-xs text-slate-500">
