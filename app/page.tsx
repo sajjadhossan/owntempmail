@@ -55,6 +55,7 @@ import {
 } from 'lucide-react';
 import {
   EmailRecord,
+  EmailAttachment,
   InboxMetadata,
   DomainItem,
   BusinessProfile,
@@ -76,6 +77,8 @@ import DomainFleetModal from '@/components/modals/DomainFleetModal';
 import DirectoryModal from '@/components/modals/DirectoryModal';
 import ReplyModal from '@/components/modals/ReplyModal';
 import KeyboardShortcutsModal from '@/components/modals/KeyboardShortcutsModal';
+import InboxTtlBar from '@/components/InboxTtlBar';
+import AttachmentLightboxModal from '@/components/modals/AttachmentLightboxModal';
 
 // In-Memory Browser Cache for instant 0ms domain navigation
 const domainClientCache = new Map<string, any>();
@@ -171,6 +174,7 @@ export default function OwntempHome() {
   const [showDirectoryModal, setShowDirectoryModal] = useState(false);
   const [showReplyModal, setShowReplyModal] = useState(false);
   const [showKeyboardModal, setShowKeyboardModal] = useState(false);
+  const [previewAttachment, setPreviewAttachment] = useState<EmailAttachment | null>(null);
 
   // 50,000+ Mega Domain Directory State
   const [directorySearch, setDirectorySearch] = useState('');
@@ -1778,6 +1782,19 @@ export default function OwntempHome() {
           </div>
         </section>
 
+        {/* Visual TTL & Auto-Destruct Expiration Countdown Bar */}
+        <InboxTtlBar
+          inboxMeta={inboxMeta}
+          onLockClick={() => {
+            if (inboxMeta?.isLocked) {
+              setShowUnlockModal(true);
+            } else {
+              setShowLockModal(true);
+            }
+          }}
+          lang={lang}
+        />
+
         {/* Permanent Locked Inboxes Tray */}
         {lockedInboxes.length > 0 && (
           <section className="bg-slate-900/40 border border-slate-800/80 rounded-xl p-4 space-y-3">
@@ -2234,8 +2251,8 @@ export default function OwntempHome() {
                             key={att.id}
                             className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs"
                           >
-                            <div className="truncate mr-2">
-                              <div className="font-semibold text-slate-200 truncate">{att.filename}</div>
+                            <div className="truncate mr-2 cursor-pointer" onClick={() => setPreviewAttachment(att)}>
+                              <div className="font-semibold text-slate-200 truncate hover:text-indigo-300 transition">{att.filename}</div>
                               <div className="text-[10px] text-slate-500 font-mono">
                                 {(att.sizeBytes / 1024).toFixed(1)} KB • {att.contentType}
                               </div>
@@ -2401,8 +2418,8 @@ export default function OwntempHome() {
                         key={att.id}
                         className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs"
                       >
-                        <div className="truncate mr-2">
-                          <div className="font-semibold text-slate-200 truncate">{att.filename}</div>
+                        <div className="truncate mr-2 cursor-pointer" onClick={() => setPreviewAttachment(att)}>
+                          <div className="font-semibold text-slate-200 truncate hover:text-indigo-300 transition">{att.filename}</div>
                           <div className="text-[10px] text-slate-500 font-mono">
                             {(att.sizeBytes / 1024).toFixed(1)} KB • {att.contentType}
                           </div>
@@ -2692,6 +2709,13 @@ export default function OwntempHome() {
       <KeyboardShortcutsModal
         isOpen={showKeyboardModal}
         onClose={() => setShowKeyboardModal(false)}
+        lang={lang}
+      />
+
+      {/* Attachment Image & Document Lightbox Modal */}
+      <AttachmentLightboxModal
+        attachment={previewAttachment}
+        onClose={() => setPreviewAttachment(null)}
         lang={lang}
       />
 
