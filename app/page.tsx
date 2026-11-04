@@ -49,6 +49,7 @@ import {
   Sun,
   Moon,
   Zap,
+  Reply,
 } from 'lucide-react';
 import {
   EmailRecord,
@@ -71,6 +72,7 @@ import SimModal from '@/components/modals/SimModal';
 import SettingsModal from '@/components/modals/SettingsModal';
 import DomainFleetModal from '@/components/modals/DomainFleetModal';
 import DirectoryModal from '@/components/modals/DirectoryModal';
+import ReplyModal from '@/components/modals/ReplyModal';
 
 // In-Memory Browser Cache for instant 0ms domain navigation
 const domainClientCache = new Map<string, any>();
@@ -164,6 +166,7 @@ export default function OwntempHome() {
   const [showQrModal, setShowQrModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showDirectoryModal, setShowDirectoryModal] = useState(false);
+  const [showReplyModal, setShowReplyModal] = useState(false);
 
   // 50,000+ Mega Domain Directory State
   const [directorySearch, setDirectorySearch] = useState('');
@@ -1996,6 +1999,14 @@ export default function OwntempHome() {
                   <div className="flex items-center space-x-2 shrink-0">
                     <button
                       type="button"
+                      onClick={() => setShowReplyModal(true)}
+                      className="p-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 transition"
+                      title={lang === 'bn' ? 'উত্তর দিন' : 'Reply'}
+                    >
+                      <Reply className="w-4 h-4 text-indigo-400" />
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleDownloadEml(selectedEmail)}
                       className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
                       title={t.exportEml}
@@ -2112,6 +2123,14 @@ export default function OwntempHome() {
                 {/* Pane Footer */}
                 <div className="p-4 border-t border-slate-800 bg-slate-900/60 flex items-center justify-between">
                   <div className="flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowReplyModal(true)}
+                      className="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600 text-xs font-medium text-indigo-300 hover:text-white border border-indigo-500/30 flex items-center space-x-1.5 transition"
+                    >
+                      <Reply className="w-3.5 h-3.5" />
+                      <span>{lang === 'bn' ? 'রিপ্লাই দিন' : 'Reply'}</span>
+                    </button>
                     <button
                       type="button"
                       onClick={() => handleDownloadEml(selectedEmail)}
@@ -2271,6 +2290,14 @@ export default function OwntempHome() {
             {/* Modal Footer with Export options */}
             <div className="p-4 border-t border-slate-800 flex items-center justify-between">
               <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setShowReplyModal(true)}
+                  className="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600 text-xs font-medium text-indigo-300 hover:text-white border border-indigo-500/30 flex items-center space-x-1.5 transition"
+                >
+                  <Reply className="w-3.5 h-3.5" />
+                  <span>{lang === 'bn' ? 'রিপ্লাই' : 'Reply'}</span>
+                </button>
                 <button
                   onClick={() => handleDownloadEml(selectedEmail)}
                   className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 border border-slate-700 flex items-center space-x-1.5 transition"
@@ -2505,6 +2532,23 @@ export default function OwntempHome() {
         handleNextDirectoryPage={handleNextDirectoryPage}
         handleLastDirectoryPage={handleLastDirectoryPage}
       />
+
+      {/* Disposable Outbound Reply Modal */}
+      {selectedEmail && (
+        <ReplyModal
+          isOpen={showReplyModal}
+          onClose={() => setShowReplyModal(false)}
+          fromAddress={activeEmail}
+          toAddress={selectedEmail.sender}
+          defaultSubject={selectedEmail.subject}
+          onSentSuccess={(msg) => {
+            setActionSuccess(msg);
+            setTimeout(() => setActionSuccess(null), 3500);
+            setShowReplyModal(false);
+          }}
+          lang={lang}
+        />
+      )}
 
       {/* Floating Instant OTP Notification Card */}
       {latestOtpEmail && latestOtpEmail.otpCode && latestOtpEmail.otpCode !== dismissedOtp && (

@@ -12,6 +12,7 @@ import {
   DeploymentSwitchLog,
 } from './types';
 import { sendTelegramAlert } from './telegram';
+import { prisma, hasDatabaseUrl } from './prisma';
 
 interface DatabaseSchema {
   inboxes: Record<string, InboxMetadata>;
@@ -121,6 +122,37 @@ export function lockInbox(address: string, pin: string): { success: boolean; mes
   });
 
   persistDb();
+
+  if (hasDatabaseUrl) {
+    (async () => {
+      try {
+        await prisma.inbox.upsert({
+          where: { address: normalized },
+          update: {
+            isLocked: true,
+            lockPin: pin.trim(),
+            lockedAt: new Date(),
+            failedAttempts: 0,
+          },
+          create: {
+            address: normalized,
+            domain: normalized.split('@')[1] || 'owntemp.live',
+            isLocked: true,
+            lockPin: pin.trim(),
+            lockedAt: new Date(),
+            failedAttempts: 0,
+          },
+        });
+        await prisma.email.updateMany({
+          where: { address: normalized },
+          data: { isLocked: true },
+        });
+      } catch (err) {
+        console.warn('[Storage] Prisma lock sync warning:', err);
+      }
+    })();
+  }
+
   return { success: true, message: 'Inbox permanently locked with lifetime protection.' };
 }
 
@@ -176,6 +208,29 @@ export function unlockInbox(address: string, pin: string): { success: boolean; m
   });
 
   persistDb();
+
+  if (hasDatabaseUrl) {
+    (async () => {
+      try {
+        await prisma.inbox.update({
+          where: { address: normalized },
+          data: {
+            isLocked: false,
+            lockPin: null,
+            lockedAt: null,
+            failedAttempts: 0,
+          },
+        });
+        await prisma.email.updateMany({
+          where: { address: normalized },
+          data: { isLocked: false },
+        });
+      } catch (err) {
+        console.warn('[Storage] Prisma unlock sync warning:', err);
+      }
+    })();
+  }
+
   return { success: true, message: 'Inbox unlocked successfully.' };
 }
 
@@ -219,6 +274,48 @@ export function saveInboundEmail(record: Omit<EmailRecord, 'id' | 'receivedAt' |
 
   persistDb();
 
+  if (hasDatabaseUrl) {
+    (async () => {
+      try {
+        const inbox = await prisma.inbox.upsert({
+          where: { address: normalizedAddress },
+          update: {
+            lastActiveAt: new Date(),
+            totalEmails: { increment: 1 },
+          },
+          create: {
+            address: normalizedAddress,
+            domain: normalizedAddress.split('@')[1] || 'owntemp.live',
+            isLocked: meta.isLocked,
+            totalEmails: 1,
+          },
+        });
+
+        await prisma.email.create({
+          data: {
+            id: newEmail.id,
+            inboxId: inbox.id,
+            address: normalizedAddress,
+            sender: newEmail.sender,
+            senderName: newEmail.senderName,
+            subject: newEmail.subject,
+            textBody: newEmail.textBody || '',
+            htmlBody: newEmail.htmlBody || '',
+            otpCode: newEmail.otpCode,
+            verificationLinks: (newEmail.verificationLinks as any) || [],
+            attachments: (newEmail.attachments as any) || [],
+            sizeBytes: newEmail.sizeBytes || 0,
+            isRead: false,
+            isLocked: newEmail.isLocked,
+            receivedAt: new Date(newEmail.receivedAt),
+          },
+        });
+      } catch (dbErr) {
+        console.warn('[Storage] Prisma cloud sync warning:', dbErr);
+      }
+    })();
+  }
+
   // Real-time Telegram Alert Dispatch
   if (db.telegramConfig?.enabled && db.telegramConfig.botToken && db.telegramConfig.chatId) {
     sendTelegramAlert(newEmail, db.telegramConfig).catch((err) => {
@@ -240,6 +337,13 @@ export function deleteEmail(id: string): boolean {
 
   db.emails = db.emails.filter((e) => e.id !== id);
   persistDb();
+
+  if (hasDatabaseUrl) {
+    prisma.email.delete({ where: { id } }).catch((err) => {
+      console.warn('[Storage] Prisma delete sync warning:', err);
+    });
+  }
+
   return true;
 }
 

@@ -97,6 +97,16 @@ export interface BlueGreenConfig {
   updatedAt: string;
 }
 
+export interface OutboundEmail {
+  id: string;
+  from: string;
+  to: string;
+  subject: string;
+  textBody: string;
+  sentAt: string;
+  status: 'sent' | 'delivered' | 'simulated';
+}
+
 export interface ApiResponse<T = any> {
   success: boolean;
   message: string;
