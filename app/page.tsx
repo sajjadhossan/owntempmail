@@ -87,6 +87,7 @@ import BurnerResetModal from '@/components/modals/BurnerResetModal';
 import ForwardingModal from '@/components/modals/ForwardingModal';
 import AuthModal from '@/components/modals/AuthModal';
 import DeviceSyncModal from '@/components/modals/DeviceSyncModal';
+import RecoverModal from '@/components/modals/RecoverModal';
 import { getOrCreateDeviceId, detectDeviceDetails } from '@/lib/device-sync';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
@@ -191,6 +192,7 @@ export default function OwntempHome() {
   const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showDeviceSyncModal, setShowDeviceSyncModal] = useState(false);
+  const [showRecoverModal, setShowRecoverModal] = useState(false);
 
   // 50,000+ Mega Domain Directory State
   const [directorySearch, setDirectorySearch] = useState('');
@@ -1608,21 +1610,21 @@ export default function OwntempHome() {
   }, [emails]);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between pb-16 lg:pb-0">
+    <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between pb-16 lg:pb-0 w-full max-w-full overflow-x-hidden">
       {/* Top Header */}
-      <header className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+      <header className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40 w-full max-w-full overflow-x-hidden">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 h-16 flex items-center justify-between gap-2 overflow-x-hidden">
+          <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1 sm:flex-none">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/20 flex-shrink-0">
               <Mail className="w-5 h-5 text-white" />
             </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-indigo-300 bg-clip-text text-transparent">
+            <div className="min-w-0">
+              <div className="flex items-center space-x-1.5 sm:space-x-2">
+                <span className="font-extrabold text-base sm:text-xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-indigo-300 bg-clip-text text-transparent truncate">
                   {t.appTitle}
                 </span>
-                <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-mono shadow-sm flex items-center space-x-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-mono shadow-sm flex items-center space-x-1 flex-shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                   <span>{APP_VERSION}</span>
                 </span>
                 {blueGreenConfig && (
@@ -1631,7 +1633,7 @@ export default function OwntempHome() {
                       setSettingsTab('deployment');
                       setShowSettingsModal(true);
                     }}
-                    className={`text-[10px] px-2 py-0.5 rounded-full font-bold font-mono border transition flex items-center space-x-1 cursor-pointer ${
+                    className={`hidden sm:flex text-[10px] px-2 py-0.5 rounded-full font-bold font-mono border transition items-center space-x-1 cursor-pointer ${
                       blueGreenConfig.activeSlot === 'blue'
                         ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 hover:bg-blue-500/30'
                         : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
@@ -1648,24 +1650,24 @@ export default function OwntempHome() {
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-slate-400 hidden sm:block">
+              <p className="text-[11px] text-slate-400 hidden md:block truncate max-w-[280px]">
                 {businessProfile?.tagline || (lang === 'bn' ? 'যেকোনো বিজনেস ডোমেইন ও লাইফটাইম লক সুবিধাযুক্ত ফ্রি টেম্প মেইল' : 'Free Custom Business Domain Temp Mail with Lifetime Lock')}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 sm:space-x-2.5">
-            {/* Quick Test Simulator Button */}
+          <div className="flex items-center space-x-1.5 sm:space-x-2 flex-shrink-0">
+            {/* Quick Test Simulator Button (Desktop only, mobile has it in bottom nav) */}
             <button
               onClick={() => setShowSimModal(true)}
-              className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-gradient-to-r from-indigo-600/30 to-purple-600/30 hover:from-indigo-600/40 hover:to-purple-600/40 text-indigo-200 border border-indigo-500/40 transition shadow-sm"
+              className="hidden md:flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-gradient-to-r from-indigo-600/30 to-purple-600/30 hover:from-indigo-600/40 hover:to-purple-600/40 text-indigo-200 border border-indigo-500/40 transition shadow-sm"
               title="Test OTP & Inbound Email Simulator"
             >
               <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
-              <span className="hidden sm:inline">{lang === 'bn' ? 'সিমুলেটর' : 'Simulator'}</span>
+              <span>{lang === 'bn' ? 'সিমুলেটর' : 'Simulator'}</span>
             </button>
 
-            {/* Voice OTP Announcer Toggle */}
+            {/* Voice OTP Announcer Toggle (Desktop only) */}
             <button
               onClick={() => {
                 const nextState = !voiceEnabled;
@@ -1674,7 +1676,7 @@ export default function OwntempHome() {
                   announceOtp('849201', lang);
                 }
               }}
-              className={`p-2 rounded-xl border text-xs transition ${
+              className={`hidden sm:block p-2 rounded-xl border text-xs transition ${
                 voiceEnabled
                   ? 'bg-purple-600/20 text-purple-300 border-purple-500/40 shadow-sm'
                   : 'bg-slate-800 text-slate-500 border-slate-700'
@@ -1684,10 +1686,10 @@ export default function OwntempHome() {
               {voiceEnabled ? <Mic className="w-4 h-4 text-purple-400" /> : <MicOff className="w-4 h-4" />}
             </button>
 
-            {/* Sound Toggle */}
+            {/* Sound Toggle (Desktop only) */}
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
-              className={`p-2 rounded-xl border text-xs transition ${
+              className={`hidden sm:block p-2 rounded-xl border text-xs transition ${
                 soundEnabled
                   ? 'bg-indigo-600/20 text-indigo-300 border-indigo-500/40 shadow-sm'
                   : 'bg-slate-800 text-slate-500 border-slate-700'
@@ -1697,24 +1699,11 @@ export default function OwntempHome() {
               {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             </button>
 
-            {/* Unified Settings Hub Trigger */}
-            <button
-              onClick={() => {
-                setSettingsTab('api');
-                setShowSettingsModal(true);
-              }}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition shadow-sm text-xs font-semibold"
-              title="Settings & Cloudflare API, Domains, Telegram, Deployment"
-            >
-              <Settings className="w-4 h-4 text-slate-400" />
-              <span className="hidden md:inline">{lang === 'bn' ? 'সেটিংস' : 'Settings'}</span>
-            </button>
-
-            {/* Keyboard Shortcuts HUD */}
+            {/* Keyboard Shortcuts HUD (Desktop only) */}
             <button
               type="button"
               onClick={() => setShowKeyboardModal(true)}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-white transition shadow-sm text-xs font-semibold"
+              className="hidden lg:block p-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-white transition shadow-sm text-xs font-semibold"
               title={lang === 'bn' ? 'কিবোর্ড শর্টকাট (?)' : 'Keyboard Shortcuts (?)'}
             >
               <Keyboard className="w-4 h-4 text-slate-400" />
@@ -1723,10 +1712,23 @@ export default function OwntempHome() {
             {/* Language Switcher */}
             <button
               onClick={() => setLang(lang === 'bn' ? 'en' : 'bn')}
-              className="px-2.5 py-1.5 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-indigo-300 transition"
+              className="px-2 sm:px-2.5 py-1.5 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-indigo-300 transition"
               title="Toggle Language"
             >
-              {lang === 'bn' ? 'English' : 'বাংলা'}
+              {lang === 'bn' ? 'EN' : 'বাং'}
+            </button>
+
+            {/* Unified Settings Hub Trigger */}
+            <button
+              onClick={() => {
+                setSettingsTab('api');
+                setShowSettingsModal(true);
+              }}
+              className="flex items-center space-x-1.5 p-2 sm:px-3 sm:py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition shadow-sm text-xs font-semibold"
+              title="Settings & Cloudflare API, Domains, Telegram, Deployment"
+            >
+              <Settings className="w-4 h-4 text-slate-400" />
+              <span className="hidden md:inline">{lang === 'bn' ? 'সেটিংস' : 'Settings'}</span>
             </button>
 
             {/* Account & Cross-Device Sync Hub */}
@@ -1734,24 +1736,21 @@ export default function OwntempHome() {
               <button
                 type="button"
                 onClick={() => setShowAuthModal(true)}
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition shadow-sm cursor-pointer"
+                className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition shadow-sm cursor-pointer"
                 title={lang === 'bn' ? 'ইউজার প্রোফাইল ও ডিভাইস সেটিংস' : 'User profile & devices'}
               >
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span className="font-mono max-w-[120px] truncate">{currentUser.email?.split('@')[0]}</span>
-                <span className="text-[10px] px-1 rounded bg-emerald-950 text-emerald-200 border border-emerald-800">
-                  {lang === 'bn' ? 'প্রোফাইল' : 'Profile'}
-                </span>
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0"></span>
+                <span className="font-mono max-w-[70px] sm:max-w-[120px] truncate">{currentUser.email?.split('@')[0]}</span>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => setShowAuthModal(true)}
-                className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold transition shadow-md shadow-indigo-600/30 cursor-pointer"
+                className="flex items-center space-x-1 px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold transition shadow-md shadow-indigo-600/30 cursor-pointer"
                 title={lang === 'bn' ? 'লগইন বা নতুন অ্যাকাউন্ট তৈরি করুন' : 'Sign in or create account'}
               >
                 <User className="w-3.5 h-3.5 text-yellow-300" />
-                <span>{lang === 'bn' ? 'লগইন / সাইন আপ' : 'Sign In / Sign Up'}</span>
+                <span>{lang === 'bn' ? 'লগইন' : 'Login'}</span>
               </button>
             )}
           </div>
@@ -1843,13 +1842,13 @@ export default function OwntempHome() {
 
             {/* Email Address Display Box */}
             <div className="flex flex-col md:flex-row items-stretch gap-3">
-              <div className="flex-1 bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 flex items-center justify-between shadow-inner">
-                <span className="font-mono text-lg md:text-xl font-bold tracking-wide text-indigo-200 truncate select-all">
+              <div className="flex-1 min-w-0 bg-slate-950/80 border border-slate-800 rounded-xl px-3 sm:px-4 py-3 flex items-center justify-between shadow-inner gap-2">
+                <span className="font-mono text-sm sm:text-base md:text-lg font-bold tracking-wide text-indigo-200 truncate select-all min-w-0">
                   {activeEmail}
                 </span>
                 <button
                   onClick={handleCopyEmail}
-                  className={`ml-3 px-4 py-2 rounded-lg font-semibold text-xs flex items-center space-x-2 transition ${
+                  className={`flex-shrink-0 px-3 sm:px-4 py-2 rounded-lg font-semibold text-xs flex items-center space-x-1.5 transition ${
                     copiedText
                       ? 'bg-emerald-600 text-white'
                       : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/30'
@@ -1857,71 +1856,82 @@ export default function OwntempHome() {
                 >
                   {copiedText ? (
                     <>
-                      <Check className="w-4 h-4" />
+                      <Check className="w-3.5 h-3.5" />
                       <span>{t.copied}</span>
                     </>
                   ) : (
                     <>
-                      <Copy className="w-4 h-4" />
+                      <Copy className="w-3.5 h-3.5" />
                       <span>{t.copy}</span>
                     </>
                   )}
                 </button>
               </div>
 
-              {/* Quick Actions */}
-              <div className="flex items-center gap-2">
+              {/* Quick Actions (Responsive 2-column grid on mobile, flex on desktop) */}
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap md:flex-nowrap items-center gap-2">
                 <button
                   onClick={() => fetchEmails(activeEmail)}
                   disabled={isLoading}
-                  className="flex-1 sm:flex-none px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700/80 border border-slate-700 font-medium text-xs flex items-center justify-center space-x-2 transition"
+                  className="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700/80 border border-slate-700 font-medium text-xs flex items-center justify-center space-x-1.5 transition text-slate-200 cursor-pointer"
                   title="Manual Refresh"
                 >
-                  <RefreshCw className={`w-4 h-4 text-slate-300 ${isLoading ? 'animate-spin text-indigo-400' : ''}`} />
-                  <span className="hidden sm:inline">{t.refresh}</span>
+                  <RefreshCw className={`w-3.5 h-3.5 text-slate-300 ${isLoading ? 'animate-spin text-indigo-400' : ''}`} />
+                  <span>{t.refresh}</span>
                   <span className="text-[10px] text-slate-500 font-mono">({countdown}s)</span>
                 </button>
 
                 {inboxMeta?.isLocked ? (
                   <button
                     onClick={() => setShowUnlockModal(true)}
-                    className="flex-1 sm:flex-none px-4 py-3 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/30 text-amber-300 font-medium text-xs flex items-center justify-center space-x-2 transition"
+                    className="px-3 py-2.5 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/30 text-amber-300 font-medium text-xs flex items-center justify-center space-x-1.5 transition cursor-pointer"
                   >
-                    <Unlock className="w-4 h-4 text-amber-400" />
+                    <Unlock className="w-3.5 h-3.5 text-amber-400" />
                     <span>{t.unlock}</span>
                   </button>
                 ) : (
                   <button
                     onClick={() => setShowLockModal(true)}
-                    className="flex-1 sm:flex-none px-4 py-3 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 font-medium text-xs flex items-center justify-center space-x-2 transition"
+                    className="px-3 py-2.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 font-medium text-xs flex items-center justify-center space-x-1.5 transition cursor-pointer"
                     title="Lock forever with a PIN"
                   >
-                    <Lock className="w-4 h-4 text-indigo-400" />
+                    <Lock className="w-3.5 h-3.5 text-indigo-400" />
                     <span>{t.lockLifetime}</span>
                   </button>
                 )}
 
                 <button
                   onClick={handleGenerateRandom}
-                  className="flex-1 sm:flex-none px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-medium text-xs flex items-center justify-center space-x-2 transition"
+                  className="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-medium text-xs flex items-center justify-center space-x-1.5 transition cursor-pointer"
                   title="Random Address"
                 >
-                  <Sparkles className="w-4 h-4 text-yellow-400" />
-                  <span className="hidden sm:inline">{t.random}</span>
+                  <Sparkles className="w-3.5 h-3.5 text-yellow-400" />
+                  <span>{t.random}</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setShowCustomEmailStudio((prev) => !prev)}
-                  className={`flex-1 sm:flex-none px-4 py-3 rounded-xl border font-bold text-xs flex items-center justify-center space-x-2 transition shadow-sm ${
+                  className={`px-3 py-2.5 rounded-xl border font-bold text-xs flex items-center justify-center space-x-1.5 transition shadow-sm cursor-pointer ${
                     showCustomEmailStudio
                       ? 'bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-400 text-white shadow-indigo-500/25'
                       : 'bg-indigo-600/20 hover:bg-indigo-600/30 border-indigo-500/40 text-indigo-300 hover:text-white'
                   }`}
                   title={t.customEmailBtn}
                 >
-                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                   <span>{t.customEmailBtn}</span>
+                </button>
+
+                {/* Recover Email Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowRecoverModal(true)}
+                  className="col-span-2 sm:col-span-1 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600/20 to-teal-600/20 hover:from-cyan-600/30 hover:to-teal-600/30 border border-cyan-500/40 text-cyan-300 hover:text-white font-bold text-xs flex items-center justify-center space-x-1.5 transition shadow-sm cursor-pointer"
+                  title={t.recoverEmailBtn}
+                >
+                  <RefreshCw className="w-3.5 h-3.5 text-cyan-300" />
+                  <span>{t.recoverEmailBtn}</span>
                 </button>
               </div>
             </div>
@@ -1982,7 +1992,17 @@ export default function OwntempHome() {
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setShowRecoverModal(true)}
+                      className="inline-flex items-center space-x-1 text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/30 transition cursor-pointer"
+                      title={t.recoverEmailBtn}
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 text-cyan-300" />
+                      <span>{t.recoverEmailBtn}</span>
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => {
@@ -2910,6 +2930,7 @@ export default function OwntempHome() {
         emailsCount={emails.length}
         onActivateCustomEmail={handleActivateCustomEmail}
         onOpenAuthModal={() => setShowAuthModal(true)}
+        onOpenRecoverModal={() => setShowRecoverModal(true)}
       />
 
       {/* Lifetime Lock Modal */}
@@ -2937,6 +2958,24 @@ export default function OwntempHome() {
         description={t.enterUnlockPin}
         cancelText={t.cancel}
         confirmText={t.confirmUnlock}
+      />
+
+      {/* Email Recovery Modal */}
+      <RecoverModal
+        isOpen={showRecoverModal}
+        onClose={() => setShowRecoverModal(false)}
+        onRecoverAddress={(addr) => {
+          handleSwitchInbox(addr);
+          setActionSuccess(
+            lang === 'bn'
+              ? `ইমেইল "${addr}" সফলভাবে রিকভার হয়েছে!`
+              : `Inbox "${addr}" recovered successfully!`
+          );
+          setTimeout(() => setActionSuccess(null), 3500);
+        }}
+        recentInboxes={recentInboxes}
+        lockedInboxes={lockedInboxes.map((l) => l.address)}
+        lang={lang}
       />
 
       {/* Custom Domain & Business Workspace Modal */}

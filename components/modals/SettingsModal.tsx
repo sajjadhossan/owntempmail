@@ -93,6 +93,7 @@ interface SettingsModalProps {
   emailsCount: number;
   onActivateCustomEmail?: (email: string) => void;
   onOpenAuthModal?: () => void;
+  onOpenRecoverModal?: () => void;
 }
 
 export default function SettingsModal({
@@ -152,6 +153,7 @@ export default function SettingsModal({
   emailsCount,
   onActivateCustomEmail,
   onOpenAuthModal,
+  onOpenRecoverModal,
 }: SettingsModalProps) {
   const [isTestingWebhook, setIsTestingWebhook] = useState(false);
   const [webhookDiagnostic, setWebhookDiagnostic] = useState<any | null>(null);
@@ -597,24 +599,39 @@ export default function SettingsModal({
                   </span>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    const cleanP = cfCustomPrefix.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '') || 'user';
-                    const targetD = cfCustomDomain || selectedDomain;
-                    if (targetD && onActivateCustomEmail) {
-                      onActivateCustomEmail(`${cleanP}@${targetD}`);
-                      setCfEmailActivatedToast(`${cleanP}@${targetD}`);
-                      setTimeout(() => {
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  {onOpenRecoverModal && (
+                    <button
+                      type="button"
+                      onClick={() => {
                         onClose();
-                      }, 400);
-                    }
-                  }}
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-600/30 transition flex items-center justify-center space-x-1.5 cursor-pointer"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                  <span>{lang === 'bn' ? '🚀 এই ইমেইলটি চালু করুন' : '🚀 Launch This Email'}</span>
-                </button>
+                        onOpenRecoverModal();
+                      }}
+                      className="px-3.5 py-2 rounded-xl bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/30 text-xs font-bold transition flex items-center justify-center space-x-1.5 cursor-pointer"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>{lang === 'bn' ? '🔄 পূর্বের ইমেইল রিকভার' : '🔄 Recover Email'}</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cleanP = cfCustomPrefix.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '') || 'user';
+                      const targetD = cfCustomDomain || selectedDomain;
+                      if (targetD && onActivateCustomEmail) {
+                        onActivateCustomEmail(`${cleanP}@${targetD}`);
+                        setCfEmailActivatedToast(`${cleanP}@${targetD}`);
+                        setTimeout(() => {
+                          onClose();
+                        }, 400);
+                      }
+                    }}
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-600/30 transition flex items-center justify-center space-x-1.5 cursor-pointer"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>{lang === 'bn' ? '🚀 এই ইমেইলটি চালু করুন' : '🚀 Launch This Email'}</span>
+                  </button>
+                </div>
               </div>
 
               {cfEmailActivatedToast && (
