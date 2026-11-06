@@ -324,7 +324,7 @@ export function saveInboundEmail(record: Omit<EmailRecord, 'id' | 'receivedAt' |
 
   // Real-time Telegram Alert Dispatch
   if (db.telegramConfig?.enabled && db.telegramConfig.botToken && db.telegramConfig.chatId) {
-    sendTelegramAlert(newEmail, db.telegramConfig).catch((err) => {
+    sendTelegramAlert(newEmail, db.telegramConfig).catch((err: any) => {
       console.error('[Storage] Telegram alert dispatch failed:', err);
     });
   }
@@ -332,7 +332,7 @@ export function saveInboundEmail(record: Omit<EmailRecord, 'id' | 'receivedAt' |
   // SimpleLogin-style Real-Time Forwarding Relay (Discord, Slack, Webhook, Email)
   const forwardRule = db.forwardingRules?.[normalizedAddress];
   if (forwardRule && forwardRule.enabled) {
-    dispatchForwarding(newEmail, forwardRule).catch((err) => {
+    dispatchForwarding(newEmail, forwardRule).catch((err: any) => {
       console.error('[Storage] Forwarding dispatch failed:', err);
     });
   }
@@ -353,7 +353,7 @@ export function deleteEmail(id: string): boolean {
   persistDb();
 
   if (hasDatabaseUrl) {
-    prisma.email.delete({ where: { id } }).catch((err) => {
+    prisma.email.delete({ where: { id } }).catch((err: any) => {
       console.warn('[Storage] Prisma delete sync warning:', err);
     });
   }
@@ -721,7 +721,7 @@ export function recordDeviceHeartbeat(session: DeviceSession): DeviceSession[] {
         ipAddress: session.ipAddress || '127.0.0.1',
         lastHeartbeat: new Date(),
       },
-    }).catch((err) => console.warn('[Prisma] Device session upsert warning:', err?.message));
+    }).catch((err: any) => console.warn('[Prisma] Device session upsert warning:', err?.message));
   }
 
   return db.deviceSessions[session.userId];
@@ -741,7 +741,7 @@ export function revokeDeviceSession(userId: string, deviceId: string): boolean {
   if (hasDatabaseUrl) {
     prisma.deviceSession.deleteMany({
       where: { deviceId },
-    }).catch((err) => console.warn('[Prisma] Device session delete warning:', err?.message));
+    }).catch((err: any) => console.warn('[Prisma] Device session delete warning:', err?.message));
   }
 
   return true;
@@ -780,7 +780,7 @@ export function saveUserSyncState(state: SyncedUserState): SyncedUserState {
         soundEnabled: state.soundEnabled ?? true,
         voiceEnabled: state.voiceEnabled ?? false,
       },
-    }).catch((err) => console.warn('[Prisma] User sync state upsert warning:', err?.message));
+    }).catch((err: any) => console.warn('[Prisma] User sync state upsert warning:', err?.message));
   }
 
   return db.userSyncState[state.userId];

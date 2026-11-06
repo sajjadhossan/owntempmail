@@ -35,7 +35,7 @@ export default function DeviceSyncModal({
           setDevices(data.data.devices);
         }
       })
-      .catch((e) => console.error(e))
+      .catch((e: any) => console.error(e))
       .finally(() => setIsLoading(false));
   };
 
