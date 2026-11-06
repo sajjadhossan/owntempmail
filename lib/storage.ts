@@ -697,6 +697,33 @@ export function recordDeviceHeartbeat(session: DeviceSession): DeviceSession[] {
 
   db.deviceSessions[session.userId] = list.slice(0, 10);
   persistDb();
+
+  // Async sync to Postgres/Prisma when database is configured
+  if (hasDatabaseUrl) {
+    prisma.deviceSession.upsert({
+      where: { deviceId: session.deviceId },
+      update: {
+        userId: session.userId,
+        deviceName: session.deviceName || 'My Device',
+        deviceType: session.deviceType,
+        browser: session.browser,
+        os: session.os,
+        ipAddress: session.ipAddress || '127.0.0.1',
+        lastHeartbeat: new Date(),
+      },
+      create: {
+        deviceId: session.deviceId,
+        userId: session.userId,
+        deviceName: session.deviceName || 'My Device',
+        deviceType: session.deviceType,
+        browser: session.browser,
+        os: session.os,
+        ipAddress: session.ipAddress || '127.0.0.1',
+        lastHeartbeat: new Date(),
+      },
+    }).catch((err) => console.warn('[Prisma] Device session upsert warning:', err?.message));
+  }
+
   return db.deviceSessions[session.userId];
 }
 
@@ -710,6 +737,13 @@ export function revokeDeviceSession(userId: string, deviceId: string): boolean {
   if (!db.deviceSessions?.[userId]) return false;
   db.deviceSessions[userId] = db.deviceSessions[userId].filter((d) => d.deviceId !== deviceId);
   persistDb();
+
+  if (hasDatabaseUrl) {
+    prisma.deviceSession.deleteMany({
+      where: { deviceId },
+    }).catch((err) => console.warn('[Prisma] Device session delete warning:', err?.message));
+  }
+
   return true;
 }
 
@@ -721,6 +755,34 @@ export function saveUserSyncState(state: SyncedUserState): SyncedUserState {
     updatedAt: new Date().toISOString(),
   };
   persistDb();
+
+  if (hasDatabaseUrl) {
+    prisma.userSyncState.upsert({
+      where: { userId: state.userId },
+      update: {
+        email: state.email || null,
+        activeEmail: state.activeEmail || null,
+        recentInboxes: state.recentInboxes as any,
+        pinnedDomains: (state.pinnedDomains || []) as any,
+        theme: state.theme || 'system',
+        lang: state.lang || 'bn',
+        soundEnabled: state.soundEnabled ?? true,
+        voiceEnabled: state.voiceEnabled ?? false,
+      },
+      create: {
+        userId: state.userId,
+        email: state.email || null,
+        activeEmail: state.activeEmail || null,
+        recentInboxes: state.recentInboxes as any,
+        pinnedDomains: (state.pinnedDomains || []) as any,
+        theme: state.theme || 'system',
+        lang: state.lang || 'bn',
+        soundEnabled: state.soundEnabled ?? true,
+        voiceEnabled: state.voiceEnabled ?? false,
+      },
+    }).catch((err) => console.warn('[Prisma] User sync state upsert warning:', err?.message));
+  }
+
   return db.userSyncState[state.userId];
 }
 

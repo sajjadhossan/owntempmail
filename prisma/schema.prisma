@@ -54,3 +54,31 @@ model Domain {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
+
+model DeviceSession {
+  id              String    @id @default(uuid())
+  deviceId        String    @unique
+  userId          String?
+  deviceName      String    @default("My Device")
+  deviceType      String    @default("desktop")
+  browser         String    @default("Browser")
+  os              String    @default("Windows")
+  ipAddress       String    @default("127.0.0.1")
+  lastHeartbeat   DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model UserSyncState {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+  email           String?
+  activeEmail     String?
+  recentInboxes   Json
+  pinnedDomains   Json?
+  theme           String    @default("system")
+  lang            String    @default("bn")
+  soundEnabled    Boolean   @default(true)
+  voiceEnabled    Boolean   @default(false)
+  updatedAt       DateTime  @updatedAt
+}
