@@ -201,8 +201,9 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Pull to refresh
+        // Pull to refresh only when webView is at the very top
         swipeRefresh.setOnRefreshListener(() -> webView.reload());
+        swipeRefresh.setOnChildScrollUpCallback((parent, child) -> webView.getScrollY() > 0);
 
         // Back button navigation
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
