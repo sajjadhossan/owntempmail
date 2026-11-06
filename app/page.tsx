@@ -54,6 +54,7 @@ import {
   FileSpreadsheet,
   Flame,
   Share2,
+  User,
 } from 'lucide-react';
 import {
   EmailRecord,
@@ -84,6 +85,10 @@ import AttachmentLightboxModal from '@/components/modals/AttachmentLightboxModal
 import PasswordGeneratorBar from '@/components/PasswordGeneratorBar';
 import BurnerResetModal from '@/components/modals/BurnerResetModal';
 import ForwardingModal from '@/components/modals/ForwardingModal';
+import AuthModal from '@/components/modals/AuthModal';
+import DeviceSyncModal from '@/components/modals/DeviceSyncModal';
+import { getOrCreateDeviceId, detectDeviceDetails } from '@/lib/device-sync';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 // In-Memory Browser Cache for instant 0ms domain navigation
 const domainClientCache = new Map<string, any>();
@@ -182,6 +187,9 @@ export default function OwntempHome() {
   const [previewAttachment, setPreviewAttachment] = useState<EmailAttachment | null>(null);
   const [showBurnerModal, setShowBurnerModal] = useState(false);
   const [showForwardingModal, setShowForwardingModal] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showDeviceSyncModal, setShowDeviceSyncModal] = useState(false);
 
   // 50,000+ Mega Domain Directory State
   const [directorySearch, setDirectorySearch] = useState('');
@@ -742,6 +750,81 @@ export default function OwntempHome() {
   );
 
   const isInitializedRef = useRef(false);
+
+  // Device Heartbeat & Cross-Device Sync on mount
+  useEffect(() => {
+    const devId = getOrCreateDeviceId();
+    const details = detectDeviceDetails();
+    let activeUid = 'guest_user';
+    try {
+      const savedU = localStorage.getItem('owntemp_auth_user');
+      if (savedU) {
+        const parsed = JSON.parse(savedU);
+        if (parsed && parsed.id) {
+          setCurrentUser(parsed);
+          activeUid = parsed.id;
+        }
+      }
+    } catch (e) {}
+
+    fetch('/api/sync/devices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        deviceId: devId,
+        userId: activeUid,
+        deviceName: details.deviceName,
+        deviceType: details.deviceType,
+        browser: details.browser,
+        os: details.os,
+      }),
+    }).catch(() => {});
+  }, []);
+
+  // When user logs in, pull synced state from cloud
+  useEffect(() => {
+    if (!currentUser || !currentUser.id) return;
+    fetch(`/api/sync/inboxes?userId=${encodeURIComponent(currentUser.id)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data) {
+          const synced = data.data;
+          if (synced.activeEmail && synced.activeEmail !== activeEmail) {
+            setActiveEmail(synced.activeEmail);
+            fetchEmails(synced.activeEmail);
+          }
+          if (Array.isArray(synced.recentInboxes) && synced.recentInboxes.length > 0) {
+            setRecentInboxes(synced.recentInboxes);
+          }
+          if (Array.isArray(synced.pinnedDomains) && synced.pinnedDomains.length > 0) {
+            setPinnedDomains(synced.pinnedDomains);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [currentUser]);
+
+  // Force push local state to cloud for all connected devices
+  const handleForceSyncCloud = useCallback(async () => {
+    if (!currentUser || !currentUser.id) return;
+    try {
+      await fetch('/api/sync/inboxes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          email: currentUser.email,
+          activeEmail,
+          recentInboxes,
+          pinnedDomains,
+          theme: currentTheme,
+          lang,
+          soundEnabled,
+          voiceEnabled,
+        }),
+      });
+    } catch (e) {}
+  }, [currentUser, activeEmail, recentInboxes, pinnedDomains, currentTheme, lang, soundEnabled, voiceEnabled]);
 
   // Initial load - runs strictly once on mount
   useEffect(() => {
@@ -1597,6 +1680,32 @@ export default function OwntempHome() {
             >
               {lang === 'bn' ? 'English' : 'বাংলা'}
             </button>
+
+            {/* Supabase Account & Cross-Device Sync Hub */}
+            {currentUser ? (
+              <button
+                type="button"
+                onClick={() => setShowDeviceSyncModal(true)}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition shadow-sm"
+                title="Manage Connected Devices & Sync"
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span className="hidden sm:inline font-mono">{currentUser.email?.split('@')[0]}</span>
+                <span className="text-[10px] px-1 rounded bg-emerald-950 text-emerald-200 border border-emerald-800">
+                  Sync
+                </span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowAuthModal(true)}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold transition shadow-sm"
+                title="Sign in to sync inboxes across all your devices"
+              >
+                <User className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{lang === 'bn' ? 'ডিভাইস সিঙ্ক' : 'Device Sync'}</span>
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -2872,6 +2981,36 @@ export default function OwntempHome() {
           setActionSuccess(msg);
           setTimeout(() => setActionSuccess(null), 3500);
         }}
+        lang={lang}
+      />
+
+      {/* Supabase Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        currentUser={currentUser}
+        onAuthSuccess={(user) => {
+          setCurrentUser(user);
+          try { localStorage.setItem('owntemp_auth_user', JSON.stringify(user)); } catch (e) {}
+          setActionSuccess(lang === 'bn' ? '✅ ক্লাউড ডিভাইস সিঙ্ক সক্রিয় হয়েছে!' : '✅ Cross-device sync enabled!');
+          setTimeout(() => setActionSuccess(null), 3000);
+        }}
+        onSignOut={() => {
+          setCurrentUser(null);
+          try { localStorage.removeItem('owntemp_auth_user'); } catch (e) {}
+          setActionSuccess(lang === 'bn' ? 'লগআউট সম্পন্ন হয়েছে' : 'Signed out');
+          setTimeout(() => setActionSuccess(null), 2500);
+        }}
+        onOpenDeviceManager={() => setShowDeviceSyncModal(true)}
+        lang={lang}
+      />
+
+      {/* Cross-Device Manager Modal */}
+      <DeviceSyncModal
+        isOpen={showDeviceSyncModal}
+        onClose={() => setShowDeviceSyncModal(false)}
+        userId={currentUser?.id || 'guest_user'}
+        onForceSync={handleForceSyncCloud}
         lang={lang}
       />
 

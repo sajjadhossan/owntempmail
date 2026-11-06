@@ -15,12 +15,15 @@ import {
 import { sendTelegramAlert } from './telegram';
 import { prisma, hasDatabaseUrl } from './prisma';
 import { dispatchForwarding } from './forwarding';
+import { DeviceSession, SyncedUserState } from './device-sync';
 
 interface DatabaseSchema {
   inboxes: Record<string, InboxMetadata>;
   emails: EmailRecord[];
   domains: DomainItem[];
   forwardingRules?: Record<string, ForwardingRule>;
+  deviceSessions?: Record<string, DeviceSession[]>;
+  userSyncState?: Record<string, SyncedUserState>;
   businessProfile?: BusinessProfile;
   telegramConfig?: TelegramConfig;
   blueGreenConfig?: BlueGreenConfig;
@@ -677,4 +680,51 @@ export function getForwardingRule(inboxAddress: string): ForwardingRule | null {
   const db = ensureDbLoaded();
   const normalized = inboxAddress.trim().toLowerCase();
   return db.forwardingRules?.[normalized] || null;
+}
+
+export function recordDeviceHeartbeat(session: DeviceSession): DeviceSession[] {
+  const db = ensureDbLoaded();
+  if (!db.deviceSessions) db.deviceSessions = {};
+  if (!db.deviceSessions[session.userId]) db.deviceSessions[session.userId] = [];
+
+  const list = db.deviceSessions[session.userId];
+  const idx = list.findIndex((d) => d.deviceId === session.deviceId);
+  if (idx !== -1) {
+    list[idx] = { ...list[idx], ...session, lastActiveAt: new Date().toISOString() };
+  } else {
+    list.unshift({ ...session, lastActiveAt: new Date().toISOString() });
+  }
+
+  db.deviceSessions[session.userId] = list.slice(0, 10);
+  persistDb();
+  return db.deviceSessions[session.userId];
+}
+
+export function getDeviceSessions(userId: string): DeviceSession[] {
+  const db = ensureDbLoaded();
+  return db.deviceSessions?.[userId] || [];
+}
+
+export function revokeDeviceSession(userId: string, deviceId: string): boolean {
+  const db = ensureDbLoaded();
+  if (!db.deviceSessions?.[userId]) return false;
+  db.deviceSessions[userId] = db.deviceSessions[userId].filter((d) => d.deviceId !== deviceId);
+  persistDb();
+  return true;
+}
+
+export function saveUserSyncState(state: SyncedUserState): SyncedUserState {
+  const db = ensureDbLoaded();
+  if (!db.userSyncState) db.userSyncState = {};
+  db.userSyncState[state.userId] = {
+    ...state,
+    updatedAt: new Date().toISOString(),
+  };
+  persistDb();
+  return db.userSyncState[state.userId];
+}
+
+export function getUserSyncState(userId: string): SyncedUserState | null {
+  const db = ensureDbLoaded();
+  return db.userSyncState?.[userId] || null;
 }
