@@ -107,6 +107,7 @@ export default function OwntempHome() {
   const [recentInboxes, setRecentInboxes] = useState<string[]>([]);
   const [isDirectDomainMode, setIsDirectDomainMode] = useState(false);
   const [directDomainInput, setDirectDomainInput] = useState('');
+  const [showCustomEmailStudio, setShowCustomEmailStudio] = useState(true);
 
   // Business Profile
   const [businessProfile, setBusinessProfile] = useState<BusinessProfile>({
@@ -1083,6 +1084,53 @@ export default function OwntempHome() {
     setTimeout(() => setActionSuccess(null), 3000);
   };
 
+  // Direct 1-Click Custom Email Activator (for Studio, Modals & Cloudflare)
+  const handleActivateCustomEmail = useCallback(
+    async (customEmailOrPrefix: string, explicitDomain?: string) => {
+      let cleanPrefix = '';
+      let cleanDomain = '';
+
+      if (explicitDomain) {
+        cleanPrefix = customEmailOrPrefix.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '') || 'user';
+        cleanDomain = explicitDomain.trim().toLowerCase().replace(/^@+/, '');
+      } else if (customEmailOrPrefix.includes('@')) {
+        const parts = customEmailOrPrefix.split('@');
+        cleanPrefix = parts[0].trim().toLowerCase().replace(/[^a-z0-9._-]/g, '') || 'user';
+        cleanDomain = parts[1].trim().toLowerCase().replace(/^@+/, '');
+      } else {
+        cleanPrefix = customEmailOrPrefix.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '') || 'user';
+        cleanDomain = selectedDomain || 'owntemp.live';
+      }
+
+      if (!cleanPrefix || !cleanDomain) return;
+
+      if (cleanDomain.includes('.') && !domains.some((d) => d.domain.toLowerCase() === cleanDomain.toLowerCase())) {
+        try {
+          await fetch('/api/domains', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ domain: cleanDomain, businessName: 'Cloudflare / Custom' }),
+          });
+          fetchDomains();
+        } catch (e) {}
+      }
+
+      const newAddress = `${cleanPrefix}@${cleanDomain}`;
+      setUsernamePrefix(cleanPrefix);
+      setSelectedDomain(cleanDomain);
+      setActiveEmail(newAddress);
+      try {
+        localStorage.setItem('owntemp_active_email', newAddress);
+      } catch (e) {}
+      addRecentInbox(newAddress);
+      fetchEmails(newAddress);
+      triggerHaptic(50);
+      setActionSuccess(lang === 'bn' ? `✨ কাস্টম ইমেইল সক্রিয় করা হয়েছে: ${newAddress}` : `✨ Custom email activated: ${newAddress}`);
+      setTimeout(() => setActionSuccess(null), 3500);
+    },
+    [selectedDomain, domains, fetchDomains, addRecentInbox, fetchEmails, triggerHaptic, lang]
+  );
+
   const addRecentInbox = useCallback((addr: string) => {
     if (!addr) return;
     setRecentInboxes((prev) => {
@@ -1681,29 +1729,29 @@ export default function OwntempHome() {
               {lang === 'bn' ? 'English' : 'বাংলা'}
             </button>
 
-            {/* Supabase Account & Cross-Device Sync Hub */}
+            {/* Account & Cross-Device Sync Hub */}
             {currentUser ? (
               <button
                 type="button"
-                onClick={() => setShowDeviceSyncModal(true)}
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition shadow-sm"
-                title="Manage Connected Devices & Sync"
+                onClick={() => setShowAuthModal(true)}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition shadow-sm cursor-pointer"
+                title={lang === 'bn' ? 'ইউজার প্রোফাইল ও ডিভাইস সেটিংস' : 'User profile & devices'}
               >
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span className="hidden sm:inline font-mono">{currentUser.email?.split('@')[0]}</span>
+                <span className="font-mono max-w-[120px] truncate">{currentUser.email?.split('@')[0]}</span>
                 <span className="text-[10px] px-1 rounded bg-emerald-950 text-emerald-200 border border-emerald-800">
-                  Sync
+                  {lang === 'bn' ? 'প্রোফাইল' : 'Profile'}
                 </span>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => setShowAuthModal(true)}
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold transition shadow-sm"
-                title="Sign in to sync inboxes across all your devices"
+                className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold transition shadow-md shadow-indigo-600/30 cursor-pointer"
+                title={lang === 'bn' ? 'লগইন বা নতুন অ্যাকাউন্ট তৈরি করুন' : 'Sign in or create account'}
               >
-                <User className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{lang === 'bn' ? 'ডিভাইস সিঙ্ক' : 'Device Sync'}</span>
+                <User className="w-3.5 h-3.5 text-yellow-300" />
+                <span>{lang === 'bn' ? 'লগইন / সাইন আপ' : 'Sign In / Sign Up'}</span>
               </button>
             )}
           </div>
@@ -1861,6 +1909,20 @@ export default function OwntempHome() {
                   <Sparkles className="w-4 h-4 text-yellow-400" />
                   <span className="hidden sm:inline">{t.random}</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowCustomEmailStudio((prev) => !prev)}
+                  className={`flex-1 sm:flex-none px-4 py-3 rounded-xl border font-bold text-xs flex items-center justify-center space-x-2 transition shadow-sm ${
+                    showCustomEmailStudio
+                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-400 text-white shadow-indigo-500/25'
+                      : 'bg-indigo-600/20 hover:bg-indigo-600/30 border-indigo-500/40 text-indigo-300 hover:text-white'
+                  }`}
+                  title={t.customEmailBtn}
+                >
+                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <span>{t.customEmailBtn}</span>
+                </button>
               </div>
             </div>
 
@@ -1906,114 +1968,164 @@ export default function OwntempHome() {
               </div>
             )}
 
-            {/* Custom Alias & Domain Bar */}
-            <div className="pt-2 border-t border-slate-800/60 space-y-2">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-[11px]">
-                <span className="flex items-center space-x-1.5 text-indigo-300 font-semibold">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                  <span>{lang === 'bn' ? '৫০,০০০+ মেগা ডোমেইন পুল (ccTLD সহ) • কাস্টম নাম ও কোম্পানি ফিল্টার:' : '50,000+ Ultra-Mega Fleet (ccTLDs Included):'}</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowDirectoryModal(true);
-                    fetchDirectoryDomains('', directoryCategory, 1, directoryLimit, false);
-                  }}
-                  className="inline-flex items-center justify-center space-x-1.5 text-[11px] font-bold px-3 py-1 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-md shadow-indigo-600/30 transition transform active:scale-95 cursor-pointer"
-                >
-                  <Search className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
-                  <span>{lang === 'bn' ? '🌐 ৫০,০০০+ ডোমেইন ডিরেক্টরি ব্রাউজ করুন' : '🌐 Browse 50,000+ Directory'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleCreateOpenSourceInbox}
-                  className="inline-flex items-center justify-center space-x-1.5 text-[11px] font-bold px-3 py-1 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-md shadow-emerald-600/30 transition transform active:scale-95 cursor-pointer"
-                  title="Create instant inbox from Mail.tm Open Source Fleet"
-                >
-                  <Globe className="w-3.5 h-3.5 text-emerald-200" />
-                  <span>{lang === 'bn' ? '⚡ Mail.tm ওপেন সোর্স ফ্লিট' : '⚡ Mail.tm Open Fleet'}</span>
-                </button>
-              </div>
-              <form onSubmit={handleApplyAddress} className="flex flex-col sm:flex-row items-center gap-3">
-              <div className="w-full sm:w-auto flex-1 flex items-center bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 focus-within:border-indigo-500 transition">
-                <span className="text-slate-500 font-mono text-sm mr-1">@</span>
-                <input
-                  type="text"
-                  value={usernamePrefix}
-                  onChange={(e) => setUsernamePrefix(e.target.value)}
-                  placeholder={t.enterPrefix}
-                  className="bg-transparent border-none outline-none text-sm text-slate-200 placeholder:text-slate-600 w-full font-mono"
-                />
-              </div>
-
-              <div className="w-full sm:w-auto flex items-center space-x-2">
-                {isDirectDomainMode ? (
-                  <div className="flex-1 sm:w-64 flex items-center bg-slate-950 border border-indigo-500 rounded-xl px-3 py-1.5 transition">
-                    <span className="text-indigo-400 font-mono text-xs mr-1">@</span>
-                    <input
-                      type="text"
-                      value={directDomainInput}
-                      onChange={(e) => setDirectDomainInput(e.target.value)}
-                      placeholder="e.g. sajjadholding.com"
-                      className="bg-transparent border-none outline-none text-xs text-indigo-200 placeholder:text-slate-600 w-full font-mono"
-                    />
+            {/* Custom Email Creator Studio */}
+            {showCustomEmailStudio && (
+              <div className="pt-3 border-t border-slate-800/80 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="flex items-center space-x-1.5 text-xs font-bold text-indigo-300">
+                      <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
+                      <span>{t.customEmailStudioTitle}</span>
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-mono">
+                      Cloudflare Ready
+                    </span>
                   </div>
-                ) : (
-                  <select
-                    value={selectedDomain}
-                    onChange={(e) => setSelectedDomain(e.target.value)}
-                    className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 outline-none focus:border-indigo-500 font-mono w-full sm:w-auto"
-                  >
-                    {pinnedDomains.length > 0 && (
-                      <optgroup label={lang === 'bn' ? '⭐ পিন করা ফেভারিট' : '⭐ Pinned Favorites'}>
-                        {pinnedDomains.map((pDom) => (
-                          <option key={`pin-${pDom}`} value={pDom}>
-                            ⭐ @{pDom}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
-                    <optgroup label={lang === 'bn' ? '🌐 সমস্ত ডোমেন' : '🌐 All Domains'}>
-                      {domains.map((dom) => (
-                        <option key={dom.id} value={dom.domain}>
-                          @{dom.domain} {dom.businessName ? `(${dom.businessName})` : dom.isCustom ? '(Custom)' : ''}
-                        </option>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSettingsTab('api');
+                        setShowSettingsModal(true);
+                      }}
+                      className="inline-flex items-center space-x-1 text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 transition cursor-pointer"
+                      title="Cloudflare Setup"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>{lang === 'bn' ? '🛡️ ক্লাউডফ্লেয়ার ডোমেইন যোগ করুন' : '🛡️ Connect Cloudflare'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDirectoryModal(true);
+                        fetchDirectoryDomains('', directoryCategory, 1, directoryLimit, false);
+                      }}
+                      className="inline-flex items-center space-x-1 text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer"
+                    >
+                      <Search className="w-3.5 h-3.5 text-yellow-300" />
+                      <span>{lang === 'bn' ? '৫০,০০০+ ডিরেক্টরি' : '50k+ Fleet'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleCreateOpenSourceInbox}
+                      className="inline-flex items-center space-x-1 text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 transition cursor-pointer"
+                      title="Mail.tm Fleet"
+                    >
+                      <Globe className="w-3.5 h-3.5 text-emerald-300" />
+                      <span>Mail.tm</span>
+                    </button>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  {t.customEmailStudioDesc}
+                </p>
+
+                <form onSubmit={handleApplyAddress} className="space-y-2.5">
+                  <div className="flex flex-col sm:flex-row items-center gap-2.5">
+                    {/* Username prefix input */}
+                    <div className="w-full sm:flex-1 flex items-center bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 focus-within:border-indigo-500 transition">
+                      <span className="text-slate-500 font-mono text-sm mr-1.5">@</span>
+                      <input
+                        type="text"
+                        value={usernamePrefix}
+                        onChange={(e) => setUsernamePrefix(e.target.value)}
+                        placeholder={t.enterPrefix}
+                        className="bg-transparent border-none outline-none text-xs sm:text-sm text-slate-200 placeholder:text-slate-600 w-full font-mono"
+                      />
+                    </div>
+
+                    {/* Domain selection or direct domain */}
+                    <div className="w-full sm:w-auto flex items-center space-x-2">
+                      {isDirectDomainMode ? (
+                        <div className="flex-1 sm:w-64 flex items-center bg-slate-950 border border-indigo-500 rounded-xl px-3 py-2 transition">
+                          <span className="text-indigo-400 font-mono text-xs mr-1">@</span>
+                          <input
+                            type="text"
+                            value={directDomainInput}
+                            onChange={(e) => setDirectDomainInput(e.target.value)}
+                            placeholder={t.customDomainDirectPlaceholder}
+                            className="bg-transparent border-none outline-none text-xs text-indigo-200 placeholder:text-slate-600 w-full font-mono"
+                          />
+                        </div>
+                      ) : (
+                        <select
+                          value={selectedDomain}
+                          onChange={(e) => setSelectedDomain(e.target.value)}
+                          className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-300 outline-none focus:border-indigo-500 font-mono w-full sm:w-auto"
+                        >
+                          {pinnedDomains.length > 0 && (
+                            <optgroup label={lang === 'bn' ? '⭐ পিন করা ফেভারিট' : '⭐ Pinned Favorites'}>
+                              {pinnedDomains.map((pDom) => (
+                                <option key={`pin-${pDom}`} value={pDom}>
+                                  ⭐ @{pDom}
+                                </option>
+                              ))}
+                            </optgroup>
+                          )}
+                          <optgroup label={lang === 'bn' ? '🌐 সমস্ত ডোমেন' : '🌐 All Domains'}>
+                            {domains.map((dom) => (
+                              <option key={dom.id} value={dom.domain}>
+                                @{dom.domain} {dom.businessName ? `(${dom.businessName})` : dom.isCustom ? '(Custom)' : ''}
+                              </option>
+                            ))}
+                          </optgroup>
+                        </select>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => setIsDirectDomainMode(!isDirectDomainMode)}
+                        className={`p-2.5 rounded-xl border text-xs transition cursor-pointer ${
+                          isDirectDomainMode
+                            ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm'
+                            : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-slate-400 hover:text-indigo-300'
+                        }`}
+                        title={isDirectDomainMode ? 'Switch to domain dropdown' : 'Type custom domain directly'}
+                      >
+                        {isDirectDomainMode ? <Layers className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                      </button>
+                    </div>
+
+                    {/* Submit Button */}
+                    <button
+                      type="submit"
+                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white border border-indigo-500/50 text-xs font-bold shadow-md shadow-indigo-600/30 transition flex items-center justify-center space-x-1.5 whitespace-nowrap cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+                      <span>{t.createAndActivateBtn}</span>
+                    </button>
+                  </div>
+
+                  {/* Quick Username Suggestions & Live Email Preview */}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1 text-[11px]">
+                    <div className="flex items-center space-x-1.5 overflow-x-auto scrollbar-none">
+                      <span className="text-slate-500 whitespace-nowrap">{t.quickPrefixes}</span>
+                      {['sajjad', 'contact', 'admin', 'support', 'vip', 'otp', 'service', 'dev'].map((sug) => (
+                        <button
+                          key={`pre-${sug}`}
+                          type="button"
+                          onClick={() => setUsernamePrefix(sug)}
+                          className="px-2 py-0.5 rounded bg-slate-900 hover:bg-indigo-600/30 text-indigo-300 hover:text-white border border-slate-800 font-mono transition text-[10px]"
+                        >
+                          {sug}
+                        </button>
                       ))}
-                    </optgroup>
-                  </select>
-                )}
+                    </div>
 
-                <button
-                  type="button"
-                  onClick={() => setIsDirectDomainMode(!isDirectDomainMode)}
-                  className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-indigo-300 text-xs transition"
-                  title={isDirectDomainMode ? 'Switch to dropdown' : 'Type custom domain directly'}
-                >
-                  {isDirectDomainMode ? <Layers className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowDirectoryModal(true);
-                    fetchDirectoryDomains('', directoryCategory, 1, directoryLimit, false);
-                  }}
-                  className="p-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 text-xs transition"
-                  title="Search 50,000+ Domains"
-                >
-                  <Search className="w-4 h-4 text-yellow-300" />
-                </button>
-
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white border border-slate-700 text-xs font-semibold transition whitespace-nowrap"
-                >
-                  {t.applyAddress}
-                </button>
+                    <div className="flex items-center space-x-1.5 font-mono text-[11px] self-end sm:self-auto">
+                      <span className="text-slate-500">{lang === 'bn' ? 'প্রিভিউ:' : 'Preview:'}</span>
+                      <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/25 font-bold truncate max-w-[200px]">
+                        {(usernamePrefix.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '') || 'username')}@{(isDirectDomainMode && directDomainInput.trim()) ? directDomainInput.trim().replace(/^@+/, '') : (selectedDomain || 'domain.com')}
+                      </span>
+                    </div>
+                  </div>
+                </form>
               </div>
-            </form>
-          </div>
+            )}
           </div>
         </section>
 
@@ -2796,6 +2908,8 @@ export default function OwntempHome() {
         setSoundEnabled={setSoundEnabled}
         handleExportEmails={handleExportEmails}
         emailsCount={emails.length}
+        onActivateCustomEmail={handleActivateCustomEmail}
+        onOpenAuthModal={() => setShowAuthModal(true)}
       />
 
       {/* Lifetime Lock Modal */}
@@ -3087,6 +3201,19 @@ export default function OwntempHome() {
         >
           <Settings className="w-5 h-5 text-slate-400" />
           <span>{lang === 'bn' ? 'সেটিংস' : 'Settings'}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowAuthModal(true)}
+          className="flex flex-col items-center justify-center space-y-1 text-slate-300 hover:text-indigo-400 text-[10px] font-semibold transition"
+        >
+          <div className="relative">
+            <User className="w-5 h-5 text-indigo-400" />
+            {currentUser && (
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            )}
+          </div>
+          <span>{currentUser ? (lang === 'bn' ? 'প্রোফাইল' : 'Profile') : (lang === 'bn' ? 'লগইন' : 'Login')}</span>
         </button>
       </nav>
     </main>

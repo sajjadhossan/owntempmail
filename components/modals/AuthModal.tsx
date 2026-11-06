@@ -38,11 +38,24 @@ export default function AuthModal({
     setErrorMsg(null);
     setSuccessMsg(null);
 
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+      setErrorMsg(lang === 'bn' ? 'সঠিক ইমেইল অ্যাড্রেস লিখুন।' : 'Please enter a valid email address.');
+      setIsLoading(false);
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorMsg(lang === 'bn' ? 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।' : 'Password must be at least 6 characters.');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       if (isSupabaseConfigured) {
         if (tab === 'signup') {
           const { data, error } = await supabase.auth.signUp({
-            email,
+            email: cleanEmail,
             password,
           });
           if (error) throw error;
@@ -50,14 +63,14 @@ export default function AuthModal({
             onAuthSuccess(data.user);
             setSuccessMsg(
               lang === 'bn'
-                ? 'অ্যাকাউন্ট তৈরি সফল হয়েছে! লগইন সম্পন্ন।'
-                : 'Account created successfully! Logged in.'
+                ? 'অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে! লগইন সম্পন্ন।'
+                : 'Account created successfully! Signed in.'
             );
-            setTimeout(() => onClose(), 1500);
+            setTimeout(() => onClose(), 1200);
           }
         } else {
           const { data, error } = await supabase.auth.signInWithPassword({
-            email,
+            email: cleanEmail,
             password,
           });
           if (error) throw error;
@@ -66,26 +79,77 @@ export default function AuthModal({
             setSuccessMsg(
               lang === 'bn' ? 'সফলভাবে লগইন হয়েছে!' : 'Signed in successfully!'
             );
-            setTimeout(() => onClose(), 1500);
+            setTimeout(() => onClose(), 1200);
           }
         }
       } else {
-        // Safe offline/local resilient user session simulation
-        const mockUser = {
-          id: `usr_${Math.random().toString(36).substring(2, 10)}`,
-          email: email.trim().toLowerCase(),
-          created_at: new Date().toISOString(),
-        };
-        onAuthSuccess(mockUser);
-        setSuccessMsg(
-          lang === 'bn'
-            ? 'সুপারবেস লোকাল সেশন সিঙ্ক মোডে সক্রিয় হয়েছে!'
-            : 'Signed in with local cross-device session!'
-        );
-        setTimeout(() => onClose(), 1500);
+        // Resilient, functional persistent local account system
+        let accounts: Array<{ id: string; email: string; passwordHash: string; created_at: string }> = [];
+        try {
+          const savedAccs = localStorage.getItem('owntemp_auth_accounts');
+          if (savedAccs) accounts = JSON.parse(savedAccs);
+        } catch (e) {}
+
+        if (tab === 'signup') {
+          const existing = accounts.find((a) => a.email.toLowerCase() === cleanEmail);
+          if (existing) {
+            throw new Error(
+              lang === 'bn'
+                ? 'এই ইমেইল দিয়ে আগেই অ্যাকাউন্ট খোলা আছে। দয়া করে লগইন করুন।'
+                : 'Account already exists with this email. Please sign in.'
+            );
+          }
+
+          const newUser = {
+            id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+            email: cleanEmail,
+            passwordHash: btoa(password),
+            created_at: new Date().toISOString(),
+          };
+
+          accounts.push(newUser);
+          try {
+            localStorage.setItem('owntemp_auth_accounts', JSON.stringify(accounts));
+          } catch (e) {}
+
+          onAuthSuccess({ id: newUser.id, email: newUser.email, created_at: newUser.created_at });
+          setSuccessMsg(
+            lang === 'bn'
+              ? 'অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে! লগইন সম্পন্ন।'
+              : 'Account registered successfully! Signed in.'
+          );
+          setTimeout(() => onClose(), 1200);
+        } else {
+          // Sign In
+          const found = accounts.find((a) => a.email.toLowerCase() === cleanEmail);
+          if (found) {
+            if (found.passwordHash !== btoa(password)) {
+              throw new Error(
+                lang === 'bn' ? 'ভুল পাসওয়ার্ড! আবার চেষ্টা করুন।' : 'Incorrect password! Please try again.'
+              );
+            }
+            onAuthSuccess({ id: found.id, email: found.email, created_at: found.created_at });
+          } else {
+            // New user direct sign in & auto-register
+            const newUser = {
+              id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+              email: cleanEmail,
+              passwordHash: btoa(password),
+              created_at: new Date().toISOString(),
+            };
+            accounts.push(newUser);
+            try {
+              localStorage.setItem('owntemp_auth_accounts', JSON.stringify(accounts));
+            } catch (e) {}
+            onAuthSuccess({ id: newUser.id, email: newUser.email, created_at: newUser.created_at });
+          }
+
+          setSuccessMsg(lang === 'bn' ? 'সফলভাবে লগইন হয়েছে!' : 'Signed in successfully!');
+          setTimeout(() => onClose(), 1200);
+        }
       }
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Authentication failed');
+      setErrorMsg(err?.message || (lang === 'bn' ? 'অথেনটিকেশন ব্যর্থ হয়েছে' : 'Authentication failed'));
     } finally {
       setIsLoading(false);
     }
@@ -106,7 +170,7 @@ export default function AuthModal({
             </div>
             <div>
               <h3 className="font-bold text-base text-slate-100 flex items-center space-x-1.5">
-                <span>{currentUser ? (lang === 'bn' ? 'ব্যবহারকারী প্রোফাইল' : 'User Profile') : (lang === 'bn' ? 'সুপারবেস ক্লাউড লগইন' : 'Supabase Cloud Account')}</span>
+                <span>{currentUser ? (lang === 'bn' ? 'ব্যবহারকারী প্রোফাইল' : 'User Profile') : (lang === 'bn' ? 'লগইন ও সাইন আপ' : 'Sign In & Sign Up')}</span>
                 <span className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-300 font-mono border border-indigo-800 uppercase">
                   Cross-Device
                 </span>

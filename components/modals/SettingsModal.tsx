@@ -90,6 +90,8 @@ interface SettingsModalProps {
   setSoundEnabled: (val: boolean) => void;
   handleExportEmails: () => void;
   emailsCount: number;
+  onActivateCustomEmail?: (email: string) => void;
+  onOpenAuthModal?: () => void;
 }
 
 export default function SettingsModal({
@@ -147,10 +149,23 @@ export default function SettingsModal({
   setSoundEnabled,
   handleExportEmails,
   emailsCount,
+  onActivateCustomEmail,
+  onOpenAuthModal,
 }: SettingsModalProps) {
   const [isTestingWebhook, setIsTestingWebhook] = useState(false);
   const [webhookDiagnostic, setWebhookDiagnostic] = useState<any | null>(null);
   const [diagnosticError, setDiagnosticError] = useState<string | null>(null);
+
+  // Cloudflare & Custom Domain Email Personalization State
+  const [cfCustomPrefix, setCfCustomPrefix] = useState('sajjad');
+  const [cfCustomDomain, setCfCustomDomain] = useState(selectedDomain || '');
+  const [cfEmailActivatedToast, setCfEmailActivatedToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (selectedDomain && (!cfCustomDomain || cfCustomDomain === 'owntemp.live')) {
+      setCfCustomDomain(selectedDomain);
+    }
+  }, [selectedDomain, cfCustomDomain]);
 
   const handleRunWebhookDiagnostic = async () => {
     setIsTestingWebhook(true);
@@ -489,6 +504,125 @@ export default function SettingsModal({
               )}
             </form>
 
+            {/* Cloudflare Instant Custom Email Studio */}
+            <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-950/70 via-slate-900 to-slate-950 border border-indigo-500/40 space-y-3 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div className="font-bold text-xs text-indigo-300 flex items-center space-x-1.5">
+                  <Sparkles className="w-4 h-4 text-yellow-400" />
+                  <span>{lang === 'bn' ? '⚡ ক্লাউডফ্লেয়ার ডোমেইনে কাস্টম ইমেইল বানান' : '⚡ Create Custom Email on Cloudflare'}</span>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  {lang === 'bn' ? 'কাস্টম প্রিফিক্স' : 'Custom Prefix'}
+                </span>
+              </div>
+
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                {lang === 'bn'
+                  ? 'আপনার Cloudflare-এ যুক্ত ডোমেইনের অধীনে নিজের পছন্দের যেকোনো ইউজারনেম টাইপ করে ১-ক্লিকে ইনবক্স তৈরি ও চালু করুন।'
+                  : 'Type any username under your Cloudflare domain to instantly launch your personalized inbox.'}
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-slate-300 block">
+                    {lang === 'bn' ? 'পছন্দের নাম (Username):' : 'Desired Username:'}
+                  </label>
+                  <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 focus-within:border-indigo-500">
+                    <span className="text-slate-500 font-mono text-xs mr-1">@</span>
+                    <input
+                      type="text"
+                      value={cfCustomPrefix}
+                      onChange={(e) => setCfCustomPrefix(e.target.value)}
+                      placeholder="যেমন: sajjad, admin, ceo"
+                      className="bg-transparent border-none outline-none text-xs text-slate-200 placeholder:text-slate-600 w-full font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-slate-300 block">
+                    {lang === 'bn' ? 'টার্গেট ডোমেইন:' : 'Target Domain:'}
+                  </label>
+                  <select
+                    value={cfCustomDomain}
+                    onChange={(e) => {
+                      setCfCustomDomain(e.target.value);
+                      setSelectedDomain(e.target.value);
+                    }}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-2 text-xs font-mono text-slate-200 outline-none focus:border-indigo-500"
+                  >
+                    {selectedDomain && (
+                      <option value={selectedDomain}>
+                        @{selectedDomain} (Current)
+                      </option>
+                    )}
+                    {cfAvailableZones.map((z) => (
+                      <option key={`cf-zone-${z.id}`} value={z.name}>
+                        @{z.name} (Cloudflare Zone)
+                      </option>
+                    ))}
+                    {domains
+                      .filter((d) => d.domain !== selectedDomain && !cfAvailableZones.some((z) => z.name === d.domain))
+                      .map((d) => (
+                        <option key={`dom-tab1-${d.id}`} value={d.domain}>
+                          @{d.domain} {d.isCustom ? '(Custom)' : ''}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Quick Suggestions */}
+              <div className="flex items-center space-x-1.5 text-[10px] text-slate-400 overflow-x-auto scrollbar-none pt-0.5">
+                <span className="font-semibold text-slate-400 whitespace-nowrap">{lang === 'bn' ? 'আইডিয়া:' : 'Ideas:'}</span>
+                {['sajjad', 'contact', 'admin', 'support', 'otp', 'service', 'dev'].map((p) => (
+                  <button
+                    key={`sug-${p}`}
+                    type="button"
+                    onClick={() => setCfCustomPrefix(p)}
+                    className="px-2 py-0.5 rounded bg-slate-800 hover:bg-indigo-600/30 text-indigo-300 hover:text-white border border-slate-700 font-mono transition"
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+
+              {/* Live Preview & Action */}
+              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 border-t border-slate-800/80">
+                <div className="flex items-center space-x-2 font-mono text-xs">
+                  <span className="text-slate-400">{lang === 'bn' ? 'ঠিকানা প্রিভিউ:' : 'Address Preview:'}</span>
+                  <span className="px-2.5 py-1 rounded-md bg-indigo-500/15 text-indigo-200 border border-indigo-500/40 font-bold truncate max-w-[220px]">
+                    {cfCustomPrefix.trim() || 'user'}@{cfCustomDomain || selectedDomain || 'domain.com'}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const cleanP = cfCustomPrefix.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '') || 'user';
+                    const targetD = cfCustomDomain || selectedDomain;
+                    if (targetD && onActivateCustomEmail) {
+                      onActivateCustomEmail(`${cleanP}@${targetD}`);
+                      setCfEmailActivatedToast(`${cleanP}@${targetD}`);
+                      setTimeout(() => {
+                        onClose();
+                      }, 400);
+                    }
+                  }}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-600/30 transition flex items-center justify-center space-x-1.5 cursor-pointer"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>{lang === 'bn' ? '🚀 এই ইমেইলটি চালু করুন' : '🚀 Launch This Email'}</span>
+                </button>
+              </div>
+
+              {cfEmailActivatedToast && (
+                <div className="text-[11px] text-emerald-300 font-semibold text-center pt-1 animate-pulse">
+                  ✅ {lang === 'bn' ? 'কাস্টম ইমেইল সেট হয়েছে এবং ইনবক্স চালু হচ্ছে!' : 'Custom email set! Loading inbox...'}
+                </div>
+              )}
+            </div>
+
             {/* Token Guide */}
             <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs">
               <div className="font-bold text-amber-300 flex items-center space-x-1.5">
@@ -597,6 +731,28 @@ export default function SettingsModal({
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Quick Launch Custom Email on Selected Domain */}
+            <div className="p-3.5 rounded-xl bg-gradient-to-r from-slate-950 to-indigo-950/40 border border-indigo-500/30 flex flex-col sm:flex-row items-center justify-between gap-2.5">
+              <div className="flex items-center space-x-2 text-xs">
+                <span className="text-slate-400">{lang === 'bn' ? 'নির্বাচিত ডোমেইন:' : 'Selected Domain:'}</span>
+                <span className="font-mono font-bold text-indigo-300 px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20">@{selectedDomain}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const cleanP = cfCustomPrefix.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '') || 'sajjad';
+                  if (selectedDomain && onActivateCustomEmail) {
+                    onActivateCustomEmail(`${cleanP}@${selectedDomain}`);
+                    onClose();
+                  }
+                }}
+                className="w-full sm:w-auto px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm transition flex items-center justify-center space-x-1.5 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+                <span>{lang === 'bn' ? `এই ডোমেইনে (${selectedDomain}) কাস্টম ইনবক্স খুলুন` : `Launch Inbox on @${selectedDomain}`}</span>
+              </button>
             </div>
           </div>
         )}
@@ -880,6 +1036,31 @@ export default function SettingsModal({
         {/* TAB 4: GENERAL & DOWNLOADS */}
         {settingsTab === 'general' && (
           <div className="space-y-4">
+            {/* Account & Profile Hub */}
+            <div className="p-4 rounded-xl bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950/40 border border-indigo-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
+              <div className="flex items-center space-x-2.5">
+                <div className="p-2 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">
+                  <User className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-slate-200">{lang === 'bn' ? 'অ্যাকাউন্ট ও ডিভাইস সিঙ্ক' : 'Account & Device Sync'}</div>
+                  <div className="text-[11px] text-slate-400">
+                    {lang === 'bn' ? 'সকল ডিভাইসে একই ইনবক্স ব্যবহার করতে লগইন বা সাইন আপ করুন।' : 'Sign in or register to sync inboxes across all your devices.'}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  if (onOpenAuthModal) onOpenAuthModal();
+                }}
+                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition whitespace-nowrap cursor-pointer text-center"
+              >
+                {lang === 'bn' ? 'লগইন / সাইন আপ' : 'Sign In / Sign Up'}
+              </button>
+            </div>
+
             <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
               <div className="flex items-center justify-between">
                 <div>

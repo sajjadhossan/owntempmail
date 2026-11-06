@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { addCustomDomain } from '@/lib/storage';
 
 export async function POST(req: NextRequest) {
   try {
@@ -147,7 +148,12 @@ export async function POST(req: NextRequest) {
       }),
     });
     const txtJson = await txtRes.json();
-    recordResults.push({ record: 'SPF TXT', success: txtJson.success || txtJson.errors?.[0]?.code === 81057 });
+    // Automatically register domain into app domains so it appears in active domains & custom email generator
+    try {
+      addCustomDomain(cleanDomain, 'Cloudflare Domain');
+    } catch (e) {
+      console.warn('[Cloudflare Setup] Domain storage warning:', e);
+    }
 
     return NextResponse.json({
       success: true,
