@@ -107,6 +107,15 @@ export interface OutboundEmail {
   status: 'sent' | 'delivered' | 'simulated';
 }
 
+export interface ForwardingRule {
+  inboxAddress: string;
+  enabled: boolean;
+  type: 'discord' | 'slack' | 'webhook' | 'email';
+  destination: string;
+  otpOnly: boolean;
+  createdAt: string;
+}
+
 export interface ApiResponse<T = any> {
   success: boolean;
   message: string;

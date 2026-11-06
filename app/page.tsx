@@ -53,6 +53,7 @@ import {
   Keyboard,
   FileSpreadsheet,
   Flame,
+  Share2,
 } from 'lucide-react';
 import {
   EmailRecord,
@@ -82,6 +83,7 @@ import InboxTtlBar from '@/components/InboxTtlBar';
 import AttachmentLightboxModal from '@/components/modals/AttachmentLightboxModal';
 import PasswordGeneratorBar from '@/components/PasswordGeneratorBar';
 import BurnerResetModal from '@/components/modals/BurnerResetModal';
+import ForwardingModal from '@/components/modals/ForwardingModal';
 
 // In-Memory Browser Cache for instant 0ms domain navigation
 const domainClientCache = new Map<string, any>();
@@ -179,6 +181,7 @@ export default function OwntempHome() {
   const [showKeyboardModal, setShowKeyboardModal] = useState(false);
   const [previewAttachment, setPreviewAttachment] = useState<EmailAttachment | null>(null);
   const [showBurnerModal, setShowBurnerModal] = useState(false);
+  const [showForwardingModal, setShowForwardingModal] = useState(false);
 
   // 50,000+ Mega Domain Directory State
   const [directorySearch, setDirectorySearch] = useState('');
@@ -679,16 +682,44 @@ export default function OwntempHome() {
     }
   };
 
-  // Fetch emails for current inbox
+  // Fetch emails for current inbox (Supports both Cloudflare and Mail.tm Open Source Fleet)
   const fetchEmails = useCallback(
     async (targetAddress: string, silent = false) => {
       if (!silent) setIsLoading(true);
       setActionError(null);
       try {
-        const res = await fetch(`/api/inbox/${encodeURIComponent(targetAddress)}`);
-        const data = await res.json();
-        if (data.success) {
-          const newEmails: EmailRecord[] = data.data.emails || [];
+        let token = '';
+        try {
+          const storedTokens = JSON.parse(localStorage.getItem('owntemp_mailtm_tokens') || '{}');
+          token = storedTokens[targetAddress.toLowerCase()] || '';
+        } catch (e) {}
+
+        let newEmails: EmailRecord[] = [];
+        let inboxData: any = null;
+
+        if (token) {
+          const res = await fetch(`/api/gateway/mailtm?action=messages&address=${encodeURIComponent(targetAddress)}&token=${encodeURIComponent(token)}`);
+          const data = await res.json();
+          if (data.success) {
+            newEmails = data.data.emails || [];
+            inboxData = {
+              address: targetAddress,
+              isLocked: false,
+              totalEmails: newEmails.length,
+              createdAt: new Date().toISOString(),
+              lastActiveAt: new Date().toISOString(),
+            };
+          }
+        } else {
+          const res = await fetch(`/api/inbox/${encodeURIComponent(targetAddress)}`);
+          const data = await res.json();
+          if (data.success) {
+            newEmails = data.data.emails || [];
+            inboxData = data.data.inbox || null;
+          }
+        }
+
+        if (newEmails) {
           setEmails((prev) => {
             if (prev.length > 0 && newEmails.length > prev.length) {
               playChime();
@@ -699,7 +730,7 @@ export default function OwntempHome() {
             }
             return newEmails;
           });
-          setInboxMeta(data.data.inbox || null);
+          if (inboxData) setInboxMeta(inboxData);
         }
       } catch (err: any) {
         console.error('Failed to fetch emails', err);
@@ -1067,6 +1098,55 @@ export default function OwntempHome() {
     navigator.clipboard.writeText(code);
     setCopiedOtp(code);
     setTimeout(() => setCopiedOtp(null), 2000);
+  };
+
+  // 1-Click Mail.tm Open Source Fleet Provisioner
+  const handleCreateOpenSourceInbox = async () => {
+    setIsLoading(true);
+    try {
+      const dRes = await fetch('/api/gateway/mailtm?action=domains');
+      const dData = await dRes.json();
+      const openDomains = dData.data?.domains || ['fldubai.com'];
+      const chosenDomain = openDomains[0];
+      const randomPrefix = `open_${Math.random().toString(36).substring(2, 8)}`;
+
+      const pRes = await fetch('/api/gateway/mailtm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prefix: randomPrefix, domain: chosenDomain }),
+      });
+      const pData = await pRes.json();
+
+      if (pData.success) {
+        const newAddr = pData.data.address;
+        const token = pData.data.token;
+
+        try {
+          const storedTokens = JSON.parse(localStorage.getItem('owntemp_mailtm_tokens') || '{}');
+          storedTokens[newAddr.toLowerCase()] = token;
+          localStorage.setItem('owntemp_mailtm_tokens', JSON.stringify(storedTokens));
+        } catch (e) {}
+
+        setActiveEmail(newAddr);
+        setUsernamePrefix(randomPrefix);
+        setSelectedDomain(chosenDomain);
+        try { localStorage.setItem('owntemp_active_email', newAddr); } catch (e) {}
+        addRecentInbox(newAddr);
+        fetchEmails(newAddr);
+
+        setActionSuccess(
+          lang === 'bn'
+            ? `🌐 Mail.tm ওপেন সোর্স ইনবক্স (@${chosenDomain}) সক্রিয় হয়েছে!`
+            : `🌐 Mail.tm Open-Source inbox (@${chosenDomain}) activated!`
+        );
+        setTimeout(() => setActionSuccess(null), 3500);
+      }
+    } catch (err: any) {
+      setActionError(lang === 'bn' ? 'ওপেন সোর্স ইনবক্স তৈরিতে ব্যর্থ হয়েছে' : 'Failed to create open source inbox');
+      setTimeout(() => setActionError(null), 3500);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // 1-Click Burn & Wipe Session
@@ -1591,6 +1671,16 @@ export default function OwntempHome() {
                 >
                   <Flame className="w-4 h-4" />
                 </button>
+
+                {/* Auto-Forwarding Relay (SimpleLogin Style) */}
+                <button
+                  type="button"
+                  onClick={() => setShowForwardingModal(true)}
+                  className="p-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-purple-300 transition"
+                  title={lang === 'bn' ? 'অটো-ফরোয়ার্ডিং ও ওয়েবহুক রিলে (SimpleLogin)' : 'Auto-Forwarding & Webhook Relay'}
+                >
+                  <Share2 className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
@@ -1724,6 +1814,16 @@ export default function OwntempHome() {
                 >
                   <Search className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />
                   <span>{lang === 'bn' ? '🌐 ৫০,০০০+ ডোমেইন ডিরেক্টরি ব্রাউজ করুন' : '🌐 Browse 50,000+ Directory'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCreateOpenSourceInbox}
+                  className="inline-flex items-center justify-center space-x-1.5 text-[11px] font-bold px-3 py-1 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-md shadow-emerald-600/30 transition transform active:scale-95 cursor-pointer"
+                  title="Create instant inbox from Mail.tm Open Source Fleet"
+                >
+                  <Globe className="w-3.5 h-3.5 text-emerald-200" />
+                  <span>{lang === 'bn' ? '⚡ Mail.tm ওপেন সোর্স ফ্লিট' : '⚡ Mail.tm Open Fleet'}</span>
                 </button>
               </div>
               <form onSubmit={handleApplyAddress} className="flex flex-col sm:flex-row items-center gap-3">
@@ -2760,6 +2860,18 @@ export default function OwntempHome() {
         isOpen={showBurnerModal}
         onClose={() => setShowBurnerModal(false)}
         onConfirmBurn={handleBurnSession}
+        lang={lang}
+      />
+
+      {/* SimpleLogin-Style Real-Time Auto-Forwarding Relay Modal */}
+      <ForwardingModal
+        isOpen={showForwardingModal}
+        onClose={() => setShowForwardingModal(false)}
+        activeEmail={activeEmail}
+        onSaveSuccess={(msg) => {
+          setActionSuccess(msg);
+          setTimeout(() => setActionSuccess(null), 3500);
+        }}
         lang={lang}
       />
 

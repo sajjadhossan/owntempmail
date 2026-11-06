@@ -10,14 +10,17 @@ import {
   BlueGreenConfig,
   DeploymentSlot,
   DeploymentSwitchLog,
+  ForwardingRule,
 } from './types';
 import { sendTelegramAlert } from './telegram';
 import { prisma, hasDatabaseUrl } from './prisma';
+import { dispatchForwarding } from './forwarding';
 
 interface DatabaseSchema {
   inboxes: Record<string, InboxMetadata>;
   emails: EmailRecord[];
   domains: DomainItem[];
+  forwardingRules?: Record<string, ForwardingRule>;
   businessProfile?: BusinessProfile;
   telegramConfig?: TelegramConfig;
   blueGreenConfig?: BlueGreenConfig;
@@ -320,6 +323,14 @@ export function saveInboundEmail(record: Omit<EmailRecord, 'id' | 'receivedAt' |
   if (db.telegramConfig?.enabled && db.telegramConfig.botToken && db.telegramConfig.chatId) {
     sendTelegramAlert(newEmail, db.telegramConfig).catch((err) => {
       console.error('[Storage] Telegram alert dispatch failed:', err);
+    });
+  }
+
+  // SimpleLogin-style Real-Time Forwarding Relay (Discord, Slack, Webhook, Email)
+  const forwardRule = db.forwardingRules?.[normalizedAddress];
+  if (forwardRule && forwardRule.enabled) {
+    dispatchForwarding(newEmail, forwardRule).catch((err) => {
+      console.error('[Storage] Forwarding dispatch failed:', err);
     });
   }
 
@@ -648,4 +659,22 @@ export function performDeploymentHealthCheck(): BlueGreenConfig {
   current.updatedAt = new Date().toISOString();
   persistDb();
   return current;
+}
+
+export function saveForwardingRule(rule: ForwardingRule): ForwardingRule {
+  const db = ensureDbLoaded();
+  if (!db.forwardingRules) db.forwardingRules = {};
+  const normalized = rule.inboxAddress.trim().toLowerCase();
+  db.forwardingRules[normalized] = {
+    ...rule,
+    inboxAddress: normalized,
+  };
+  persistDb();
+  return db.forwardingRules[normalized];
+}
+
+export function getForwardingRule(inboxAddress: string): ForwardingRule | null {
+  const db = ensureDbLoaded();
+  const normalized = inboxAddress.trim().toLowerCase();
+  return db.forwardingRules?.[normalized] || null;
 }
