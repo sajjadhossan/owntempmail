@@ -5,7 +5,8 @@
   "main": "desktop/main.js",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "next lint",
     "cap:sync": "npx cap sync android",
