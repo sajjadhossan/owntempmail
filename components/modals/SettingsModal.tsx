@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Settings,
   Sparkles,
@@ -21,6 +21,7 @@ import {
   Volume2,
   VolumeX,
   Download,
+  User,
 } from 'lucide-react';
 import { DomainItem, TelegramConfig, BlueGreenConfig, DeploymentSlot } from '@/lib/types';
 import { APP_VERSION, APP_EDITION } from '@/lib/constants';
