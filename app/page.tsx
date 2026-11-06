@@ -1049,6 +1049,18 @@ export default function OwntempHome() {
     }
   };
 
+  const addRecentInbox = useCallback((addr: string) => {
+    if (!addr) return;
+    setRecentInboxes((prev) => {
+      const filtered = prev.filter((item) => item.toLowerCase() !== addr.toLowerCase());
+      const updated = [addr, ...filtered].slice(0, 6);
+      try {
+        localStorage.setItem('owntemp_recent_inboxes', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  }, []);
+
   // Switch to custom username and domain
   const handleApplyAddress = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -1130,18 +1142,6 @@ export default function OwntempHome() {
     },
     [selectedDomain, domains, fetchDomains, addRecentInbox, fetchEmails, triggerHaptic, lang]
   );
-
-  const addRecentInbox = useCallback((addr: string) => {
-    if (!addr) return;
-    setRecentInboxes((prev) => {
-      const filtered = prev.filter((item) => item.toLowerCase() !== addr.toLowerCase());
-      const updated = [addr, ...filtered].slice(0, 6);
-      try {
-        localStorage.setItem('owntemp_recent_inboxes', JSON.stringify(updated));
-      } catch (e) {}
-      return updated;
-    });
-  }, []);
 
   const handleSwitchInbox = (address: string) => {
     triggerHaptic(35);
