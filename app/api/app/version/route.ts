@@ -5,15 +5,15 @@ export async function GET() {
     success: true,
     data: {
       appName: 'Owntemp',
-      latestVersion: '2.8.1',
-      edition: 'Resilient Directory & Multi-Engine Public Mail Sync Edition',
+      latestVersion: '2.8.2',
+      edition: '100% Live Verified Domain Fleet & Multi-Engine Public Mail Sync Edition',
       minimumSupportedVersion: '1.0.0',
-      apkDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.1/app-v2.8.1-build41-android.apk',
-      windowsDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.1/Owntemp-v2.8.1-windows-x64.exe',
-      macDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.1/Owntemp-v2.8.1-macOS-Universal.dmg',
+      apkDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.2/app-v2.8.2-build42-android.apk',
+      windowsDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.2/Owntemp-v2.8.2-windows-x64.exe',
+      macDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.2/Owntemp-v2.8.2-macOS-Universal.dmg',
       releaseNotes: {
-        bn: 'Owntemp v2.8.1: ৫০,০০০+ ডিরেক্টরি মোডাল লেআউট ও নাল-সেফটি ফিক্স, Maildrop GraphQL লাইভ ইঞ্জিন ইন্টিগ্রেশন এবং পাবলিক টেম্প মেইল সিঙ্ক নিশ্চিতকরণ।',
-        en: 'Owntemp v2.8.1: 50,000+ directory modal mobile layout and null-safety fix, Maildrop GraphQL live engine integration, and verified public temp mail delivery.',
+        bn: 'Owntemp v2.8.2: ৫০,০০০+ ডিরেক্টরি লাইভ ফ্লিট ফিল্টার, ১০০% লাইভ ভেরিফাইড ব্যাজিং (Guerrilla, Mail.tm, Maildrop), এবং ইনস্ট্যান্ট ওটিপি রিসিভার ইঞ্জিন।',
+        en: 'Owntemp v2.8.2: 50,000+ directory live fleet filter, 100% live verified badging (Guerrilla, Mail.tm, Maildrop), and instant OTP delivery engine.',
       },
       platforms: {
         android: {

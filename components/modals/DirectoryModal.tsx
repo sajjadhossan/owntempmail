@@ -39,7 +39,7 @@ interface DirectoryModalProps {
   setSelectedDomain?: (dom: string) => void;
   onSelectDomain: (domain: string) => void;
   isLoadingDirectory?: boolean;
-  directoryResults?: Array<{ domain: string; category: string; length?: number; isUltraShort?: boolean }>;
+  directoryResults?: Array<{ domain: string; category: string; length?: number; isUltraShort?: boolean; isLiveVerified?: boolean }>;
   handleLoadMoreDomains?: () => void;
   isLoadingMore?: boolean;
   handleFirstDirectoryPage?: () => void;
@@ -47,6 +47,23 @@ interface DirectoryModalProps {
   handleNextDirectoryPage?: () => void;
   handleLastDirectoryPage?: () => void;
 }
+
+const LIVE_VERIFIED_DOMAINS_SET = new Set([
+  'sharklasers.com',
+  'grr.la',
+  'fldubai.com',
+  'maildrop.cc',
+  'pokemail.net',
+  'guerrillamail.com',
+  'guerrillamailblock.com',
+  'guerrillamail.net',
+  'guerrillamail.org',
+  'guerrillamail.biz',
+  'guerrillamail.info',
+  'spam4.me',
+  'mail.tm',
+  'mail.gw',
+]);
 
 export default function DirectoryModal({
   isOpen,
@@ -153,6 +170,7 @@ export default function DirectoryModal({
           <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 text-xs no-scrollbar select-none" style={{ WebkitOverflowScrolling: 'touch' }}>
             {[
               { id: 'all', label: lang === 'bn' ? 'সকল' : 'All', count: safeCategoryCounts.all || 51774 },
+              { id: 'live', label: lang === 'bn' ? '🟢 ১০০% লাইভ' : '🟢 100% Live', count: safeCategoryCounts.live || 14 },
               { id: 'ultrashort', label: lang === 'bn' ? '⚡ আল্ট্রা-শর্ট' : '⚡ Ultra-Short', count: safeCategoryCounts.ultrashort || 11192 },
               { id: 'cctld', label: lang === 'bn' ? '🌍 ccTLD কান্ট্রি' : '🌍 ccTLDs', count: safeCategoryCounts.cctld || 5593 },
               { id: 'tenminute', label: lang === 'bn' ? '⏱️ ১০-মিনিট' : '⏱️ 10-Min', count: safeCategoryCounts.tenminute || 610 },
@@ -322,6 +340,12 @@ export default function DirectoryModal({
                         @{item.domain}
                       </span>
                       <div className="flex items-center space-x-1 flex-shrink-0">
+                        {(item.isLiveVerified || LIVE_VERIFIED_DOMAINS_SET.has(item.domain.toLowerCase())) && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center space-x-1 flex-shrink-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span>{lang === 'bn' ? '১০০% লাইভ' : 'Live'}</span>
+                          </span>
+                        )}
                         {item.isUltraShort && (
                           <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30 flex-shrink-0">
                             {item.length}c

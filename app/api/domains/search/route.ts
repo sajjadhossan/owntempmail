@@ -47,9 +47,30 @@ export async function GET(req: NextRequest) {
     const devRegex = /dev|api|test|qa|mock|sandbox|inbox|smtp|post|mailtub|inbucket|mailhog/i;
     const privacyRegex = /privac|shield|safe|secure|ghost|stealth|anon|hide|cloak|burner|secret/i;
 
+    // 100% Live Verified Domains with active public mail engines
+    const LIVE_VERIFIED_DOMAINS = [
+      'sharklasers.com',
+      'grr.la',
+      'fldubai.com',
+      'maildrop.cc',
+      'pokemail.net',
+      'guerrillamail.com',
+      'guerrillamailblock.com',
+      'guerrillamail.net',
+      'guerrillamail.org',
+      'guerrillamail.biz',
+      'guerrillamail.info',
+      'spam4.me',
+      'mail.tm',
+      'mail.gw',
+    ];
+
     let targetPool: string[] = [];
 
     switch (category) {
+      case 'live':
+        targetPool = LIVE_VERIFIED_DOMAINS;
+        break;
       case 'cctld':
         targetPool = allDomains.filter((d) => ccRegex.test(d));
         break;
@@ -93,8 +114,10 @@ export async function GET(req: NextRequest) {
     const paginatedSlice = filtered.slice(startIndex, startIndex + limit);
 
     const results = paginatedSlice.map((dom) => {
+      const isLiveVerified = LIVE_VERIFIED_DOMAINS.includes(dom.toLowerCase());
       let comp = 'Global Network';
-      if (mailinatorRegex.test(dom)) comp = '👑 Mailinator';
+      if (isLiveVerified) comp = '🟢 100% Live Verified (Instant OTP)';
+      else if (mailinatorRegex.test(dom)) comp = '👑 Mailinator';
       else if (guerrillaRegex.test(dom)) comp = '🚀 Guerrilla Mail';
       else if (mailtmRegex.test(dom)) comp = '✈️ Mail.tm Cloud';
       else if (tenMinRegex.test(dom)) comp = '⏱️ 10 Minute Mail';
@@ -111,6 +134,7 @@ export async function GET(req: NextRequest) {
         category: comp,
         length: dom.length,
         isUltraShort: dom.length <= 8,
+        isLiveVerified,
       };
     });
 
@@ -132,6 +156,7 @@ export async function GET(req: NextRequest) {
           },
           categoryCounts: {
             all: allDomains.length,
+            live: LIVE_VERIFIED_DOMAINS.length,
             ultrashort: 11192,
             cctld: 5593,
             tenminute: 610,

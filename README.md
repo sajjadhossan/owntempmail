@@ -1,6 +1,6 @@
 <div align="center">
   <img src="public/logo.jpg" width="110" height="110" alt="Owntemp 3D Logo" style="border-radius: 24px; box-shadow: 0 10px 30px rgba(99,102,241,0.3);" />
-  <h1>Owntemp (v2.8.1) 🛡️</h1>
+  <h1>Owntemp (v2.8.2) 🛡️</h1>
   <p><b>জীবনব্যাপী সুরক্ষিত কাস্টম ডোমেইন ডিসপোজেবল ইমেইল ও ওটিপি ইঞ্জিন</b></p>
   <p><i>Lifetime Permanent Disposable Temp Mail Engine with Neon Postgres, Supabase Auth & Multi-Platform Delivery</i></p>
 
@@ -8,7 +8,7 @@
     <a href="https://github.com/sajjadhossan/owntempmail/releases"><img src="https://img.shields.io/github/v/release/sajjadhossan/owntempmail?color=6366f1&label=Release&style=flat-square" alt="Release" /></a>
     <a href="https://sim-cooler-mitsubishi-kits.trycloudflare.com"><img src="https://img.shields.io/badge/Cloudflare_Live-Active-06B6D4?style=flat-square" alt="Cloudflare Tunnel" /></a>
     <a href="https://owntempmail.vercel.app"><img src="https://img.shields.io/badge/Vercel_Hub-Online-10B981?style=flat-square" alt="Vercel App" /></a>
-    <img src="https://img.shields.io/badge/Android-APK_Build_41-F59E0B?style=flat-square" alt="Android APK" />
+    <img src="https://img.shields.io/badge/Android-APK_Build_42-F59E0B?style=flat-square" alt="Android APK" />
     <img src="https://img.shields.io/badge/Platforms-Android_|_Windows_|_MacBook_|_Web-8B5CF6?style=flat-square" alt="Platforms" />
   </p>
 </div>
@@ -35,10 +35,10 @@
 
 | প্ল্যাটফর্ম | টার্গেট ও আসল ফরম্যাট | সরাসরি ডাউনলোড লিংক (Direct Assets Download) |
 | :--- | :--- | :--- |
-| 📱 **Android Mobile** | Android 8.0 – 15.0 (.apk) | [📥 `app-v2.8.1-build41-android.apk` (সরাসরি APK)](https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.1/app-v2.8.1-build41-android.apk) |
-| 💻 **Windows PC** | 64-bit Windows (.exe Setup) | [📥 `Owntemp-v2.8.1-windows-x64.exe` (সরাসরি EXE)](https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.1/Owntemp-v2.8.1-windows-x64.exe) |
-| 🍏 **MacBook Universal** | Intel + Apple Silicon M-Series (.dmg) | [📥 `Owntemp-v2.8.1-macOS-Universal.dmg` (সরাসরি DMG)](https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.1/Owntemp-v2.8.1-macOS-Universal.dmg) |
-| ☁️ **Web Standalone** | Node.js Serverless Tarball | [📥 `Owntemp-v2.8.1-web-standalone.tar.gz`](https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.1/Owntemp-v2.8.1-web-standalone.tar.gz) |
+| 📱 **Android Mobile** | Android 8.0 – 15.0 (.apk) | [📥 `app-v2.8.2-build42-android.apk` (সরাসরি APK)](https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.2/app-v2.8.2-build42-android.apk) |
+| 💻 **Windows PC** | 64-bit Windows (.exe Setup) | [📥 `Owntemp-v2.8.2-windows-x64.exe` (সরাসরি EXE)](https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.2/Owntemp-v2.8.2-windows-x64.exe) |
+| 🍏 **MacBook Universal** | Intel + Apple Silicon M-Series (.dmg) | [📥 `Owntemp-v2.8.2-macOS-Universal.dmg` (সরাসরি DMG)](https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.2/Owntemp-v2.8.2-macOS-Universal.dmg) |
+| ☁️ **Web Standalone** | Node.js Serverless Tarball | [📥 `Owntemp-v2.8.2-web-standalone.tar.gz`](https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.2/Owntemp-v2.8.2-web-standalone.tar.gz) |
 
 > 💡 **নোট:** GitHub Releases পেজে গেলে প্রতিটি রিলিজের নিচে থাকা **"Assets"** ড্রপডাউনে এই ফাইলগুলো সরাসরি পাবেন।
 
