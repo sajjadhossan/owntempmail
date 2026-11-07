@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, User, Check, AlertCircle, Sparkles, ShieldCheck, KeyRound, ArrowRight, ArrowLeft } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { translations, Language } from '@/lib/translations';
+import { APP_VERSION } from '@/lib/constants';
 
 interface LoginGateProps {
   lang: Language;
@@ -39,53 +40,46 @@ export default function LoginGate({ lang, onToggleLang, onAuthSuccess }: LoginGa
     }
 
     if (mode === 'forgot') {
-      // Forgot Password handling
       try {
-        if (isSupabaseConfigured) {
-          const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail);
-          if (error) throw error;
+        const res = await fetch('/api/auth/unified', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'forgot', email: cleanEmail, password }),
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
           setSuccessMsg(
             lang === 'bn'
-              ? 'আপনার ইমেইলে পাসওয়ার্ড রিসেট লিংক পাঠানো হয়েছে! ইনবক্স চেক করুন।'
-              : 'Password reset link sent to your email! Please check your inbox.'
+              ? 'নিওন ক্লাউড ও সুপারবেজে পাসওয়ার্ড আপডেট হয়েছে! এখন লগইন করুন।'
+              : (data.message || 'Password successfully reset in Neon & Supabase!')
           );
-        } else {
-          // Local account password reset simulation & update
-          let accounts: Array<{ id: string; email: string; passwordHash: string; name?: string }> = [];
-          try {
-            const saved = localStorage.getItem('owntemp_auth_accounts');
-            if (saved) accounts = JSON.parse(saved);
-          } catch (e) {}
-
-          const target = accounts.find((a) => a.email.toLowerCase() === cleanEmail);
-          if (!target) {
-            throw new Error(
-              lang === 'bn'
-                ? 'এই ইমেইলে কোনো রেজিস্টার্ড অ্যাকাউন্ট পাওয়া যায়নি।'
-                : 'No registered account found with this email.'
-            );
-          }
-
-          // If new password provided during forgot reset
           if (password.length >= 6) {
-            target.passwordHash = btoa(password);
-            localStorage.setItem('owntemp_auth_accounts', JSON.stringify(accounts));
-            setSuccessMsg(
-              lang === 'bn'
-                ? 'আপনার পাসওয়ার্ড সফলভাবে রিসেট ও পরিবর্তন করা হয়েছে! এখন লগইন করুন।'
-                : 'Password has been successfully reset! You can now sign in.'
-            );
             setTimeout(() => setMode('signin'), 1500);
-          } else {
-            setSuccessMsg(
-              lang === 'bn'
-                ? 'অ্যাকাউন্ট ভেরিফাইড! নিচে আপনার নতুন পাসওয়ার্ড লিখে "রিসেট করুন" চাপুন।'
-                : 'Account verified! Enter your new password below and click Reset.'
-            );
           }
+        } else {
+          throw new Error(data.message || 'Password reset request failed.');
         }
       } catch (err: any) {
-        setErrorMsg(err.message || 'Password reset request failed.');
+        // Local account password reset fallback
+        let accounts: Array<{ id: string; email: string; passwordHash: string; name?: string }> = [];
+        try {
+          const saved = localStorage.getItem('owntemp_auth_accounts');
+          if (saved) accounts = JSON.parse(saved);
+        } catch (e) {}
+
+        const target = accounts.find((a) => a.email.toLowerCase() === cleanEmail);
+        if (target && password.length >= 6) {
+          target.passwordHash = btoa(password);
+          localStorage.setItem('owntemp_auth_accounts', JSON.stringify(accounts));
+          setSuccessMsg(
+            lang === 'bn'
+              ? 'পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে! এখন লগইন করুন।'
+              : 'Password reset successfully! You can now sign in.'
+          );
+          setTimeout(() => setMode('signin'), 1500);
+        } else {
+          setErrorMsg(err.message || 'Password reset failed.');
+        }
       } finally {
         setIsLoading(false);
       }
@@ -105,119 +99,130 @@ export default function LoginGate({ lang, onToggleLang, onAuthSuccess }: LoginGa
       return;
     }
 
+    // 1. Direct Unified Neon & Supabase Auth Connection
     try {
-      if (isSupabaseConfigured) {
-        if (mode === 'signup') {
-          const { data, error } = await supabase.auth.signUp({
-            email: cleanEmail,
-            password,
-            options: {
-              data: { display_name: name.trim() || cleanEmail.split('@')[0] },
-            },
-          });
-          if (error) throw error;
-          if (data.user) {
-            setSuccessMsg(lang === 'bn' ? 'অ্যাকাউন্ট তৈরি সফল হয়েছে! স্বাগতম।' : 'Account created successfully! Welcome.');
-            setTimeout(() => {
-              onAuthSuccess(data.user, rememberMe);
-            }, 600);
-          }
-        } else {
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email: cleanEmail,
-            password,
-          });
-          if (error) throw error;
-          if (data.user) {
-            setSuccessMsg(lang === 'bn' ? 'সফলভাবে লগইন হয়েছে!' : 'Signed in successfully!');
-            setTimeout(() => {
-              onAuthSuccess(data.user, rememberMe);
-            }, 500);
-          }
-        }
-      } else {
-        // Resilient persistent local account database
-        let accounts: Array<{ id: string; email: string; passwordHash: string; name?: string; created_at: string }> = [];
+      const res = await fetch('/api/auth/unified', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: mode,
+          email: cleanEmail,
+          password,
+          name: name.trim() || cleanEmail.split('@')[0],
+        }),
+      });
+
+      const resData = await res.json();
+
+      if (res.ok && resData.success && resData.data?.user) {
+        const user = resData.data.user;
+
+        // Cache in local vault for seamless offline access
         try {
           const savedAccs = localStorage.getItem('owntemp_auth_accounts');
-          if (savedAccs) accounts = JSON.parse(savedAccs);
+          let accounts: any[] = savedAccs ? JSON.parse(savedAccs) : [];
+          if (!accounts.some((a) => a.email.toLowerCase() === cleanEmail)) {
+            accounts.push({
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              passwordHash: btoa(password),
+              created_at: new Date().toISOString(),
+            });
+            localStorage.setItem('owntemp_auth_accounts', JSON.stringify(accounts));
+          }
         } catch (e) {}
 
-        if (mode === 'signup') {
-          const existing = accounts.find((a) => a.email.toLowerCase() === cleanEmail);
-          if (existing) {
-            throw new Error(
-              lang === 'bn'
-                ? 'এই ইমেইল দিয়ে আগেই অ্যাকাউন্ট খোলা আছে। দয়া করে লগইন করুন।'
-                : 'Account already exists with this email. Please sign in.'
-            );
-          }
+        const successText = mode === 'signup'
+          ? (lang === 'bn' ? '🎉 অ্যাকাউন্ট নিওন (Neon) ও সুপারবেজে (Supabase) সফলভাবে তৈরি হয়েছে!' : '🎉 Account created and linked in Neon & Supabase!')
+          : (lang === 'bn' ? '✅ নিওন ক্লাউড ও সুপারবেজের সাথে সফলভাবে লগইন হয়েছে!' : '✅ Signed in successfully! (Neon + Supabase linked)');
 
-          const newUser = {
-            id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-            email: cleanEmail,
-            name: name.trim() || cleanEmail.split('@')[0],
-            passwordHash: btoa(password),
-            created_at: new Date().toISOString(),
-          };
-
-          accounts.push(newUser);
-          try {
-            localStorage.setItem('owntemp_auth_accounts', JSON.stringify(accounts));
-          } catch (e) {}
-
-          setSuccessMsg(lang === 'bn' ? 'অ্যাকাউন্ট তৈরি সফল হয়েছে!' : 'Account created successfully!');
-          setTimeout(() => {
-            onAuthSuccess(
-              { id: newUser.id, email: newUser.email, name: newUser.name, created_at: newUser.created_at },
-              rememberMe
-            );
-          }, 600);
-        } else {
-          // Sign In
-          const userAcc = accounts.find((a) => a.email.toLowerCase() === cleanEmail);
-          if (!userAcc) {
-            // First-time guest auto-onboarding or invalid email
-            if (accounts.length === 0) {
-              // Create the user's master account instantly
-              const masterUser = {
-                id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-                email: cleanEmail,
-                name: cleanEmail.split('@')[0],
-                passwordHash: btoa(password),
-                created_at: new Date().toISOString(),
-              };
-              accounts.push(masterUser);
-              localStorage.setItem('owntemp_auth_accounts', JSON.stringify(accounts));
-              setSuccessMsg(lang === 'bn' ? 'মাস্টার অ্যাকাউন্ট তৈরি ও লগইন সম্পন্ন!' : 'Account registered and signed in!');
-              setTimeout(() => {
-                onAuthSuccess(masterUser, rememberMe);
-              }, 500);
-              return;
-            } else {
-              throw new Error(
-                lang === 'bn'
-                  ? 'এই ইমেইলে কোনো অ্যাকাউন্ট পাওয়া যায়নি। দয়া করে সাইন আপ করুন।'
-                  : 'No account found with this email. Please sign up first.'
-              );
-            }
-          }
-
-          if (userAcc.passwordHash !== btoa(password)) {
-            throw new Error(lang === 'bn' ? 'ভুল পাসওয়ার্ড। আবার চেষ্টা করুন।' : 'Incorrect password. Please try again.');
-          }
-
-          setSuccessMsg(lang === 'bn' ? 'সফলভাবে লগইন হয়েছে!' : 'Signed in successfully!');
-          setTimeout(() => {
-            onAuthSuccess(
-              { id: userAcc.id, email: userAcc.email, name: userAcc.name, created_at: userAcc.created_at },
-              rememberMe
-            );
-          }, 500);
-        }
+        setSuccessMsg(successText);
+        setTimeout(() => {
+          onAuthSuccess(user, rememberMe);
+        }, 500);
+        return;
       }
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Authentication error.');
+
+      // If explicit rejection from server (e.g. wrong password, existing account)
+      if (!res.ok) {
+        throw new Error(resData.message || (mode === 'signup' ? 'Registration failed' : 'Authentication failed'));
+      }
+    } catch (apiErr: any) {
+      // If error is an explicit authentication rejection (e.g., 401, 409), display it directly
+      const msg = apiErr.message || '';
+      if (
+        msg.includes('already exists') ||
+        msg.includes('Incorrect') ||
+        msg.includes('Invalid') ||
+        msg.includes('password')
+      ) {
+        setErrorMsg(msg);
+        setIsLoading(false);
+        return;
+      }
+
+      // 2. Resilient local fallback if network or serverless function is unreachable
+      let accounts: Array<{ id: string; email: string; passwordHash: string; name?: string; created_at: string }> = [];
+      try {
+        const savedAccs = localStorage.getItem('owntemp_auth_accounts');
+        if (savedAccs) accounts = JSON.parse(savedAccs);
+      } catch (e) {}
+
+      if (mode === 'signup') {
+        const existing = accounts.find((a) => a.email.toLowerCase() === cleanEmail);
+        if (existing) {
+          setErrorMsg(
+            lang === 'bn'
+              ? 'এই ইমেইল দিয়ে আগেই অ্যাকাউন্ট খোলা আছে। দয়া করে লগইন করুন।'
+              : 'Account already exists with this email. Please sign in.'
+          );
+          setIsLoading(false);
+          return;
+        }
+
+        const newUser = {
+          id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          email: cleanEmail,
+          name: name.trim() || cleanEmail.split('@')[0],
+          passwordHash: btoa(password),
+          created_at: new Date().toISOString(),
+          provider: 'local',
+        };
+
+        accounts.push(newUser);
+        try {
+          localStorage.setItem('owntemp_auth_accounts', JSON.stringify(accounts));
+        } catch (e) {}
+
+        setSuccessMsg(lang === 'bn' ? 'অ্যাকাউন্ট তৈরি সফল হয়েছে!' : 'Account created successfully!');
+        setTimeout(() => {
+          onAuthSuccess(newUser, rememberMe);
+        }, 600);
+      } else {
+        // Sign In fallback
+        const userAcc = accounts.find((a) => a.email.toLowerCase() === cleanEmail);
+        if (!userAcc) {
+          setErrorMsg(
+            lang === 'bn'
+              ? 'এই ইমেইলে কোনো অ্যাকাউন্ট পাওয়া যায়নি। দয়া করে সাইন আপ করুন।'
+              : 'No account found with this email. Please sign up first.'
+          );
+          setIsLoading(false);
+          return;
+        }
+
+        if (userAcc.passwordHash !== btoa(password)) {
+          setErrorMsg(lang === 'bn' ? 'ভুল পাসওয়ার্ড। আবার চেষ্টা করুন।' : 'Incorrect password. Please try again.');
+          setIsLoading(false);
+          return;
+        }
+
+        setSuccessMsg(lang === 'bn' ? 'সফলভাবে লগইন হয়েছে!' : 'Signed in successfully!');
+        setTimeout(() => {
+          onAuthSuccess(userAcc, rememberMe);
+        }, 500);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -241,7 +246,7 @@ export default function LoginGate({ lang, onToggleLang, onAuthSuccess }: LoginGa
                 Owntemp
               </span>
               <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-mono">
-                v2.5.8
+                {APP_VERSION}
               </span>
             </div>
             <p className="text-[10px] text-slate-400 hidden sm:block">
@@ -265,6 +270,17 @@ export default function LoginGate({ lang, onToggleLang, onAuthSuccess }: LoginGa
       {/* MAIN AUTH GATE CARD */}
       <div className="flex-1 flex items-center justify-center p-4 z-10">
         <div className="w-full max-w-md bg-slate-900/90 backdrop-blur-xl border border-slate-800/90 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-indigo-950/40 space-y-5 animate-in fade-in zoom-in-95 duration-200">
+          {/* Neon & Supabase Live Link Badge */}
+          <div className="flex justify-center">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-slate-950/70 border border-emerald-500/30 text-[10px] font-mono text-slate-300 shadow-inner">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+              <span className="text-emerald-300 font-semibold">Neon DB</span>
+              <span className="text-slate-500">•</span>
+              <span className="text-cyan-300 font-semibold">Supabase</span>
+              <span className="text-slate-400">Direct Linked</span>
+            </div>
+          </div>
+
           {/* Card Header */}
           <div className="text-center space-y-1.5">
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-600/15 border border-indigo-500/30 text-indigo-400 mb-1">

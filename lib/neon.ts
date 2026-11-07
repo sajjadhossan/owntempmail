@@ -5,13 +5,17 @@ import { S3Client } from '@aws-sdk/client-s3';
  * Neon Serverless Postgres Client
  * Uses HTTP pipeline for fast, connection-pool-friendly serverless queries.
  */
+export const NEON_DEFAULT_DATABASE_URL =
+  'postgresql://neondb_owner:npg_VAt8OEvx0pIk@ep-rapid-recipe-aoa945op-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require';
+
+const effectiveDbUrl = process.env.DATABASE_URL || NEON_DEFAULT_DATABASE_URL;
+
 export const hasNeonDatabase = Boolean(
-  process.env.DATABASE_URL &&
-  process.env.DATABASE_URL.includes('neon.tech')
+  effectiveDbUrl && effectiveDbUrl.includes('neon.tech')
 );
 
-export const neonSql = hasNeonDatabase && process.env.DATABASE_URL
-  ? neon(process.env.DATABASE_URL)
+export const neonSql = hasNeonDatabase && effectiveDbUrl
+  ? neon(effectiveDbUrl)
   : null;
 
 /**

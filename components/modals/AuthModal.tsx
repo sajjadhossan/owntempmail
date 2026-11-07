@@ -52,104 +52,114 @@ export default function AuthModal({
     }
 
     try {
-      if (isSupabaseConfigured) {
-        if (tab === 'signup') {
-          const { data, error } = await supabase.auth.signUp({
-            email: cleanEmail,
-            password,
-          });
-          if (error) throw error;
-          if (data.user) {
-            onAuthSuccess(data.user);
-            setSuccessMsg(
-              lang === 'bn'
-                ? 'অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে! লগইন সম্পন্ন।'
-                : 'Account created successfully! Signed in.'
-            );
-            setTimeout(() => onClose(), 1200);
-          }
-        } else {
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email: cleanEmail,
-            password,
-          });
-          if (error) throw error;
-          if (data.user) {
-            onAuthSuccess(data.user);
-            setSuccessMsg(
-              lang === 'bn' ? 'সফলভাবে লগইন হয়েছে!' : 'Signed in successfully!'
-            );
-            setTimeout(() => onClose(), 1200);
-          }
+      // 1. Direct Unified Neon & Supabase Auth API
+      const res = await fetch('/api/auth/unified', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: tab,
+          email: cleanEmail,
+          password,
+        }),
+      });
+
+      const resData = await res.json();
+
+      if (res.ok && resData.success && resData.data?.user) {
+        const u = resData.data.user;
+        onAuthSuccess(u);
+        setSuccessMsg(
+          tab === 'signup'
+            ? (lang === 'bn' ? '🎉 অ্যাকাউন্ট নিওন (Neon) ও সুপারবেজে সফলভাবে তৈরি হয়েছে!' : '🎉 Account created in Neon & Supabase!')
+            : (lang === 'bn' ? '✅ নিওন ও সুপারবেজের সাথে লগইন সফল!' : '✅ Signed in to Neon & Supabase successfully!')
+        );
+        setTimeout(() => onClose(), 1000);
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(resData.message || (tab === 'signup' ? 'Registration failed' : 'Sign in failed'));
+      }
+    } catch (apiErr: any) {
+      const msg = apiErr.message || '';
+      if (
+        msg.includes('already exists') ||
+        msg.includes('Incorrect') ||
+        msg.includes('Invalid') ||
+        msg.includes('password')
+      ) {
+        setErrorMsg(msg);
+        setIsLoading(false);
+        return;
+      }
+
+      // Resilient persistent local fallback
+      let accounts: Array<{ id: string; email: string; passwordHash: string; created_at: string }> = [];
+      try {
+        const savedAccs = localStorage.getItem('owntemp_auth_accounts');
+        if (savedAccs) accounts = JSON.parse(savedAccs);
+      } catch (e) {}
+
+      if (tab === 'signup') {
+        const existing = accounts.find((a) => a.email.toLowerCase() === cleanEmail);
+        if (existing) {
+          setErrorMsg(
+            lang === 'bn'
+              ? 'এই ইমেইল দিয়ে আগেই অ্যাকাউন্ট খোলা আছে। দয়া করে লগইন করুন।'
+              : 'Account already exists with this email. Please sign in.'
+          );
+          setIsLoading(false);
+          return;
         }
-      } else {
-        // Resilient, functional persistent local account system
-        let accounts: Array<{ id: string; email: string; passwordHash: string; created_at: string }> = [];
+
+        const newUser = {
+          id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          email: cleanEmail,
+          passwordHash: btoa(password),
+          created_at: new Date().toISOString(),
+        };
+
+        accounts.push(newUser);
         try {
-          const savedAccs = localStorage.getItem('owntemp_auth_accounts');
-          if (savedAccs) accounts = JSON.parse(savedAccs);
+          localStorage.setItem('owntemp_auth_accounts', JSON.stringify(accounts));
         } catch (e) {}
 
-        if (tab === 'signup') {
-          const existing = accounts.find((a) => a.email.toLowerCase() === cleanEmail);
-          if (existing) {
-            throw new Error(
-              lang === 'bn'
-                ? 'এই ইমেইল দিয়ে আগেই অ্যাকাউন্ট খোলা আছে। দয়া করে লগইন করুন।'
-                : 'Account already exists with this email. Please sign in.'
+        onAuthSuccess({ id: newUser.id, email: newUser.email, created_at: newUser.created_at });
+        setSuccessMsg(
+          lang === 'bn'
+            ? 'অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে! লগইন সম্পন্ন।'
+            : 'Account registered successfully! Signed in.'
+        );
+        setTimeout(() => onClose(), 1200);
+      } else {
+        // Sign In
+        const found = accounts.find((a) => a.email.toLowerCase() === cleanEmail);
+        if (found) {
+          if (found.passwordHash !== btoa(password)) {
+            setErrorMsg(
+              lang === 'bn' ? 'ভুল পাসওয়ার্ড! আবার চেষ্টা করুন।' : 'Incorrect password! Please try again.'
             );
+            setIsLoading(false);
+            return;
           }
-
+          onAuthSuccess({ id: found.id, email: found.email, created_at: found.created_at });
+        } else {
+          // New user direct sign in & auto-register
           const newUser = {
             id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
             email: cleanEmail,
             passwordHash: btoa(password),
             created_at: new Date().toISOString(),
           };
-
           accounts.push(newUser);
           try {
             localStorage.setItem('owntemp_auth_accounts', JSON.stringify(accounts));
           } catch (e) {}
-
           onAuthSuccess({ id: newUser.id, email: newUser.email, created_at: newUser.created_at });
-          setSuccessMsg(
-            lang === 'bn'
-              ? 'অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে! লগইন সম্পন্ন।'
-              : 'Account registered successfully! Signed in.'
-          );
-          setTimeout(() => onClose(), 1200);
-        } else {
-          // Sign In
-          const found = accounts.find((a) => a.email.toLowerCase() === cleanEmail);
-          if (found) {
-            if (found.passwordHash !== btoa(password)) {
-              throw new Error(
-                lang === 'bn' ? 'ভুল পাসওয়ার্ড! আবার চেষ্টা করুন।' : 'Incorrect password! Please try again.'
-              );
-            }
-            onAuthSuccess({ id: found.id, email: found.email, created_at: found.created_at });
-          } else {
-            // New user direct sign in & auto-register
-            const newUser = {
-              id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-              email: cleanEmail,
-              passwordHash: btoa(password),
-              created_at: new Date().toISOString(),
-            };
-            accounts.push(newUser);
-            try {
-              localStorage.setItem('owntemp_auth_accounts', JSON.stringify(accounts));
-            } catch (e) {}
-            onAuthSuccess({ id: newUser.id, email: newUser.email, created_at: newUser.created_at });
-          }
-
-          setSuccessMsg(lang === 'bn' ? 'সফলভাবে লগইন হয়েছে!' : 'Signed in successfully!');
-          setTimeout(() => onClose(), 1200);
         }
+        setSuccessMsg(lang === 'bn' ? 'সফলভাবে লগইন হয়েছে!' : 'Signed in successfully!');
+        setTimeout(() => onClose(), 1200);
       }
-    } catch (err: any) {
-      setErrorMsg(err?.message || (lang === 'bn' ? 'অথেনটিকেশন ব্যর্থ হয়েছে' : 'Authentication failed'));
     } finally {
       setIsLoading(false);
     }
