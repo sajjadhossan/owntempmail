@@ -3216,7 +3216,10 @@ export default function OwntempHome() {
           setActionSuccess(lang === 'bn' ? 'লগআউট সম্পন্ন হয়েছে' : 'Signed out');
           setTimeout(() => setActionSuccess(null), 2500);
         }}
-        onOpenDeviceManager={() => setShowDeviceSyncModal(true)}
+        onOpenDeviceManager={() => {
+          setShowAuthModal(false);
+          setShowDeviceSyncModal(true);
+        }}
         lang={lang}
       />
 
@@ -3237,8 +3240,27 @@ export default function OwntempHome() {
         lang={lang}
       />
 
-      {/* Floating Instant OTP Notification Card */}
-      {latestOtpEmail && latestOtpEmail.otpCode && latestOtpEmail.otpCode !== dismissedOtp && (
+      {/* Floating Instant OTP Notification Card (Safely suppressed while modals are active to prevent visual overlap) */}
+      {!showLockModal &&
+        !showUnlockModal &&
+        !showDomainModal &&
+        !showSimModal &&
+        !showQrModal &&
+        !showSettingsModal &&
+        !showDirectoryModal &&
+        !showReplyModal &&
+        !showKeyboardModal &&
+        !showBurnerModal &&
+        !showForwardingModal &&
+        !showAuthModal &&
+        !showAdminModal &&
+        !showDeviceSyncModal &&
+        !showRecoverModal &&
+        !selectedEmail &&
+        !previewAttachment &&
+        latestOtpEmail &&
+        latestOtpEmail.otpCode &&
+        latestOtpEmail.otpCode !== dismissedOtp && (
         <FloatingOtpBanner
           otpCode={latestOtpEmail.otpCode}
           senderName={latestOtpEmail.senderName || latestOtpEmail.sender}

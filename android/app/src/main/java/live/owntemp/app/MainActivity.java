@@ -64,6 +64,7 @@ public class MainActivity extends AppCompatActivity {
 
         webView = new WebView(this);
         webView.setBackgroundColor(0xFF0B0F19);
+        webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
         swipeRefresh.addView(webView);
 
         progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
@@ -201,9 +202,9 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Pull to refresh only when webView is at the very top
+        // Pull to refresh only when webView is strictly at the top (eliminates screen trembling / jitter)
         swipeRefresh.setOnRefreshListener(() -> webView.reload());
-        swipeRefresh.setOnChildScrollUpCallback((parent, child) -> webView.getScrollY() > 0);
+        swipeRefresh.setOnChildScrollUpCallback((parent, child) -> webView.canScrollVertically(-1));
 
         // Back button navigation
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {

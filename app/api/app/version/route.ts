@@ -5,15 +5,15 @@ export async function GET() {
     success: true,
     data: {
       appName: 'Owntemp',
-      latestVersion: '2.5.3',
-      edition: 'Silky Smooth UI, Haptics & Pinned Domains Edition',
+      latestVersion: '2.6.3',
+      edition: 'Jitter-Free Smooth UI & Super Admin Approval Edition',
       minimumSupportedVersion: '1.0.0',
-      apkDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.5.3/app-v2.5.3-build28-android.apk',
-      windowsDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.5.3/Owntemp-v2.5.3-windows-x64.zip',
-      macDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.5.3/Owntemp-v2.5.3-mac-universal.zip',
+      apkDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.6.3/app-v2.6.3-build38-android.apk',
+      windowsDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.6.3/Owntemp-v2.6.3-windows-x64.zip',
+      macDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.6.3/Owntemp-v2.6.3-mac-universal.zip',
       releaseNotes: {
-        bn: 'Owntemp v2.5.3: ট্যাকটাইল হ্যাপটিক ভাইব্রেশন ফিডব্যাক, ৫০ হাজার ডোমেন ব্রাউজারে স্টার/পিনড ফেভারিট সিস্টেম, ১২০ হার্জ আল্ট্রা-স্মুথ স্ক্রলিং এবং অ্যামোলেড পিওর ব্ল্যাক অপটিমাইজেশন।',
-        en: 'Owntemp v2.5.3: Tactile haptic vibration feedback, Star/Pinned favorite domain subsystem across 50,000+ pool, 120Hz ultra-smooth touch scrolling, and AMOLED optimizations.',
+        bn: 'Owntemp v2.6.3: অ্যান্ড্রয়েড স্ক্রিন কাঁপাকাপি দূরীকরণ, স্মার্ট মডাল ওভারল্যাপ কন্ট্রোল, নিয়ন ডিবি ও সুপারবেজ সুপার অ্যাডমিন অনুমোদন ব্যবস্থা এবং নিরবচ্ছিন্ন পারফরম্যান্স।',
+        en: 'Owntemp v2.6.3: Android screen jitter elimination, smart non-overlapping modal stacking, Neon DB & Supabase Super Admin user approval system, and peak performance.',
       },
       platforms: {
         android: {
