@@ -32,12 +32,8 @@ export const ALL_PUBLIC_DOMAINS: PublicDomainDef[] = [
   { domain: 'guerrillamail.info', name: '🌐 GuerrillaMail (.info গ্লোবাল)', provider: 'guerrilla', category: 'public' },
   { domain: 'guerrillamail.biz', name: '💼 GuerrillaMail (.biz বিজনেস)', provider: 'guerrilla', category: 'public' },
   { domain: 'guerrillamailblock.com', name: '🛡️ Guerrilla Block (স্প্যামগার্ড)', provider: 'guerrilla', category: 'public' },
-  { domain: 'maildrop.cc', name: '📨 Maildrop (ওপেন-সোর্স ডিসপোজেবল)', provider: 'maildrop', category: 'public' },
-  { domain: '1secmail.com', name: '⏱️ 1SecMail (.com ইনস্ট্যান্ট ওটিপি)', provider: '1secmail', category: 'public' },
-  { domain: '1secmail.net', name: '⏱️ 1SecMail (.net ব্যাকআপ ওটিপি)', provider: '1secmail', category: 'public' },
-  { domain: '1secmail.org', name: '⏱️ 1SecMail (.org ওপেন ওটিপি)', provider: '1secmail', category: 'public' },
-  { domain: 'kzccv.com', name: '🔒 Kzccv (প্রাইভেট ওটিপি ডোমেইন)', provider: '1secmail', category: 'public' },
-  { domain: 'qiott.com', name: '🔒 Qiott (সিকিউর ওটিপি ডোমেইন)', provider: '1secmail', category: 'public' },
+  { domain: 'maildrop.cc', name: '📨 Maildrop (ওপেন-সোর্স লাইভ GraphQL)', provider: 'maildrop', category: 'public' },
+  { domain: 'spam4.me', name: '🛡️ Spam4.me (স্প্যাম শিল্ড ওটিপি)', provider: 'guerrilla', category: 'public' },
   { domain: 'tempmail.lol', name: '🛡️ TempMail.lol (জিরো-লগিং ওপেন API)', provider: 'cloudgateway', category: 'security' },
   { domain: 'dropmail.me', name: '⚡ DropMail.me (লাইভ গ্রাফকিউএল গেটওয়ে)', provider: 'cloudgateway', category: 'public' },
   { domain: 'dispostable.com', name: '📨 Dispostable.com (ওপেন ইনবক্স)', provider: 'cloudgateway', category: 'public' },
@@ -303,6 +299,49 @@ async function syncGuerrilla(username: string, domain: string, address: string) 
   }
 }
 
+// ----------------- Maildrop GraphQL Sync Engine -----------------
+async function syncMaildrop(mailbox: string, address: string) {
+  try {
+    const res = await fetch('https://api.maildrop.cc/graphql', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: `query { inbox(mailbox: "${mailbox}") { id, mailfrom, headerfrom, subject, date, data, html } }`,
+      }),
+    });
+    if (!res.ok) return;
+    const json = await res.json();
+    const messages = json.data?.inbox || [];
+    const existingEmails = getEmailsForAddress(address);
+
+    for (const msg of messages) {
+      const sender = msg.headerfrom || msg.mailfrom || 'unknown@sender.com';
+      const senderName = sender.split('<')[0].replace(/"/g, '').trim() || sender;
+      const subject = msg.subject || '(No Subject)';
+      const textBody = msg.data || msg.html || '';
+      const htmlBody = msg.html || msg.data || '';
+
+      if (existingEmails.some((e) => e.sender === sender && e.subject === subject)) continue;
+
+      const otpCode = extractOtp(textBody, subject);
+      const verificationLinks = extractVerificationLinks(htmlBody, textBody);
+
+      saveInboundEmail({
+        address,
+        sender,
+        senderName,
+        subject,
+        textBody,
+        htmlBody,
+        otpCode,
+        verificationLinks,
+        attachments: [],
+        sizeBytes: textBody.length,
+      });
+    }
+  } catch (e) {}
+}
+
 // ----------------- Master Sync Dispatcher -----------------
 export async function syncPublicInbox(address: string): Promise<void> {
   const parts = address.split('@');
@@ -318,6 +357,7 @@ export async function syncPublicInbox(address: string): Promise<void> {
     'guerrillamail.net',
     'guerrillamail.org',
     'guerrillamail.biz',
+    'guerrillamail.info',
     'grr.la',
     'pokemail.net',
     'spam4.me',
@@ -329,10 +369,16 @@ export async function syncPublicInbox(address: string): Promise<void> {
     'mail.gw',
   ];
 
+  const maildropDomains = [
+    'maildrop.cc',
+  ];
+
   if (guerrillaDomains.includes(domain)) {
     await syncGuerrilla(username, domain, address);
   } else if (mailtmDomains.includes(domain)) {
     await syncMailtm(address);
+  } else if (maildropDomains.includes(domain)) {
+    await syncMaildrop(username, address);
   } else {
     const domainDef = ALL_PUBLIC_DOMAINS.find((d) => d.domain.toLowerCase() === domain);
     if (domainDef) {
@@ -340,7 +386,12 @@ export async function syncPublicInbox(address: string): Promise<void> {
         await syncGuerrilla(username, domain, address);
       } else if (domainDef.provider === 'mailtm') {
         await syncMailtm(address);
+      } else if (domainDef.provider === 'maildrop') {
+        await syncMaildrop(username, address);
       }
+    } else {
+      // Default fallback: Try Guerrilla Mail for standard public requests
+      await syncGuerrilla(username, domain, address);
     }
   }
 }

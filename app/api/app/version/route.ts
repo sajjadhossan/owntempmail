@@ -5,15 +5,15 @@ export async function GET() {
     success: true,
     data: {
       appName: 'Owntemp',
-      latestVersion: '2.8.0',
-      edition: 'Background Task Persistence & Resilient Settings Edition',
+      latestVersion: '2.8.1',
+      edition: 'Resilient Directory & Multi-Engine Public Mail Sync Edition',
       minimumSupportedVersion: '1.0.0',
-      apkDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.0/app-v2.8.0-build40-android.apk',
-      windowsDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.0/Owntemp-v2.8.0-windows-x64.exe',
-      macDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.0/Owntemp-v2.8.0-macOS-Universal.dmg',
+      apkDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.1/app-v2.8.1-build41-android.apk',
+      windowsDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.1/Owntemp-v2.8.1-windows-x64.exe',
+      macDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.1/Owntemp-v2.8.1-macOS-Universal.dmg',
       releaseNotes: {
-        bn: 'Owntemp v2.8.0: ব্যাকগ্রাউন্ড টাস্ক পারসিস্টেন্স (অ্যাপ বন্ধ না হয়ে ব্যাকগ্রাউন্ডে চালু থাকা), সেটিংস ও ডোমেইন মোডাল ফিক্স এবং সুপার অ্যাডমিন সেন্ট্রাল ডোমেইন কন্ট্রোল।',
-        en: 'Owntemp v2.8.0: Background task persistence (app stays alive in background without reloading), mobile settings modal fix, and Super Admin Domain Control desk.',
+        bn: 'Owntemp v2.8.1: ৫০,০০০+ ডিরেক্টরি মোডাল লেআউট ও নাল-সেফটি ফিক্স, Maildrop GraphQL লাইভ ইঞ্জিন ইন্টিগ্রেশন এবং পাবলিক টেম্প মেইল সিঙ্ক নিশ্চিতকরণ।',
+        en: 'Owntemp v2.8.1: 50,000+ directory modal mobile layout and null-safety fix, Maildrop GraphQL live engine integration, and verified public temp mail delivery.',
       },
       platforms: {
         android: {
