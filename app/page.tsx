@@ -1609,6 +1609,8 @@ export default function OwntempHome() {
         item.textBody.toLowerCase().includes(q)
       );
     });
+  }, [emails, filterMode, searchQuery]);
+
   // Latest received OTP email for Floating Quick-OTP Action Banner
   const latestOtpEmail = useMemo(() => {
     return emails.find((e) => !!e.otpCode) || null;
