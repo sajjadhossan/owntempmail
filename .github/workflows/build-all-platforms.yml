@@ -55,6 +55,14 @@ jobs:
           name: Owntemp-v2.7.0-web-standalone
           path: dist/web/Owntemp-v2.7.0-web-standalone.tar.gz
 
+      - name: Publish Web Artifact Directly to GitHub Release Assets
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/web/Owntemp-v2.7.0-web-standalone.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # 2. Android APK Build (Native Gradle Release Build)
   build-android-apk:
     if: inputs.build_target == 'all' || inputs.build_target == 'android_apk' || github.event_name == 'push' || startsWith(github.ref, 'refs/tags/v')
@@ -138,6 +146,14 @@ jobs:
           name: app-v2.7.0-build39-android.apk
           path: build/outputs/apk/release/app-v2.7.0-build39-android.apk
 
+      - name: Publish APK Directly to GitHub Release Assets
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/outputs/apk/release/app-v2.7.0-build39-android.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # 3. Windows PC Build (x64)
   build-windows:
     if: inputs.build_target == 'all' || inputs.build_target == 'windows_pc' || startsWith(github.ref, 'refs/tags/v')
@@ -167,6 +183,14 @@ jobs:
         with:
           name: Owntemp-v2.7.0-windows-x64.zip
           path: dist/windows/Owntemp-v2.7.0-windows-x64.zip
+
+      - name: Publish Windows Bundle Directly to GitHub Release Assets
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/windows/Owntemp-v2.7.0-windows-x64.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # 4. macOS Intel Build (x86_64)
   build-macos-intel:
@@ -199,6 +223,14 @@ jobs:
           name: Owntemp-v2.7.0-mac-intel-x64.zip
           path: dist/macos/Owntemp-v2.7.0-mac-intel-x64.zip
 
+      - name: Publish macOS Intel Bundle Directly to GitHub Release Assets
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/macos/Owntemp-v2.7.0-mac-intel-x64.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # 5. macOS Apple Silicon Build (M1-M4 arm64)
   build-macos-arm64:
     if: inputs.build_target == 'all' || inputs.build_target == 'macos_apple_silicon' || startsWith(github.ref, 'refs/tags/v')
@@ -229,6 +261,14 @@ jobs:
           name: Owntemp-v2.7.0-mac-arm64-apple-silicon.zip
           path: dist/macos/Owntemp-v2.7.0-mac-arm64-apple-silicon.zip
 
+      - name: Publish macOS Apple Silicon Bundle Directly to GitHub Release Assets
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/macos/Owntemp-v2.7.0-mac-arm64-apple-silicon.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # 6. macOS Universal Bundle (Intel + Apple Silicon)
   build-macos-universal:
     if: inputs.build_target == 'all' || inputs.build_target == 'macos_universal' || startsWith(github.ref, 'refs/tags/v')
@@ -258,6 +298,14 @@ jobs:
         with:
           name: Owntemp-v2.7.0-mac-universal.zip
           path: dist/macos/Owntemp-v2.7.0-mac-universal.zip
+
+      - name: Publish macOS Universal Bundle Directly to GitHub Release Assets
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/macos/Owntemp-v2.7.0-mac-universal.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # 7. Automated GitHub Release on Tag or Version Push
   publish-release:

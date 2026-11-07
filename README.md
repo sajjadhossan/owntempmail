@@ -1,91 +1,83 @@
-# Owntemp (v1.5.0) 🛡️
-> **সম্পূর্ণ ফ্রি ডিসপোজেবল ইমেইল ইঞ্জিন — ডুয়াল ক্লাউডফ্লেয়ার অটোমেশন (API Token + ম্যানুয়াল) ও ভার্সেল হাব, লাইফটাইম পার্মানেন্ট ইনবক্স লক এবং স্বয়ংক্রিয় ওটিপি (OTP) পার্সার সহ।**
-> *Free Disposable Temp Mail Engine with Dual Cloudflare Automation (API Token & Manual) & Vercel Hub, Lifetime Permanent Inbox Lock & Instant OTP Parser.*
+<div align="center">
+  <img src="public/logo.jpg" width="110" height="110" alt="Owntemp 3D Logo" style="border-radius: 24px; box-shadow: 0 10px 30px rgba(99,102,241,0.3);" />
+  <h1>Owntemp (v2.7.0) 🛡️</h1>
+  <p><b>জীবনব্যাপী সুরক্ষিত কাস্টম ডোমেইন ডিসপোজেবল ইমেইল ও ওটিপি ইঞ্জিন</b></p>
+  <p><i>Lifetime Permanent Disposable Temp Mail Engine with Neon Postgres, Supabase Auth & Multi-Platform Delivery</i></p>
+
+  <p>
+    <a href="https://github.com/sajjadhossan/owntempmail/releases"><img src="https://img.shields.io/github/v/release/sajjadhossan/owntempmail?color=6366f1&label=Release&style=flat-square" alt="Release" /></a>
+    <a href="https://sim-cooler-mitsubishi-kits.trycloudflare.com"><img src="https://img.shields.io/badge/Cloudflare_Live-Active-06B6D4?style=flat-square" alt="Cloudflare Tunnel" /></a>
+    <a href="https://owntempmail.vercel.app"><img src="https://img.shields.io/badge/Vercel_Hub-Online-10B981?style=flat-square" alt="Vercel App" /></a>
+    <img src="https://img.shields.io/badge/Android-APK_Build_39-F59E0B?style=flat-square" alt="Android APK" />
+    <img src="https://img.shields.io/badge/Platforms-Android_|_Windows_|_MacBook_|_Web-8B5CF6?style=flat-square" alt="Platforms" />
+  </p>
+</div>
 
 ---
 
-## 🌟 মূল সুবিধাসমূহ (Core Features)
+## 🌐 সকল লাইভ লিংক হাব (All Official & Live Project URLs)
 
-1. **ডুয়াল ক্লাউডফ্লেয়ার ও ভার্সেল কানেকশন হাব (Dual Cloudflare & Vercel Integration):**
-   - **মেথড ১ (১-ক্লিক API টোকেন অটোমেশন):** ক্লাউডফ্লেয়ার API টোকেন পেস্ট করে এক ক্লিকেই সম্পূর্ণ DNS (MX, SPF) ও Worker অটোমেটিক কনফিগারেশন।
-   - **মেথড ২ (ম্যানুয়াল ৩-মিনিট পদ্ধতি):** রেডি-মেড DNS টেবিল ও Worker স্ক্রিপ্ট এক ক্লিকে কপি করার সুবিধা।
-   - **কাস্টম ভার্সেল লাইভ ওয়েবসাইট ইনপুট:** আপনার ভার্সেল ডোমেইন দিলে সাথে সাথে লাইভ Webhook URL ক্যালকুলেট হয়ে যায়।
-   - উভয় পদ্ধতির জন্য ধাপে ধাপে **A to Z বিস্তারিত গাইড** অ্যাপের ভেতর যুক্ত।
+সকল প্রয়োজনীয় সিস্টেম লিংক সরাসরি এই প্রজেক্টের ভেতরে এক জায়গায় সংরক্ষিত:
 
-2. **যেকোনো কাস্টম বিজনেস সেটআপ ও ডাইনামিক ডোমেইন (Any Business Domain Setup):**
-   - ড্রপডাউনের বাইরেও সরাসরি যেকোনো বিজনেস ডোমেইন (যেমন: `sajjadholding.com`, `myshop.xyz`) টাইপ করে সাথে সাথে ইনবক্স তৈরি করার সুবিধা।
-   - বিজনেস ব্র্যান্ডিং সেটআপ: আপনার কোম্পানির নাম অ্যাপের প্রোফাইলে সেট করা যায়।
-
-3. **লাইফটাইম লক বাটন ও পার্মানেন্ট ইনবক্স সুইচার (Lifetime Lock Protection & Tray):**
-   - সাধারণ টেম্প মেইল নির্ধারিত সময় পর স্বয়ংক্রিয়ভাবে মুছে যায়।
-   - কিন্তু **🔒 Lock Lifetime** বাটন চাপলে এবং সিকিউরিটি পিন সেট করলে ইনবক্সটি ডাটাবেসে চিরস্থায়ী হয়ে যায়।
-   - সংরক্ষিত ইনবক্সের মধ্যে ১-ক্লিকে সুইচ করার পার্মানেন্ট ট্রে।
-
-4. **স্বয়ংক্রিয় ওটিপি (OTP), ভেরিফিকেশন লিংক ও অ্যাটাচমেন্ট নিষ্কাশন:**
-   - ইনকামিং মেইল থেকে ৪-৮ ডিজিটের সিকিউরিটি কোড স্বয়ংক্রিয়ভাবে ডিটেক্ট করে হাইলাইট চিপে এক-ক্লিকে কপি করার সুবিধা।
-   - অ্যাক্টিভেশন/ভেরিফিকেশন লিংক সরাসরি ওয়ান-ক্লিক বাটন আকারে প্রদর্শন।
-   - ইমেইল অ্যাটাচমেন্ট ফাইল ও ডাউনলোড সাপোর্ট।
-
-5. **স্বয়ংক্রিয় ক্লিনআপ ক্রন ও ডুয়াল স্টোরেজ ইঞ্জিন:**
-   - `/api/cron/cleanup` — আনলক করা পুরোনো মেইল স্বয়ংক্রিয়ভাবে মুছে ফেলে, কিন্তু লাইফটাইম লক করা ইনবক্স আজীবন অক্ষত রাখে।
-   - Prisma PostgreSQL/Supabase ডাটাবেস সাপোর্ট (`prisma/schema.prisma`) এবং লোকাল ফাইল ফলব্যাক।
-
-6. **মাল্টি-প্ল্যাটফর্ম সাপোর্ট ও প্যাকেজিং (Multi-Platform Parity):**
-   - 🌐 **Web App:** Vercel ডিপ্লয়মেন্ট রেডি (`vercel.json` সহ)।
-   - 📱 **Android App:** সম্পূর্ণ নেটিভ অ্যান্ড্রয়েড ডিরেক্টরি (`android/`) ও Capacitor কনফিগ।
-   - 💻 **Windows PC (.exe):** 64-bit উইন্ডোজ ডেস্কটপ কনফিগারেশন (`desktop/main.js`)।
-   - 🍎 **macOS Universal:** Intel (x86_64) ও Apple Silicon (M1/M2/M3/M4) `.dmg` বিল্ড সাপোর্ট।
-
-7. **সার্চ, ফিল্টারিং, ইমেইল এক্সপোর্ট, পিন রেট-লিমিটিং ও QR কোড:**
-   - মেসেজের সাবজেক্ট, প্রেরক বা ওটিপি দিয়ে তাৎক্ষণিক সার্চ।
-   - ফিল্টার: "সকল ইমেইল" অথবা "শুধু OTP কোড"।
-   - `.eml` ও `.txt` ফরম্যাটে ইমেইল ডাউনলোড ও সংরক্ষণ।
-   - মোবাইল দিয়ে স্ক্যান করে ইনবক্স লোড বা ইমেইল পাঠানোর কিউআর কোড।
-   - পিন ব্রুট-ফোর্স রেট লিমিটিং প্রটেকশন (৫ বার ভুল হলে ১০ মিনিট সাময়িক স্থগিত)।
-
-8. **ভার্সন প্যারিটি ও রিয়েল-টাইম এপিআই:**
-   - `/api/app/version` — সিনক্রোনাইজড ভার্সন ট্র্যাকিং (`v1.5.0`).
-   - `/api/cloudflare/setup` — ক্লাউডফ্লেয়ার ১-ক্লিক অটোমেটিক সেটআপ এপিআই।
-   - `/api/business` — বিজনেস ব্র্যান্ডিং ও প্রোফাইল কনফিগারেশন।
-   - `/api/inbound/webhook` — Cloudflare ও বাহ্যিক এসএমটিপি রিসিভার।
-   - `/api/inbox/[address]` — রিয়েল-টাইম ইনবক্স রিট্রিভাল।
-   - `/api/inbox/locked` — পার্মানেন্ট লক করা ইনবক্স তালিকা।
-   - `/api/cron/cleanup` — অটোমেটেড ক্লিনআপ রুট।
-   - `/api/simulate` — তাৎক্ষণিক লাইভ টেস্ট ইমেইল জেনারেটর।
+| সার্ভিস | লাইভ লিংক (Live URL) | বিবরণ ও স্ট্যাটাস |
+| :--- | :--- | :--- |
+| ⚡ **Cloudflare লাইভ অ্যাপ** | [https://sim-cooler-mitsubishi-kits.trycloudflare.com](https://sim-cooler-mitsubishi-kits.trycloudflare.com) | দ্রুততম লাইভ টানেল লিংক (SSL এনক্রিপ্টেড) |
+| ☁️ **Vercel প্রোডাকশন লিংক** | [https://owntempmail.vercel.app](https://owntempmail.vercel.app) | ভার্সেল এজ সার্ভারলেস ওয়েবসাইট |
+| 📦 **GitHub রিলিজ ও অ্যাসেট** | [https://github.com/sajjadhossan/owntempmail/releases](https://github.com/sajjadhossan/owntempmail/releases) | সরাসরি সব প্ল্যাটফর্মের ইনস্টলার ও APK ফাইল |
+| ⚡ **Supabase ডাটাবেস এন্ডপয়েন্ট** | `https://pwalrxmybjgqldzcfozk.supabase.co` | অথ ও ক্লাউড সিঙ্ক ব্যাকএন্ড |
+| 🐘 **Neon Serverless Postgres** | `ep-rapid-recipe-aoa945op-pooler.c-2.ap-southeast-1.aws.neon.tech` | ইউজার ও অ্যাকাউন্ট স্টোরেজ |
 
 ---
 
-## 🚀 লোকাল সার্ভার চালানোর নির্দেশিকা (Run Locally)
+## 📥 সরাসরি ১-ক্লিক রিলিজ অ্যাসেট ডাউনলোড হাব (GitHub Release Assets)
+
+অন্য কোথাও খোঁজাখুঁজি না করে **GitHub Releases -> Assets** থেকে সরাসরি ১-ক্লিকে প্রতিটি প্ল্যাটফর্মের আসল ফাইল ডাউনলোড করুন:
+
+| প্ল্যাটফর্ম | টার্গেট ও ফরম্যাট | সরাসরি ডাউনলোড লিংক (Direct Assets Download) |
+| :--- | :--- | :--- |
+| 📱 **Android Mobile** | Android 8.0 – 15.0 (.apk) | [📥 `app-v2.7.0-build39-android.apk`](https://github.com/sajjadhossan/owntempmail/releases/download/v2.7.0/app-v2.7.0-build39-android.apk) |
+| 💻 **Windows PC** | 64-bit Windows 10/11 (.zip) | [📥 `Owntemp-v2.7.0-windows-x64.zip`](https://github.com/sajjadhossan/owntempmail/releases/download/v2.7.0/Owntemp-v2.7.0-windows-x64.zip) |
+| 🍏 **MacBook Intel** | Intel x86_64 Mac (.zip) | [📥 `Owntemp-v2.7.0-mac-intel-x64.zip`](https://github.com/sajjadhossan/owntempmail/releases/download/v2.7.0/Owntemp-v2.7.0-mac-intel-x64.zip) |
+| ⚡ **MacBook Apple Silicon** | M1, M2, M3, M4 Apple Silicon (.zip) | [📥 `Owntemp-v2.7.0-mac-arm64-apple-silicon.zip`](https://github.com/sajjadhossan/owntempmail/releases/download/v2.7.0/Owntemp-v2.7.0-mac-arm64-apple-silicon.zip) |
+| 🌐 **MacBook Universal** | Intel + Apple Silicon সর্বজনীন | [📥 `Owntemp-v2.7.0-mac-universal.zip`](https://github.com/sajjadhossan/owntempmail/releases/download/v2.7.0/Owntemp-v2.7.0-mac-universal.zip) |
+| ☁️ **Web Standalone** | Node.js Serverless Tarball | [📥 `Owntemp-v2.7.0-web-standalone.tar.gz`](https://github.com/sajjadhossan/owntempmail/releases/download/v2.7.0/Owntemp-v2.7.0-web-standalone.tar.gz) |
+
+> 💡 **নোট:** GitHub Releases পেজে গেলে প্রতিটি রিলিজের নিচে থাকা **"Assets"** ড্রপডাউনে এই ফাইলগুলো সরাসরি পাবেন।
+
+---
+
+## 🌟 মূল ফিচারসমূহ (Core Features)
+
+1. **সুরক্ষিত লগইন গেট ও সুপার অ্যাডমিন ডেস্ক (👑 Super Admin Approval Desk):**
+   * সাধারণ যেকোনো ব্যবহারকারী সাইন আপ করলে অ্যাকাউন্ট `pending` থাকে এবং লগইন ব্লক থাকে।
+   * সুপার অ্যাডমিন (`hossansajjad1994@gmail.com`) লগইন করলে টপ বারে গোল্ডেন ক্রাউন বাটন পায় এবং ১-ক্লিকে ব্যবহারকারীকে **Approve ✅**, **Reject ❌** অথবা **Delete 🗑️** করতে পারে।
+2. **লাইভ গ্লোবাল ইমেইল কালেকশন (৫০,০০০+ ডোমেন ফ্লিট):**
+   * নিজস্ব কোনো ডোমেন ছাড়াই `sharklasers.com`, `grr.la`, `fldubai.com`, `guerrillamail.com` ইত্যাদিতে যেকোনো ইউজারনেম দিয়ে আসল ওটিপি ও ইমেইল রিসিভ করার সুবিধা।
+3. **লাইফটাইম পিন লক সুরক্ষা (Lifetime Lock Protection):**
+   * ৪-ডিজিট পিন কোড সেট করে পছন্দের ইনবক্স চিরতরে নিজের করে রাখা যায়, যা স্বয়ংক্রিয় ক্লিনআপে কখনো মুছে যায় না।
+4. **স্মার্ট ওটিপি এক্সট্রাক্টর ও ভয়েস নোটিফিকেশন:**
+   * ইনকামিং ইমেইল থেকে ৪-৮ ডিজিটের ওটিপি স্বয়ংক্রিয়ভাবে ডিটেক্ট করে চিপে প্রদর্শন এবং বাংলা ও ইংরেজিতে টেক্সট-টু-স্পিচ ভয়েস অ্যানাউন্সমেন্ট।
+5. **অ্যান্ড্রয়েড কাঁপাকাপি মুক্ত মসৃণ টাচ স্ক্রোলিং:**
+   * `SwipeRefreshLayout` এবং `WebView`-এর টাচ কনফ্লিক্ট দূর করে ১২০ হার্জ আল্ট্রা-স্মুথ স্ক্রোলিং নিশ্চিত করা হয়েছে।
+6. **মডাল ওভারল্যাপ প্রতিরোধ:**
+   * সেটিংস, অথ, রিকভার ও ওটিপি ব্যানারের মধ্যে সুনির্দিষ্ট z-index ও স্মার্ট ট্রানজিশন ব্যবস্থাপনা।
+
+---
+
+## 🛠️ লোকাল ডেভেলপমেন্ট ও সার্ভার পরিচালনা
 
 ```bash
-# ১. ডিপেনডেন্সি ইনস্টল (ইতিমধ্যে ইনস্টল করা হয়েছে)
-npm install
+# ১. ডিপেনডেন্সি ইনস্টল
+pnpm install
 
-# ২. লোকাল ডেভেলপমেন্ট সার্ভার চালু
-npm run dev
+# ২. লোকাল প্রোডাকশন বিল্ড
+pnpm build
 
-# ৩. প্রজেক্ট ব্রাউজারে দেখতে:
-http://localhost:3000
+# ৩. লোকাল সার্ভার রান
+pnpm start -p 3847
 ```
 
 ---
 
-## 🌐 ক্লাউডফ্লেয়ার ফ্রি ক্যাচ-অল সেটআপ (Cloudflare Email Routing)
-
-1. আপনার Cloudflare অ্যাকাউন্টে আপনার ডোমেইনে যান (`yourbusiness.com`)।
-2. বামদিকের মেনু থেকে **Email** -> **Email Routing** এ ক্লিক করে এনাবল করুন।
-3. **Catch-all address** অপশনে যান এবং রুল সেট করুন:
-   - **Action:** Send to a Worker
-   - **Worker:** `Owntemp Email Worker` (কোডটি `cloudflare-worker/email-worker.js` এ রয়েছে)।
-4. Worker-এর Environment Variable-এ `API_ENDPOINT` দিন:
-   `https://your-app.vercel.app/api/inbound/webhook`
-
-এখন যে কেউ `যেকোনো_নাম@yourbusiness.com` এ ইমেইল পাঠালে তা সেকেন্ডের মধ্যে আপনার Owntemp অ্যাপে চলে আসবে!
-
----
-
-## 📦 ভার্সন তথ্য (Version Information)
-
-- **বর্তমান ভার্সন:** `v1.0.0`
-- **এপিআই এন্ডপয়েন্ট:** `/api/app/version`
-- **লাইসেন্স:** MIT
+## 📄 লাইসেন্স
+MIT License — © 2026 Owntemp Project.
