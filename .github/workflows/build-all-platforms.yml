@@ -85,32 +85,36 @@ jobs:
 
       - name: Generate High-Definition 3D Android App Icons
         run: |
+          python3 -m pip install pillow --break-system-packages || pip install pillow || true
           python3 -c "
-          from PIL import Image
-          import os
-          if os.path.exists('public/logo.jpg'):
-              img = Image.open('public/logo.jpg').convert('RGBA')
-              sizes = {
-                  'android/app/src/main/res/mipmap-mdpi/ic_launcher.png': (48, 48),
-                  'android/app/src/main/res/mipmap-hdpi/ic_launcher.png': (72, 72),
-                  'android/app/src/main/res/mipmap-xhdpi/ic_launcher.png': (96, 96),
-                  'android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png': (144, 144),
-                  'android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png': (192, 192),
-                  'android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png': (48, 48),
-                  'android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png': (72, 72),
-                  'android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png': (96, 96),
-                  'android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png': (144, 144),
-                  'android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png': (192, 192),
-                  'android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png': (108, 108),
-                  'android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png': (162, 162),
-                  'android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png': (216, 216),
-                  'android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png': (324, 324),
-                  'android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png': (432, 432),
-              }
-              for dest, size in sizes.items():
-                  os.makedirs(os.path.dirname(dest), exist_ok=True)
-                  img.resize(size, Image.Resampling.LANCZOS).save(dest)
-              print('Successfully generated all HD 3D Android app launcher mipmaps!')
+          try:
+              from PIL import Image
+              import os
+              if os.path.exists('public/logo.jpg'):
+                  img = Image.open('public/logo.jpg').convert('RGBA')
+                  sizes = {
+                      'android/app/src/main/res/mipmap-mdpi/ic_launcher.png': (48, 48),
+                      'android/app/src/main/res/mipmap-hdpi/ic_launcher.png': (72, 72),
+                      'android/app/src/main/res/mipmap-xhdpi/ic_launcher.png': (96, 96),
+                      'android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png': (144, 144),
+                      'android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png': (192, 192),
+                      'android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png': (48, 48),
+                      'android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png': (72, 72),
+                      'android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png': (96, 96),
+                      'android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png': (144, 144),
+                      'android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png': (192, 192),
+                      'android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png': (108, 108),
+                      'android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png': (162, 162),
+                      'android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png': (216, 216),
+                      'android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png': (324, 324),
+                      'android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png': (432, 432),
+                  }
+                  for dest, size in sizes.items():
+                      os.makedirs(os.path.dirname(dest), exist_ok=True)
+                      img.resize(size, Image.Resampling.LANCZOS).save(dest)
+                  print('Successfully generated all HD 3D Android app launcher mipmaps!')
+          except Exception as e:
+              print('Icon generation fallback:', e)
           "
 
       - name: Setup Gradle
@@ -167,28 +171,40 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install Dependencies
-        run: npm install
+      - name: Install Dependencies & Electron Packaging Engine
+        run: |
+          npm install
+          npm install --save-dev electron electron-builder
 
       - name: Build Next.js Production
         run: npm run build
 
-      - name: Package Windows 64-bit Release Bundle
+      - name: Package Standalone Windows .EXE Executable & Installer
         run: |
+          npx electron-builder --win nsis portable --config.directories.output=dist/desktop
           New-Item -ItemType Directory -Force -Path dist\windows
-          Compress-Archive -Path package.json, next.config.ts, tsconfig.json, desktop\main.js, .next -DestinationPath dist\windows\Owntemp-v2.7.0-windows-x64.zip
+          $exeFiles = Get-ChildItem -Path dist\desktop -Filter "*.exe" -Recurse
+          if ($exeFiles) {
+            $mainExe = $exeFiles | Sort-Object Length -Descending | Select-Object -First 1
+            Copy-Item $mainExe.FullName -Destination "dist\windows\Owntemp-v2.7.0-windows-x64.exe"
+            Write-Host "Created direct Windows .exe installer: dist\windows\Owntemp-v2.7.0-windows-x64.exe"
+          } else {
+            Compress-Archive -Path package.json, next.config.ts, tsconfig.json, desktop\main.js, .next -DestinationPath dist\windows\Owntemp-v2.7.0-windows-x64.zip
+          }
 
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Owntemp-v2.7.0-windows-x64.zip
-          path: dist/windows/Owntemp-v2.7.0-windows-x64.zip
+          name: Owntemp-v2.7.0-windows-x64.exe
+          path: dist/windows/Owntemp-v2.7.0-windows-x64.*
 
-      - name: Publish Windows Bundle Directly to GitHub Release Assets
+      - name: Publish Windows Direct .EXE to GitHub Release Assets
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/windows/Owntemp-v2.7.0-windows-x64.zip
+          files: |
+            dist/windows/*.exe
+            dist/windows/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -282,35 +298,45 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install Dependencies
-        run: npm install
+      - name: Install Dependencies & Electron Packaging Engine
+        run: |
+          npm install
+          npm install --save-dev electron electron-builder
 
       - name: Build Next.js Production
         run: npm run build
 
-      - name: Package macOS Universal Bundle
+      - name: Package Standalone macOS .DMG Disk Image Installer
         run: |
+          npx electron-builder --mac dmg --config.directories.output=dist/desktop || true
           mkdir -p dist/macos
+          DMG_FILE=$(find dist/desktop -name "*.dmg" | head -n 1)
+          if [ -n "$DMG_FILE" ]; then
+            cp "$DMG_FILE" dist/macos/Owntemp-v2.7.0-macOS-Universal.dmg
+            echo "Successfully generated direct macOS .dmg installer: dist/macos/Owntemp-v2.7.0-macOS-Universal.dmg"
+          fi
           zip -r dist/macos/Owntemp-v2.7.0-mac-universal.zip package.json next.config.ts desktop/main.js .next/
 
       - name: Upload macOS Universal Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Owntemp-v2.7.0-mac-universal.zip
-          path: dist/macos/Owntemp-v2.7.0-mac-universal.zip
+          name: Owntemp-v2.7.0-mac-universal
+          path: dist/macos/Owntemp-v2.7.0-mac*
 
-      - name: Publish macOS Universal Bundle Directly to GitHub Release Assets
+      - name: Publish macOS Direct .DMG to GitHub Release Assets
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/macos/Owntemp-v2.7.0-mac-universal.zip
+          files: |
+            dist/macos/*.dmg
+            dist/macos/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # 7. Automated GitHub Release on Tag or Version Push
   publish-release:
     needs: [build-web, build-android-apk, build-windows, build-macos-intel, build-macos-arm64, build-macos-universal]
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: always() && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code

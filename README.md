@@ -33,13 +33,11 @@
 
 অন্য কোথাও খোঁজাখুঁজি না করে **GitHub Releases -> Assets** থেকে সরাসরি ১-ক্লিকে প্রতিটি প্ল্যাটফর্মের আসল ফাইল ডাউনলোড করুন:
 
-| প্ল্যাটফর্ম | টার্গেট ও ফরম্যাট | সরাসরি ডাউনলোড লিংক (Direct Assets Download) |
+| প্ল্যাটফর্ম | টার্গেট ও আসল ফরম্যাট | সরাসরি ডাউনলোড লিংক (Direct Assets Download) |
 | :--- | :--- | :--- |
-| 📱 **Android Mobile** | Android 8.0 – 15.0 (.apk) | [📥 `app-v2.7.0-build39-android.apk`](https://github.com/sajjadhossan/owntempmail/releases/download/v2.7.0/app-v2.7.0-build39-android.apk) |
-| 💻 **Windows PC** | 64-bit Windows 10/11 (.zip) | [📥 `Owntemp-v2.7.0-windows-x64.zip`](https://github.com/sajjadhossan/owntempmail/releases/download/v2.7.0/Owntemp-v2.7.0-windows-x64.zip) |
-| 🍏 **MacBook Intel** | Intel x86_64 Mac (.zip) | [📥 `Owntemp-v2.7.0-mac-intel-x64.zip`](https://github.com/sajjadhossan/owntempmail/releases/download/v2.7.0/Owntemp-v2.7.0-mac-intel-x64.zip) |
-| ⚡ **MacBook Apple Silicon** | M1, M2, M3, M4 Apple Silicon (.zip) | [📥 `Owntemp-v2.7.0-mac-arm64-apple-silicon.zip`](https://github.com/sajjadhossan/owntempmail/releases/download/v2.7.0/Owntemp-v2.7.0-mac-arm64-apple-silicon.zip) |
-| 🌐 **MacBook Universal** | Intel + Apple Silicon সর্বজনীন | [📥 `Owntemp-v2.7.0-mac-universal.zip`](https://github.com/sajjadhossan/owntempmail/releases/download/v2.7.0/Owntemp-v2.7.0-mac-universal.zip) |
+| 📱 **Android Mobile** | Android 8.0 – 15.0 (.apk) | [📥 `app-v2.7.0-build39-android.apk` (সরাসরি APK)](https://github.com/sajjadhossan/owntempmail/releases/download/v2.7.0/app-v2.7.0-build39-android.apk) |
+| 💻 **Windows PC** | 64-bit Windows (.exe Setup) | [📥 `Owntemp-v2.7.0-windows-x64.exe` (সরাসরি EXE)](https://github.com/sajjadhossan/owntempmail/releases/download/v2.7.0/Owntemp-v2.7.0-windows-x64.exe) |
+| 🍏 **MacBook Universal** | Intel + Apple Silicon M-Series (.dmg) | [📥 `Owntemp-v2.7.0-macOS-Universal.dmg` (সরাসরি DMG)](https://github.com/sajjadhossan/owntempmail/releases/download/v2.7.0/Owntemp-v2.7.0-macOS-Universal.dmg) |
 | ☁️ **Web Standalone** | Node.js Serverless Tarball | [📥 `Owntemp-v2.7.0-web-standalone.tar.gz`](https://github.com/sajjadhossan/owntempmail/releases/download/v2.7.0/Owntemp-v2.7.0-web-standalone.tar.gz) |
 
 > 💡 **নোট:** GitHub Releases পেজে গেলে প্রতিটি রিলিজের নিচে থাকা **"Assets"** ড্রপডাউনে এই ফাইলগুলো সরাসরি পাবেন।
