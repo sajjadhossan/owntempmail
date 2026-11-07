@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { eventHub } from '@/lib/event-hub';
 import { EmailRecord } from '@/lib/types';
+import { syncPublicInbox } from '@/lib/public-mail-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +21,9 @@ export async function GET(
       const handshake = `data: ${JSON.stringify({ type: 'connected', address: normalized, time: Date.now() })}\n\n`;
       controller.enqueue(encoder.encode(handshake));
 
+      // Trigger immediate sync on connection
+      syncPublicInbox(normalized).catch(() => {});
+
       // Listener for incoming emails
       const onEmail = (email: EmailRecord) => {
         try {
@@ -34,6 +38,7 @@ export async function GET(
       const heartbeat = setInterval(() => {
         try {
           controller.enqueue(encoder.encode(`: heartbeat\n\n`));
+          syncPublicInbox(normalized).catch(() => {});
         } catch (e) {
           clearInterval(heartbeat);
         }

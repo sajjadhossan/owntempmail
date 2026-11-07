@@ -258,6 +258,11 @@ async function syncGuerrilla(username: string, domain: string, address: string) 
   try {
     const checkRes = await fetch(`https://api.guerrillamail.com/ajax.php?f=check_email&seq=0&sid_token=${sid}`);
     const checkData = await checkRes.json();
+    if (!checkRes.ok || (checkData.auth && checkData.auth.success === false)) {
+      delete guerrillaSidCache[username];
+      return;
+    }
+
     const list = checkData.list || [];
     const existingEmails = getEmailsForAddress(address);
 
@@ -293,7 +298,9 @@ async function syncGuerrilla(username: string, domain: string, address: string) 
         sizeBytes: textBody.length,
       });
     }
-  } catch (err) {}
+  } catch (err) {
+    delete guerrillaSidCache[username];
+  }
 }
 
 // ----------------- Master Sync Dispatcher -----------------
@@ -304,12 +311,36 @@ export async function syncPublicInbox(address: string): Promise<void> {
   const username = parts[0].toLowerCase();
   const domain = parts[1].toLowerCase();
 
-  const domainDef = ALL_PUBLIC_DOMAINS.find((d) => d.domain.toLowerCase() === domain);
-  if (!domainDef) return;
+  const guerrillaDomains = [
+    'sharklasers.com',
+    'guerrillamail.com',
+    'guerrillamailblock.com',
+    'guerrillamail.net',
+    'guerrillamail.org',
+    'guerrillamail.biz',
+    'grr.la',
+    'pokemail.net',
+    'spam4.me',
+  ];
 
-  if (domainDef.provider === 'guerrilla') {
+  const mailtmDomains = [
+    'fldubai.com',
+    'mail.tm',
+    'mail.gw',
+  ];
+
+  if (guerrillaDomains.includes(domain)) {
     await syncGuerrilla(username, domain, address);
-  } else if (domainDef.provider === 'mailtm') {
+  } else if (mailtmDomains.includes(domain)) {
     await syncMailtm(address);
+  } else {
+    const domainDef = ALL_PUBLIC_DOMAINS.find((d) => d.domain.toLowerCase() === domain);
+    if (domainDef) {
+      if (domainDef.provider === 'guerrilla') {
+        await syncGuerrilla(username, domain, address);
+      } else if (domainDef.provider === 'mailtm') {
+        await syncMailtm(address);
+      }
+    }
   }
 }

@@ -103,8 +103,8 @@ export default function OwntempHome() {
   // Address & Domain state
   const [usernamePrefix, setUsernamePrefix] = useState('demo-user');
   const [domains, setDomains] = useState<DomainItem[]>([]);
-  const [selectedDomain, setSelectedDomain] = useState('owntemp.live');
-  const [activeEmail, setActiveEmail] = useState('demo-user@owntemp.live');
+  const [selectedDomain, setSelectedDomain] = useState('sharklasers.com');
+  const [activeEmail, setActiveEmail] = useState('demo-user@sharklasers.com');
   const [recentInboxes, setRecentInboxes] = useState<string[]>([]);
   const [isDirectDomainMode, setIsDirectDomainMode] = useState(false);
   const [directDomainInput, setDirectDomainInput] = useState('');
@@ -114,7 +114,7 @@ export default function OwntempHome() {
   const [businessProfile, setBusinessProfile] = useState<BusinessProfile>({
     businessName: 'Owntemp Business',
     tagline: 'Custom Domain Temp Mail Engine',
-    primaryDomain: 'owntemp.live',
+    primaryDomain: 'sharklasers.com',
     updatedAt: new Date().toISOString(),
   });
   const [businessNameInput, setBusinessNameInput] = useState('');
@@ -861,13 +861,13 @@ export default function OwntempHome() {
     } catch (e) {}
 
     let initialEmail = '';
-    if (savedEmail && savedEmail.includes('@')) {
+    if (savedEmail && savedEmail.includes('@') && !savedEmail.endsWith('@owntemp.live')) {
       initialEmail = savedEmail;
     } else {
       const words = ['user', 'swift', 'temp', 'spark', 'nexus', 'cloud', 'secure'];
       const word = words[Math.floor(Math.random() * words.length)];
       const num = Math.floor(1000 + Math.random() * 9000);
-      initialEmail = `${word}_${num}@owntemp.live`;
+      initialEmail = `${word}_${num}@sharklasers.com`;
       try {
         localStorage.setItem('owntemp_active_email', initialEmail);
       } catch (e) {}
@@ -1113,7 +1113,7 @@ export default function OwntempHome() {
         cleanDomain = parts[1].trim().toLowerCase().replace(/^@+/, '');
       } else {
         cleanPrefix = customEmailOrPrefix.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '') || 'user';
-        cleanDomain = selectedDomain || 'owntemp.live';
+        cleanDomain = selectedDomain || 'sharklasers.com';
       }
 
       if (!cleanPrefix || !cleanDomain) return;

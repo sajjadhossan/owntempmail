@@ -16,6 +16,7 @@ import { sendTelegramAlert } from './telegram';
 import { prisma, hasDatabaseUrl } from './prisma';
 import { dispatchForwarding } from './forwarding';
 import { DeviceSession, SyncedUserState } from './device-sync';
+import { eventHub } from './event-hub';
 
 interface DatabaseSchema {
   inboxes: Record<string, InboxMetadata>;
@@ -41,9 +42,11 @@ const DB_DIR = isServerless ? path.join('/tmp', 'data') : path.join(process.cwd(
 const DB_FILE = path.join(DB_DIR, 'owntemp-db.json');
 
 const DEFAULT_DOMAINS: DomainItem[] = [
-  { id: 'dom-1', domain: 'owntemp.live', isDefault: true, isCustom: false, status: 'active', createdAt: new Date().toISOString() },
-  { id: 'dom-2', domain: 'mybusiness.com', isDefault: false, isCustom: true, status: 'active', createdAt: new Date().toISOString() },
-  { id: 'dom-3', domain: 'tempinbox.click', isDefault: false, isCustom: false, status: 'active', createdAt: new Date().toISOString() },
+  { id: 'dom-1', domain: 'sharklasers.com', isDefault: true, isCustom: false, status: 'active', createdAt: new Date().toISOString() },
+  { id: 'dom-2', domain: 'fldubai.com', isDefault: false, isCustom: false, status: 'active', createdAt: new Date().toISOString() },
+  { id: 'dom-3', domain: 'grr.la', isDefault: false, isCustom: false, status: 'active', createdAt: new Date().toISOString() },
+  { id: 'dom-4', domain: 'guerrillamail.com', isDefault: false, isCustom: false, status: 'active', createdAt: new Date().toISOString() },
+  { id: 'dom-5', domain: 'pokemail.net', isDefault: false, isCustom: false, status: 'active', createdAt: new Date().toISOString() },
 ];
 
 let memoryDb: DatabaseSchema | null = null;
@@ -335,6 +338,13 @@ export function saveInboundEmail(record: Omit<EmailRecord, 'id' | 'receivedAt' |
     dispatchForwarding(newEmail, forwardRule).catch((err: any) => {
       console.error('[Storage] Forwarding dispatch failed:', err);
     });
+  }
+
+  // Broadcast to Live SSE streaming subscribers
+  try {
+    eventHub.broadcastNewEmail(newEmail);
+  } catch (err) {
+    console.error('[Storage] EventHub broadcast failed:', err);
   }
 
   return newEmail;
