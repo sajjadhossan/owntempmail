@@ -109,10 +109,10 @@ export default function DirectoryModal({
   const totalPages = typeof safePagination.totalPages === 'number' ? safePagination.totalPages : 1726;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[92vh] h-full sm:h-auto min-h-[460px] flex flex-col shadow-2xl overflow-hidden">
-        {/* Fixed Header */}
-        <div className="p-3.5 sm:p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/70 flex-shrink-0">
+    <div className="fixed inset-0 z-50 flex flex-col bg-slate-950 text-slate-100 animate-in fade-in duration-150 w-full h-full max-h-[100dvh] overflow-hidden">
+      <div className="w-full h-full flex flex-col overflow-hidden bg-slate-950">
+        {/* Fixed Fullscreen Header */}
+        <div className="p-3 sm:p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/90 flex-shrink-0">
           <div className="flex items-center space-x-2.5 min-w-0">
             <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-md">
               <Globe className="w-4 h-4 text-white" />
@@ -120,7 +120,7 @@ export default function DirectoryModal({
             <div className="truncate">
               <div className="flex items-center space-x-1.5 flex-wrap">
                 <h3 className="font-extrabold text-sm sm:text-base text-slate-100 truncate">
-                  {lang === 'bn' ? '৫০,০০০+ ডোমেন ডিরেক্টরি' : '50,000+ Domain Directory'}
+                  {lang === 'bn' ? '৫০,০০০+ ডোমেন ডিরেক্টরি (ফুলস্ক্রিন)' : '50,000+ Domain Directory (Fullscreen)'}
                 </h3>
                 <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
                   {(totalDatabaseCount || 51774).toLocaleString()}+ Live
@@ -136,7 +136,7 @@ export default function DirectoryModal({
               <button
                 type="button"
                 onClick={handleClearBrowserCache}
-                className="text-slate-400 hover:text-indigo-300 p-1.5 sm:p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs transition flex items-center space-x-1 cursor-pointer"
+                className="text-slate-400 hover:text-indigo-300 p-1.5 sm:p-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-xs transition flex items-center space-x-1 cursor-pointer border border-slate-800"
                 title="Clear Browser Cache & Refresh"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
@@ -146,9 +146,11 @@ export default function DirectoryModal({
             <button
               type="button"
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-100 p-1.5 sm:p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition font-bold cursor-pointer"
+              className="text-slate-300 hover:text-white px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 transition font-bold text-xs flex items-center space-x-1 cursor-pointer border border-slate-700"
+              title="Close Fullscreen Directory"
             >
-              ✕
+              <span>✕</span>
+              <span className="hidden sm:inline">{lang === 'bn' ? 'বন্ধ করুন' : 'Close'}</span>
             </button>
           </div>
         </div>
@@ -212,7 +214,7 @@ export default function DirectoryModal({
             </span>
             <div className="flex items-center space-x-1 flex-shrink-0">
               <span className="text-[10px] text-slate-500">{lang === 'bn' ? 'প্রতি পেজে:' : 'Batch:'}</span>
-              {[30, 60, 120].map((lim) => (
+              {[30, 60, 120, 240].map((lim) => (
                 <button
                   key={lim}
                   type="button"
@@ -320,7 +322,7 @@ export default function DirectoryModal({
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 min-[480px]:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-2.5">
                 {safeResults.map((item) => (
                   <div
                     key={item.domain}

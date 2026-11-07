@@ -5,15 +5,15 @@ export async function GET() {
     success: true,
     data: {
       appName: 'Owntemp',
-      latestVersion: '2.8.2',
-      edition: '100% Live Verified Domain Fleet & Multi-Engine Public Mail Sync Edition',
+      latestVersion: '2.8.3',
+      edition: 'Fullscreen 50,000+ Domain Directory & Responsive Grid Edition',
       minimumSupportedVersion: '1.0.0',
-      apkDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.2/app-v2.8.2-build42-android.apk',
-      windowsDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.2/Owntemp-v2.8.2-windows-x64.exe',
-      macDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.2/Owntemp-v2.8.2-macOS-Universal.dmg',
+      apkDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.3/app-v2.8.3-build43-android.apk',
+      windowsDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.3/Owntemp-v2.8.3-windows-x64.exe',
+      macDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.3/Owntemp-v2.8.3-macOS-Universal.dmg',
       releaseNotes: {
-        bn: 'Owntemp v2.8.2: ৫০,০০০+ ডিরেক্টরি লাইভ ফ্লিট ফিল্টার, ১০০% লাইভ ভেরিফাইড ব্যাজিং (Guerrilla, Mail.tm, Maildrop), এবং ইনস্ট্যান্ট ওটিপি রিসিভার ইঞ্জিন।',
-        en: 'Owntemp v2.8.2: 50,000+ directory live fleet filter, 100% live verified badging (Guerrilla, Mail.tm, Maildrop), and instant OTP delivery engine.',
+        bn: 'Owntemp v2.8.3: ৫০,০০০+ ডিরেক্টরি মোডাল সম্পূর্ণ ফুলস্ক্রিন ভিউ, রেসপনসিভ ওয়াইড গ্রিড ও ব্যাচ ২৪০ ডোমেইন একসাথে দেখার সুবিধা।',
+        en: 'Owntemp v2.8.3: 50,000+ directory modal full screen view, responsive wide grid and batch 240 domains viewing support.',
       },
       platforms: {
         android: {
