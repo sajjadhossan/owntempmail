@@ -51,7 +51,7 @@
         "nsis",
         "portable"
       ],
-      "icon": "public/logo.jpg"
+      "icon": "build/icon.png"
     },
     "nsis": {
       "oneClick": true,
@@ -62,7 +62,7 @@
       "target": [
         "dmg"
       ],
-      "icon": "public/logo.jpg"
+      "icon": "build/icon.png"
     }
   }
 }

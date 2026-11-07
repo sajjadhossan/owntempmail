@@ -176,12 +176,19 @@ jobs:
           npm install
           npm install --save-dev electron electron-builder
 
+      - name: Generate Desktop PNG and ICO Icons
+        run: |
+          python -m pip install pillow
+          python -c "import os; from PIL import Image; os.makedirs('build', exist_ok=True); img = Image.open('public/logo.jpg').convert('RGBA'); img.resize((512, 512)).save('build/icon.png'); img.save('public/icon.png')"
+
       - name: Build Next.js Production
         run: npm run build
 
       - name: Package Standalone Windows .EXE Executable & Installer
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
         run: |
-          npx electron-builder --win nsis portable --config.directories.output=dist/desktop
+          npx electron-builder --win nsis portable --publish never --config.directories.output=dist/desktop
           New-Item -ItemType Directory -Force -Path dist\windows
           $exeFiles = Get-ChildItem -Path dist\desktop -Filter "*.exe" -Recurse
           if ($exeFiles) {
@@ -303,12 +310,19 @@ jobs:
           npm install
           npm install --save-dev electron electron-builder
 
+      - name: Generate Desktop PNG and ICNS Icons
+        run: |
+          python3 -m pip install pillow --break-system-packages || pip install pillow || true
+          python3 -c "import os; from PIL import Image; os.makedirs('build', exist_ok=True); img = Image.open('public/logo.jpg').convert('RGBA'); img.resize((512, 512)).save('build/icon.png'); img.save('public/icon.png')" || true
+
       - name: Build Next.js Production
         run: npm run build
 
       - name: Package Standalone macOS .DMG Disk Image Installer
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
         run: |
-          npx electron-builder --mac dmg --config.directories.output=dist/desktop || true
+          npx electron-builder --mac dmg --publish never --config.directories.output=dist/desktop || true
           mkdir -p dist/macos
           DMG_FILE=$(find dist/desktop -name "*.dmg" | head -n 1)
           if [ -n "$DMG_FILE" ]; then
