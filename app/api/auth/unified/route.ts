@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     }
 
     // =========================================================================
-    // ACTION 1: SIGN UP (Register in Neon & Supabase)
+    // ACTION 1: SIGN UP (Register in Neon with Strict Approval Workflow)
     // =========================================================================
     if (action === 'signup') {
       if (!password || password.length < 6) {
@@ -58,6 +58,12 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      const SUPER_ADMIN_EMAILS = ['hossansajjad1994@gmail.com'];
+      const isSuperAdmin = SUPER_ADMIN_EMAILS.includes(cleanEmail);
+      const initialRole = isSuperAdmin ? 'super_admin' : 'pending';
+      const initialBanned = !isSuperAdmin;
+      const initialBanReason = isSuperAdmin ? null : 'Pending Super Admin Approval';
+
       const displayName = String(name || '').trim() || cleanEmail.split('@')[0];
       const pwdHash = hashPassword(password);
       let neonUser: any = null;
@@ -66,7 +72,7 @@ export async function POST(req: NextRequest) {
       if (neonSql) {
         try {
           const existing = await neonSql`
-            SELECT id, email FROM neon_auth."user"
+            SELECT id, email, role, banned, "banReason" FROM neon_auth."user"
             WHERE LOWER(email) = ${cleanEmail}
             LIMIT 1;
           `;
@@ -81,10 +87,10 @@ export async function POST(req: NextRequest) {
           // Insert into neon_auth."user"
           const insertedUser = await neonSql`
             INSERT INTO neon_auth."user" (
-              id, name, email, "emailVerified", "createdAt", "updatedAt", role
+              id, name, email, "emailVerified", "createdAt", "updatedAt", role, banned, "banReason"
             ) VALUES (
-              gen_random_uuid(), ${displayName}, ${cleanEmail}, true, NOW(), NOW(), 'user'
-            ) RETURNING id, name, email, role, "createdAt";
+              gen_random_uuid(), ${displayName}, ${cleanEmail}, true, NOW(), NOW(), ${initialRole}, ${initialBanned}, ${initialBanReason}
+            ) RETURNING id, name, email, role, banned, "banReason", "createdAt";
           `;
 
           if (insertedUser && insertedUser.length > 0) {
@@ -104,40 +110,38 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // 2. Also Sync with Supabase (if configured)
-      let supabaseUser: any = null;
-      if (isSupabaseConfigured) {
-        try {
-          const { data, error } = await supabase.auth.signUp({
-            email: cleanEmail,
-            password,
-            options: {
-              data: { display_name: displayName },
+      // If NOT super admin, hold for approval!
+      if (!isSuperAdmin) {
+        return NextResponse.json({
+          success: true,
+          pendingApproval: true,
+          message: 'আপনার অ্যাকাউন্টটি সফলভাবে জমা হয়েছে। নিরাপত্তার স্বার্থে সুপার অ্যাডমিন অনুমোদন করার পর আপনি লগইন করতে পারবেন।',
+          data: {
+            user: {
+              id: neonUser?.id || `usr_${Date.now()}`,
+              email: cleanEmail,
+              name: displayName,
+              role: 'pending',
+              status: 'pending_approval',
+              linkedWithNeon: Boolean(neonUser),
             },
-          });
-          if (!error && data?.user) {
-            supabaseUser = data.user;
-          }
-        } catch (sbErr) {
-          console.error('[Supabase Auth Sign-Up Sync Error]', sbErr);
-        }
+          },
+        });
       }
 
-      // Fallback ID if Neon was unreachable
-      const userId = neonUser?.id || supabaseUser?.id || `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-
+      // Super Admin auto-access
       return NextResponse.json({
         success: true,
-        message: 'Account successfully registered and linked across Neon & Supabase!',
+        pendingApproval: false,
+        message: 'সুপার অ্যাডমিন অ্যাকাউন্ট সক্রিয়! স্বাগতম।',
         data: {
           user: {
-            id: userId,
+            id: neonUser?.id || 'admin_root',
             email: cleanEmail,
             name: displayName,
-            role: neonUser?.role || 'user',
-            provider: neonUser ? (supabaseUser ? 'neon+supabase' : 'neon') : 'local',
-            linkedWithNeon: Boolean(neonUser),
-            linkedWithSupabase: Boolean(supabaseUser),
+            role: 'super_admin',
+            provider: 'neon',
+            linkedWithNeon: true,
           },
         },
       });
@@ -160,7 +164,7 @@ export async function POST(req: NextRequest) {
       if (neonSql) {
         try {
           const rows = await neonSql`
-            SELECT u.id, u.name, u.email, u.role, a.password as password_hash
+            SELECT u.id, u.name, u.email, u.role, u.banned, u."banReason", a.password as password_hash
             FROM neon_auth."user" u
             JOIN neon_auth."account" a ON a."userId" = u.id
             WHERE LOWER(u.email) = ${cleanEmail}
@@ -169,21 +173,41 @@ export async function POST(req: NextRequest) {
 
           if (rows && rows.length > 0) {
             const row = rows[0];
-            if (verifyPassword(password, row.password_hash)) {
-              authenticatedUser = {
-                id: row.id,
-                email: row.email,
-                name: row.name,
-                role: row.role || 'user',
-                provider: 'neon',
-                linkedWithNeon: true,
-              };
-            } else {
+            if (!verifyPassword(password, row.password_hash)) {
               return NextResponse.json(
-                { success: false, message: 'Invalid password. Please check and try again.' },
+                { success: false, message: 'ভুল পাসওয়ার্ড। আবার চেষ্টা করুন।' },
                 { status: 401 }
               );
             }
+
+            const SUPER_ADMIN_EMAILS = ['hossansajjad1994@gmail.com'];
+            const isSuperAdmin = SUPER_ADMIN_EMAILS.includes(cleanEmail) || row.role === 'super_admin';
+
+            // Check if rejected
+            if (row.role === 'rejected' || (row.banned && row.banReason?.includes('Rejected'))) {
+              return NextResponse.json(
+                { success: false, message: 'আপনার অ্যাকাউন্টের আবেদনটি সুপার অ্যাডমিন কর্তৃক বাতিল (Rejected) করা হয়েছে।' },
+                { status: 403 }
+              );
+            }
+
+            // Check if pending (and not super admin)
+            if (!isSuperAdmin && (row.role === 'pending' || row.banned)) {
+              return NextResponse.json(
+                { success: false, message: 'আপনার অ্যাকাউন্টটি এখনো অনুমোদিত হয়নি (Pending Approval)। সুপার অ্যাডমিন অনুমোদন দিলে লগইন করতে পারবেন।' },
+                { status: 403 }
+              );
+            }
+
+            authenticatedUser = {
+              id: row.id,
+              email: row.email,
+              name: row.name,
+              role: isSuperAdmin ? 'super_admin' : (row.role || 'approved'),
+              isSuperAdmin,
+              provider: 'neon',
+              linkedWithNeon: true,
+            };
           }
         } catch (dbErr: any) {
           console.error('[Neon Auth Sign-In Error]', dbErr);

@@ -56,6 +56,7 @@ import {
   Share2,
   User,
   LogOut,
+  Crown,
 } from 'lucide-react';
 import {
   EmailRecord,
@@ -90,6 +91,7 @@ import AuthModal from '@/components/modals/AuthModal';
 import DeviceSyncModal from '@/components/modals/DeviceSyncModal';
 import RecoverModal from '@/components/modals/RecoverModal';
 import LoginGate from '@/components/auth/LoginGate';
+import AdminApprovalModal from '@/components/admin/AdminApprovalModal';
 import { getOrCreateDeviceId, detectDeviceDetails } from '@/lib/device-sync';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
@@ -194,6 +196,7 @@ export default function OwntempHome() {
   const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showAdminModal, setShowAdminModal] = useState(false);
   const [showDeviceSyncModal, setShowDeviceSyncModal] = useState(false);
   const [showRecoverModal, setShowRecoverModal] = useState(false);
 
@@ -1771,6 +1774,19 @@ export default function OwntempHome() {
             {/* Account & Direct Sign Out in Header */}
             {currentUser && (
               <div className="flex items-center space-x-1.5">
+                {/* Super Admin User Approval Desk Button */}
+                {(currentUser.role === 'super_admin' || currentUser.role === 'admin' || currentUser.email === 'hossansajjad1994@gmail.com') && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAdminModal(true)}
+                    className="flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-amber-600/30 hover:from-amber-500/30 hover:to-amber-600/40 text-amber-300 border border-amber-500/40 text-xs font-bold transition shadow-sm cursor-pointer animate-pulse"
+                    title={lang === 'bn' ? 'সুপার অ্যাডমিন অনুমোদন ডেস্ক' : 'Super Admin Approval Desk'}
+                  >
+                    <Crown className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="hidden sm:inline">{lang === 'bn' ? 'অ্যাডমিন ডেস্ক' : 'Admin Desk'}</span>
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={() => setShowAuthModal(true)}
@@ -3201,6 +3217,14 @@ export default function OwntempHome() {
           setTimeout(() => setActionSuccess(null), 2500);
         }}
         onOpenDeviceManager={() => setShowDeviceSyncModal(true)}
+        lang={lang}
+      />
+
+      {/* Super Admin User Approval Desk Modal */}
+      <AdminApprovalModal
+        isOpen={showAdminModal}
+        onClose={() => setShowAdminModal(false)}
+        currentUser={currentUser}
         lang={lang}
       />
 

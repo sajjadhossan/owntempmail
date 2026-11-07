@@ -114,6 +114,18 @@ export default function LoginGate({ lang, onToggleLang, onAuthSuccess }: LoginGa
 
       const resData = await res.json();
 
+      if (res.ok && resData.success && resData.pendingApproval) {
+        setSuccessMsg(
+          lang === 'bn'
+            ? '⏳ ' + resData.message
+            : '⏳ Your account was submitted! Access requires Super Admin approval before you can sign in.'
+        );
+        setTimeout(() => {
+          setMode('signin');
+        }, 3500);
+        return;
+      }
+
       if (res.ok && resData.success && resData.data?.user) {
         const user = resData.data.user;
 
