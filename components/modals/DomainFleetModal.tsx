@@ -73,9 +73,10 @@ export default function DomainFleetModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-6 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[92vh] h-full sm:h-auto min-h-[460px] flex flex-col shadow-2xl overflow-hidden">
+        {/* Fixed Header */}
+        <div className="flex-shrink-0 px-5 py-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/70">
           <div className="flex items-center space-x-2">
             <Globe className="w-5 h-5 text-indigo-400" />
             <h3 className="font-bold text-base text-slate-100">{t.businessSetupTitle}</h3>
@@ -88,6 +89,9 @@ export default function DomainFleetModal({
             ✕
           </button>
         </div>
+
+        {/* Scrollable Body */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 overscroll-contain">
 
         {/* Business Profile Card */}
         <form onSubmit={handleSaveBusinessProfile} className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
@@ -152,7 +156,7 @@ export default function DomainFleetModal({
             {lang === 'bn' ? 'যুক্ত থাকা বিজনেস ডোমেইনসমূহ (ক্লিক করে নির্বাচন করুন):' : 'Registered Business Domains (click to select):'}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {domains.map((dom) => (
+            {(domains || []).map((dom) => (
               <div
                 key={dom.id}
                 onClick={() => {
@@ -213,7 +217,7 @@ export default function DomainFleetModal({
               <button
                 type="button"
                 onClick={() => {
-                  navigator.clipboard.writeText(`${vercelLiveUrl.replace(/\/+$/, '')}/api/inbound/webhook`);
+                  navigator.clipboard.writeText(`${(vercelLiveUrl || '').replace(/\/+$/, '')}/api/inbound/webhook`);
                   onActionSuccess(lang === 'bn' ? 'ওয়েবহুক URL কপি হয়েছে!' : 'Webhook URL copied!');
                 }}
                 className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700 transition"
@@ -222,7 +226,7 @@ export default function DomainFleetModal({
               </button>
             </div>
             <p className="text-[10px] text-slate-500 font-mono">
-              {t.generatedWebhookLabel} <span className="text-slate-400">{vercelLiveUrl.replace(/\/+$/, '')}/api/inbound/webhook</span>
+              {t.generatedWebhookLabel} <span className="text-slate-400">{(vercelLiveUrl || '').replace(/\/+$/, '')}/api/inbound/webhook</span>
             </p>
           </div>
 
@@ -408,7 +412,7 @@ export default function DomainFleetModal({
                 <button
                   type="button"
                   onClick={() => {
-                    const workerCode = `import PostalMime from 'postal-mime';\nexport default {\n  async email(message, env, ctx) {\n    const rawEmail = await new Response(message.raw).arrayBuffer();\n    const parsed = await new PostalMime().parse(rawEmail);\n    await fetch('${vercelLiveUrl.replace(/\/+$/, '')}/api/inbound/webhook', {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({\n        to: message.to,\n        from: message.from,\n        senderName: parsed.from?.name || message.from,\n        subject: parsed.subject || '(No Subject)',\n        text: parsed.text || '',\n        html: parsed.html || parsed.text || '',\n      })\n    });\n  }\n};`;
+                    const workerCode = `import PostalMime from 'postal-mime';\nexport default {\n  async email(message, env, ctx) {\n    const rawEmail = await new Response(message.raw).arrayBuffer();\n    const parsed = await new PostalMime().parse(rawEmail);\n    await fetch('${(vercelLiveUrl || '').replace(/\/+$/, '')}/api/inbound/webhook', {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({\n        to: message.to,\n        from: message.from,\n        senderName: parsed.from?.name || message.from,\n        subject: parsed.subject || '(No Subject)',\n        text: parsed.text || '',\n        html: parsed.html || parsed.text || '',\n      })\n    });\n  }\n};`;
                     navigator.clipboard.writeText(workerCode);
                     onActionSuccess(lang === 'bn' ? 'Worker স্ক্রিপ্ট কপি হয়েছে!' : 'Worker script copied!');
                   }}
@@ -419,6 +423,18 @@ export default function DomainFleetModal({
               </div>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Fixed Footer */}
+        <div className="flex-shrink-0 px-5 py-3 border-t border-slate-800 bg-slate-950/70 flex justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition"
+          >
+            {t.close}
+          </button>
         </div>
       </div>
     </div>

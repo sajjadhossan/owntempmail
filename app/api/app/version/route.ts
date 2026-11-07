@@ -5,15 +5,15 @@ export async function GET() {
     success: true,
     data: {
       appName: 'Owntemp',
-      latestVersion: '2.7.0',
-      edition: 'New 3D Cyber Emblem & Universal Multi-Platform Edition',
+      latestVersion: '2.8.0',
+      edition: 'Background Task Persistence & Resilient Settings Edition',
       minimumSupportedVersion: '1.0.0',
-      apkDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.7.0/app-v2.7.0-build39-android.apk',
-      windowsDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.7.0/Owntemp-v2.7.0-windows-x64.zip',
-      macDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.7.0/Owntemp-v2.7.0-mac-universal.zip',
+      apkDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.0/app-v2.8.0-build40-android.apk',
+      windowsDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.0/Owntemp-v2.8.0-windows-x64.exe',
+      macDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.0/Owntemp-v2.8.0-macOS-Universal.dmg',
       releaseNotes: {
-        bn: 'Owntemp v2.7.0: নতুন আধুনিক 3D গ্লাসফরমিক অ্যাপ ও ওয়েব আইকন, অ্যান্ড্রয়েড APK, উইন্ডোজ PC এবং ম্যাকবুক (ইনটেল ও অ্যাপল সিলিকন M-চিপ) ইউনিভার্সাল মাল্টি-প্ল্যাটফর্ম ডেলিভারি।',
-        en: 'Owntemp v2.7.0: Brand-new modern 3D glassmorphic cyber emblem for app & web, Android APK, Windows PC, and MacBook (Intel & Apple Silicon M-series) universal delivery.',
+        bn: 'Owntemp v2.8.0: ব্যাকগ্রাউন্ড টাস্ক পারসিস্টেন্স (অ্যাপ বন্ধ না হয়ে ব্যাকগ্রাউন্ডে চালু থাকা), সেটিংস ও ডোমেইন মোডাল ফিক্স এবং সুপার অ্যাডমিন সেন্ট্রাল ডোমেইন কন্ট্রোল।',
+        en: 'Owntemp v2.8.0: Background task persistence (app stays alive in background without reloading), mobile settings modal fix, and Super Admin Domain Control desk.',
       },
       platforms: {
         android: {

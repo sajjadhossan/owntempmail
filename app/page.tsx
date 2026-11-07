@@ -3229,6 +3229,14 @@ export default function OwntempHome() {
         onClose={() => setShowAdminModal(false)}
         currentUser={currentUser}
         lang={lang}
+        domains={domains}
+        selectedDomain={selectedDomain}
+        setSelectedDomain={setSelectedDomain}
+        handleAddDomain={handleAddDomain}
+        handleDeleteDomain={handleDeleteDomain}
+        newDomainInput={newDomainInput}
+        setNewDomainInput={setNewDomainInput}
+        vercelLiveUrl={vercelLiveUrl}
       />
 
       {/* Cross-Device Manager Modal */}

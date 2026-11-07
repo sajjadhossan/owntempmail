@@ -1,6 +1,6 @@
 {
   "name": "owntemp",
-  "version": "2.7.0",
+  "version": "2.8.0",
   "private": true,
   "main": "desktop/main.js",
   "scripts": {
@@ -9,8 +9,8 @@
     "postinstall": "prisma generate",
     "start": "next start",
     "lint": "next lint",
-    "cap:sync": "npx cap sync android",
-    "package:android": "next build && npx cap sync android && echo 'Android project synchronized ready for APK build'",
+    "cap:sync": "cap sync android",
+    "package:android": "next build && cap sync android && echo 'Android project synchronized ready for APK build'",
     "package:windows": "next build && echo 'Windows PC 64-bit production assets compiled successfully'",
     "package:mac": "next build && echo 'macOS Universal Intel & Apple Silicon assets compiled successfully'"
   },

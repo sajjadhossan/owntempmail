@@ -206,15 +206,15 @@ public class MainActivity extends AppCompatActivity {
         swipeRefresh.setOnRefreshListener(() -> webView.reload());
         swipeRefresh.setOnChildScrollUpCallback((parent, child) -> webView.canScrollVertically(-1));
 
-        // Back button navigation
+        // Back button navigation: Keep app alive in background without destroying
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                if (webView.canGoBack()) {
+                if (webView != null && webView.canGoBack()) {
                     webView.goBack();
                 } else {
-                    setEnabled(false);
-                    getOnBackPressedDispatcher().onBackPressed();
+                    // Keep app active in background. It only terminates when swiped away from recent apps.
+                    moveTaskToBack(true);
                 }
             }
         });
@@ -251,11 +251,15 @@ public class MainActivity extends AppCompatActivity {
             }
         }, "OwntempNative");
 
-        // Initial load
-        if (isNetworkAvailable()) {
-            webView.loadUrl(getServerUrl());
+        // Initial load or state restore
+        if (savedInstanceState != null) {
+            webView.restoreState(savedInstanceState);
         } else {
-            loadOfflineFallback();
+            if (isNetworkAvailable()) {
+                webView.loadUrl(getServerUrl());
+            } else {
+                loadOfflineFallback();
+            }
         }
     }
 
@@ -318,5 +322,28 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (webView != null) {
+            webView.saveState(outState);
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        // Do not reload webView when resuming from launcher icon; keep current background state intact
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (webView != null) {
+            webView.resumeTimers();
+        }
     }
 }

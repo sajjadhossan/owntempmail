@@ -192,10 +192,10 @@ export default function SettingsModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-slate-900 border border-indigo-500/30 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-5 shadow-2xl">
-        {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
+      <div className="bg-slate-900 border border-indigo-500/30 rounded-2xl w-full max-w-2xl max-h-[92vh] h-full sm:h-auto min-h-[460px] flex flex-col shadow-2xl overflow-hidden">
+        {/* Modal Header (Fixed) */}
+        <div className="flex-shrink-0 px-5 py-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/70">
           <div className="flex items-center space-x-2">
             <Settings className="w-5 h-5 text-indigo-400" />
             <h3 className="font-bold text-base text-slate-100">{t.settingsTitle}</h3>
@@ -209,73 +209,78 @@ export default function SettingsModal({
           </button>
         </div>
 
-        {/* Master Navigation Tabs */}
-        <div className="flex rounded-xl bg-slate-950 p-1 border border-slate-800 gap-1 overflow-x-auto scrollbar-none">
-          <button
-            type="button"
-            onClick={() => setSettingsTab('api')}
-            className={`flex-1 min-w-[70px] py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
-              settingsTab === 'api'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span className="truncate">{t.settingsTabApi}</span>
-          </button>
+        {/* Master Navigation Tabs (Fixed) */}
+        <div className="flex-shrink-0 px-4 py-2.5 bg-slate-950/40 border-b border-slate-800/80">
+          <div className="flex rounded-xl bg-slate-950 p-1 border border-slate-800 gap-1 overflow-x-auto scrollbar-none">
+            <button
+              type="button"
+              onClick={() => setSettingsTab('api')}
+              className={`flex-1 min-w-[70px] py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
+                settingsTab === 'api'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span className="truncate">{t.settingsTabApi}</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setSettingsTab('domains')}
-            className={`flex-1 min-w-[70px] py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
-              settingsTab === 'domains'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Globe className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="truncate">{t.settingsTabDomains}</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => setSettingsTab('domains')}
+              className={`flex-1 min-w-[70px] py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
+                settingsTab === 'domains'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Globe className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="truncate">{t.settingsTabDomains}</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setSettingsTab('telegram')}
-            className={`flex-1 min-w-[70px] py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
-              settingsTab === 'telegram'
-                ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Send className="w-3.5 h-3.5 text-sky-400" />
-            <span className="truncate">{t.settingsTabTelegram}</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => setSettingsTab('telegram')}
+              className={`flex-1 min-w-[70px] py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
+                settingsTab === 'telegram'
+                  ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Send className="w-3.5 h-3.5 text-sky-400" />
+              <span className="truncate">{t.settingsTabTelegram}</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setSettingsTab('deployment')}
-            className={`flex-1 min-w-[70px] py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
-              settingsTab === 'deployment'
-                ? 'bg-gradient-to-r from-blue-600 to-emerald-600 text-white shadow-md shadow-blue-600/30'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <ArrowLeftRight className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="truncate">{t.settingsTabDeployment}</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => setSettingsTab('deployment')}
+              className={`flex-1 min-w-[70px] py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
+                settingsTab === 'deployment'
+                  ? 'bg-gradient-to-r from-blue-600 to-emerald-600 text-white shadow-md shadow-blue-600/30'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <ArrowLeftRight className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="truncate">{t.settingsTabDeployment}</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setSettingsTab('general')}
-            className={`flex-1 min-w-[70px] py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
-              settingsTab === 'general'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Settings className="w-3.5 h-3.5 text-slate-400" />
-            <span className="truncate">{t.settingsTabGeneral}</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => setSettingsTab('general')}
+              className={`flex-1 min-w-[70px] py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
+                settingsTab === 'general'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Settings className="w-3.5 h-3.5 text-slate-400" />
+              <span className="truncate">{t.settingsTabGeneral}</span>
+            </button>
+          </div>
         </div>
+
+        {/* Scrollable Tab Body */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 overscroll-contain">
 
         {/* TAB 1: CLOUDFLARE & API INTEGRATION */}
         {settingsTab === 'api' && (
@@ -317,7 +322,7 @@ export default function SettingsModal({
                 </button>
               </div>
               <p className="text-[10px] text-slate-500 font-mono">
-                {t.generatedWebhookLabel} <span className="text-slate-400">{vercelLiveUrl.replace(/\/+$/, '')}/api/inbound/webhook</span>
+                {t.generatedWebhookLabel} <span className="text-slate-400">{(vercelLiveUrl || '').replace(/\/+$/, '')}/api/inbound/webhook</span>
               </p>
             </div>
 
@@ -454,9 +459,9 @@ export default function SettingsModal({
                 {cfZonesMsg && (
                   <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 space-y-1.5 mt-2">
                     <p className="text-[11px] font-semibold text-slate-300">{cfZonesMsg}</p>
-                    {cfAvailableZones.length > 0 && (
+                    {(cfAvailableZones || []).length > 0 && (
                       <div className="flex flex-wrap gap-1.5 pt-1">
-                        {cfAvailableZones.map((z) => (
+                        {(cfAvailableZones || []).map((z) => (
                           <button
                             key={z.id}
                             type="button"
@@ -559,13 +564,13 @@ export default function SettingsModal({
                         @{selectedDomain} (Current)
                       </option>
                     )}
-                    {cfAvailableZones.map((z) => (
+                    {(cfAvailableZones || []).map((z) => (
                       <option key={`cf-zone-${z.id}`} value={z.name}>
                         @{z.name} (Cloudflare Zone)
                       </option>
                     ))}
-                    {domains
-                      .filter((d) => d.domain !== selectedDomain && !cfAvailableZones.some((z) => z.name === d.domain))
+                    {(domains || [])
+                      .filter((d) => d && d.domain !== selectedDomain && !(cfAvailableZones || []).some((z) => z.name === d.domain))
                       .map((d) => (
                         <option key={`dom-tab1-${d.id}`} value={d.domain}>
                           @{d.domain} {d.isCustom ? '(Custom)' : ''}
@@ -717,7 +722,7 @@ export default function SettingsModal({
             <div className="space-y-2">
               <span className="text-xs font-bold text-slate-300 block">সক্রিয় ডোমেইনসমূহ (Active Domains):</span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {domains.map((dom) => (
+                {(domains || []).map((dom) => (
                   <div
                     key={dom.id}
                     onClick={() => setSelectedDomain(dom.domain)}
@@ -1189,8 +1194,10 @@ export default function SettingsModal({
           </div>
         )}
 
-        {/* Modal Footer */}
-        <div className="flex justify-end pt-2 border-t border-slate-800">
+        </div>
+
+        {/* Modal Footer (Fixed) */}
+        <div className="flex-shrink-0 px-5 py-3 border-t border-slate-800 bg-slate-950/70 flex justify-end">
           <button
             type="button"
             onClick={onClose}
