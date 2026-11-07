@@ -249,8 +249,8 @@ export default function LoginGate({ lang, onToggleLang, onAuthSuccess }: LoginGa
       {/* TOP BAR WITH BRAND & CORNER LANGUAGE TOGGLE */}
       <header className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between z-20">
         <div className="flex items-center space-x-2.5">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-            <Mail className="w-5 h-5 text-white" />
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden shadow-lg shadow-indigo-500/25 border border-indigo-500/30 flex-shrink-0">
+            <img src="/icon.svg" alt="Owntemp Logo" className="w-full h-full object-cover" />
           </div>
           <div>
             <div className="flex items-center space-x-1.5">

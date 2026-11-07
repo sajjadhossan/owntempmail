@@ -15,6 +15,7 @@ function createWindow() {
     minHeight: 600,
     backgroundColor: '#0b0f19',
     title: 'Owntemp — Free Disposable Temp Mail & Lifetime Lock',
+    icon: path.join(__dirname, '../public/logo.jpg'),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,

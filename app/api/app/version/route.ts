@@ -5,15 +5,15 @@ export async function GET() {
     success: true,
     data: {
       appName: 'Owntemp',
-      latestVersion: '2.6.3',
-      edition: 'Jitter-Free Smooth UI & Super Admin Approval Edition',
+      latestVersion: '2.7.0',
+      edition: 'New 3D Cyber Emblem & Universal Multi-Platform Edition',
       minimumSupportedVersion: '1.0.0',
-      apkDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.6.3/app-v2.6.3-build38-android.apk',
-      windowsDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.6.3/Owntemp-v2.6.3-windows-x64.zip',
-      macDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.6.3/Owntemp-v2.6.3-mac-universal.zip',
+      apkDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.7.0/app-v2.7.0-build39-android.apk',
+      windowsDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.7.0/Owntemp-v2.7.0-windows-x64.zip',
+      macDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.7.0/Owntemp-v2.7.0-mac-universal.zip',
       releaseNotes: {
-        bn: 'Owntemp v2.6.3: অ্যান্ড্রয়েড স্ক্রিন কাঁপাকাপি দূরীকরণ, স্মার্ট মডাল ওভারল্যাপ কন্ট্রোল, নিয়ন ডিবি ও সুপারবেজ সুপার অ্যাডমিন অনুমোদন ব্যবস্থা এবং নিরবচ্ছিন্ন পারফরম্যান্স।',
-        en: 'Owntemp v2.6.3: Android screen jitter elimination, smart non-overlapping modal stacking, Neon DB & Supabase Super Admin user approval system, and peak performance.',
+        bn: 'Owntemp v2.7.0: নতুন আধুনিক 3D গ্লাসফরমিক অ্যাপ ও ওয়েব আইকন, অ্যান্ড্রয়েড APK, উইন্ডোজ PC এবং ম্যাকবুক (ইনটেল ও অ্যাপল সিলিকন M-চিপ) ইউনিভার্সাল মাল্টি-প্ল্যাটফর্ম ডেলিভারি।',
+        en: 'Owntemp v2.7.0: Brand-new modern 3D glassmorphic cyber emblem for app & web, Android APK, Windows PC, and MacBook (Intel & Apple Silicon M-series) universal delivery.',
       },
       platforms: {
         android: {
