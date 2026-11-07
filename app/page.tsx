@@ -55,6 +55,7 @@ import {
   Flame,
   Share2,
   User,
+  LogOut,
 } from 'lucide-react';
 import {
   EmailRecord,
@@ -88,6 +89,7 @@ import ForwardingModal from '@/components/modals/ForwardingModal';
 import AuthModal from '@/components/modals/AuthModal';
 import DeviceSyncModal from '@/components/modals/DeviceSyncModal';
 import RecoverModal from '@/components/modals/RecoverModal';
+import LoginGate from '@/components/auth/LoginGate';
 import { getOrCreateDeviceId, detectDeviceDetails } from '@/lib/device-sync';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
@@ -190,6 +192,7 @@ export default function OwntempHome() {
   const [showBurnerModal, setShowBurnerModal] = useState(false);
   const [showForwardingModal, setShowForwardingModal] = useState(false);
   const [currentUser, setCurrentUser] = useState<any | null>(null);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showDeviceSyncModal, setShowDeviceSyncModal] = useState(false);
   const [showRecoverModal, setShowRecoverModal] = useState(false);
@@ -760,7 +763,9 @@ export default function OwntempHome() {
     const details = detectDeviceDetails();
     let activeUid = 'guest_user';
     try {
-      const savedU = localStorage.getItem('owntemp_auth_user');
+      const savedU =
+        localStorage.getItem('owntemp_auth_user') ||
+        sessionStorage.getItem('owntemp_auth_user');
       if (savedU) {
         const parsed = JSON.parse(savedU);
         if (parsed && parsed.id) {
@@ -768,7 +773,9 @@ export default function OwntempHome() {
           activeUid = parsed.id;
         }
       }
-    } catch (e) {}
+    } catch (e) {} finally {
+      setIsAuthChecking(false);
+    }
 
     fetch('/api/sync/devices', {
       method: 'POST',
@@ -1602,12 +1609,40 @@ export default function OwntempHome() {
         item.textBody.toLowerCase().includes(q)
       );
     });
-  }, [emails, filterMode, searchQuery]);
-
   // Latest received OTP email for Floating Quick-OTP Action Banner
   const latestOtpEmail = useMemo(() => {
     return emails.find((e) => !!e.otpCode) || null;
   }, [emails]);
+
+  if (isAuthChecking) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center space-y-4 select-none">
+        <div className="w-10 h-10 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
+        <span className="text-xs font-mono text-indigo-300 animate-pulse">Owntemp Secure Access...</span>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <LoginGate
+        lang={lang}
+        onToggleLang={() => setLang((prev) => (prev === 'bn' ? 'en' : 'bn'))}
+        onAuthSuccess={(user, rememberMe) => {
+          setCurrentUser(user);
+          try {
+            if (rememberMe) {
+              localStorage.setItem('owntemp_auth_user', JSON.stringify(user));
+            } else {
+              sessionStorage.setItem('owntemp_auth_user', JSON.stringify(user));
+            }
+          } catch (e) {}
+          setActionSuccess(lang === 'bn' ? 'স্বাগতম! সফলভাবে প্রবেশ করেছেন।' : 'Welcome! Access granted.');
+          setTimeout(() => setActionSuccess(null), 3000);
+        }}
+      />
+    );
+  }
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between pb-16 lg:pb-0 w-full max-w-full overflow-x-hidden">
@@ -1731,27 +1766,36 @@ export default function OwntempHome() {
               <span className="hidden md:inline">{lang === 'bn' ? 'সেটিংস' : 'Settings'}</span>
             </button>
 
-            {/* Account & Cross-Device Sync Hub */}
-            {currentUser ? (
-              <button
-                type="button"
-                onClick={() => setShowAuthModal(true)}
-                className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition shadow-sm cursor-pointer"
-                title={lang === 'bn' ? 'ইউজার প্রোফাইল ও ডিভাইস সেটিংস' : 'User profile & devices'}
-              >
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0"></span>
-                <span className="font-mono max-w-[70px] sm:max-w-[120px] truncate">{currentUser.email?.split('@')[0]}</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowAuthModal(true)}
-                className="flex items-center space-x-1 px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold transition shadow-md shadow-indigo-600/30 cursor-pointer"
-                title={lang === 'bn' ? 'লগইন বা নতুন অ্যাকাউন্ট তৈরি করুন' : 'Sign in or create account'}
-              >
-                <User className="w-3.5 h-3.5 text-yellow-300" />
-                <span>{lang === 'bn' ? 'লগইন' : 'Login'}</span>
-              </button>
+            {/* Account & Direct Sign Out in Header */}
+            {currentUser && (
+              <div className="flex items-center space-x-1.5">
+                <button
+                  type="button"
+                  onClick={() => setShowAuthModal(true)}
+                  className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition shadow-sm cursor-pointer"
+                  title={lang === 'bn' ? 'ইউজার প্রোফাইল ও ডিভাইস সেটিংস' : 'User profile & devices'}
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0"></span>
+                  <span className="font-mono max-w-[70px] sm:max-w-[120px] truncate">{currentUser.email?.split('@')[0]}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentUser(null);
+                    try {
+                      localStorage.removeItem('owntemp_auth_user');
+                      sessionStorage.removeItem('owntemp_auth_user');
+                    } catch (e) {}
+                    setActionSuccess(lang === 'bn' ? 'লগআউট সম্পন্ন হয়েছে' : 'Signed out');
+                    setTimeout(() => setActionSuccess(null), 2500);
+                  }}
+                  className="flex items-center space-x-1 px-2 sm:px-2.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-semibold transition shadow-sm cursor-pointer"
+                  title={lang === 'bn' ? 'লগআউট করে লক করুন' : 'Sign out & Lock'}
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{lang === 'bn' ? 'লগআউট' : 'Sign Out'}</span>
+                </button>
+              </div>
             )}
           </div>
         </div>
