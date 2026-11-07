@@ -5,15 +5,15 @@ export async function GET() {
     success: true,
     data: {
       appName: 'Owntemp',
-      latestVersion: '2.8.3',
-      edition: 'Fullscreen 50,000+ Domain Directory & Responsive Grid Edition',
+      latestVersion: '2.8.4',
+      edition: 'Resilient Fullscreen Domain Directory & Edge-to-Edge Layout Edition',
       minimumSupportedVersion: '1.0.0',
-      apkDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.3/app-v2.8.3-build43-android.apk',
-      windowsDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.3/Owntemp-v2.8.3-windows-x64.exe',
-      macDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.3/Owntemp-v2.8.3-macOS-Universal.dmg',
+      apkDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.4/app-v2.8.4-build44-android.apk',
+      windowsDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.4/Owntemp-v2.8.4-windows-x64.exe',
+      macDownloadUrl: 'https://github.com/sajjadhossan/owntempmail/releases/download/v2.8.4/Owntemp-v2.8.4-macOS-Universal.dmg',
       releaseNotes: {
-        bn: 'Owntemp v2.8.3: ৫০,০০০+ ডিরেক্টরি মোডাল সম্পূর্ণ ফুলস্ক্রিন ভিউ, রেসপনসিভ ওয়াইড গ্রিড ও ব্যাচ ২৪০ ডোমেইন একসাথে দেখার সুবিধা।',
-        en: 'Owntemp v2.8.3: 50,000+ directory modal full screen view, responsive wide grid and batch 240 domains viewing support.',
+        bn: 'Owntemp v2.8.4: ৫০,০০০+ ডিরেক্টরি মোডাল ফ্লেক্স হাইট ও min-h-0 ফিক্স, এজ-টু-এজ ফুলস্ক্রিন ভিউ এবং ক্র্যাশ-ফ্রি মোবাইল ডিসপ্লে।',
+        en: 'Owntemp v2.8.4: 50,000+ directory modal flex height and min-h-0 fix, edge-to-edge full screen view and crash-free mobile rendering.',
       },
       platforms: {
         android: {

@@ -109,10 +109,9 @@ export default function DirectoryModal({
   const totalPages = typeof safePagination.totalPages === 'number' ? safePagination.totalPages : 1726;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-slate-950 text-slate-100 animate-in fade-in duration-150 w-full h-full max-h-[100dvh] overflow-hidden">
-      <div className="w-full h-full flex flex-col overflow-hidden bg-slate-950">
-        {/* Fixed Fullscreen Header */}
-        <div className="p-3 sm:p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/90 flex-shrink-0">
+    <div className="fixed inset-0 z-50 flex flex-col bg-slate-950 text-slate-100 w-full h-full overflow-hidden">
+      {/* Fixed Fullscreen Header */}
+      <div className="p-3 sm:p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/90 flex-shrink-0">
           <div className="flex items-center space-x-2.5 min-w-0">
             <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-md">
               <Globe className="w-4 h-4 text-white" />
@@ -237,7 +236,7 @@ export default function DirectoryModal({
         </div>
 
         {/* Scrollable Domains Grid List */}
-        <div className="p-3 sm:p-4 overflow-y-auto flex-1 space-y-3 overscroll-contain">
+        <div className="p-3 sm:p-5 overflow-y-auto flex-1 min-h-0 space-y-3.5 overscroll-contain">
           {safePinned.length > 0 && (
             <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
               <div className="flex items-center justify-between text-[11px] font-bold text-amber-300 mb-1.5">
@@ -468,7 +467,6 @@ export default function DirectoryModal({
             {t?.close || (lang === 'bn' ? 'বন্ধ করুন' : 'Close')}
           </button>
         </div>
-      </div>
     </div>
   );
 }
